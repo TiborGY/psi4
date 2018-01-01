@@ -633,6 +633,8 @@ void DFJK::initialize_JK_core() {
     }
 }
 void DFJK::initialize_JK_disk() {
+    //This does not seem to be doing anything. Might be a stub?
+    //It certainly does not try to load anything at all.
     // Try to load
     if (df_ints_io_ == "LOAD") {
         return;
