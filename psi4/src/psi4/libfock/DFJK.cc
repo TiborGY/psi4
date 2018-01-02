@@ -400,6 +400,8 @@ void DFJK::preiterations() {
     is_core_ = is_core();
 
     if (is_core_)
+        //integrals could be returned here and passed up the call chain,
+        //like this return initialize_JK_core();
         initialize_JK_core();
     else
         initialize_JK_disk();
