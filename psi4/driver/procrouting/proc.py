@@ -1414,6 +1414,8 @@ def scf_helper(name, post_scf=True, **kwargs):
         return scf_wfn
     else:
         # If we force c1 copy the active molecule
+        # at this point the JK object inside scf_wfn should still be accessible via .jk()
+        # caveats: the jk object might have been deallocd or the integrals inside it might have been deallocd
         scf_molecule.update_geometry()
         core.print_out("""  A requested method does not make use of molecular symmetry: """
                            """further calculations in C1 point group.\n""")
