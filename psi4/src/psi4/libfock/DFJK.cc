@@ -454,7 +454,7 @@ void DFJK::initialize_JK_core() {
 #ifdef _OPENMP
     nthread = df_ints_num_threads_;
 #endif
-
+    //Qmn_ seems to be a shared pointer that could be returned by value in this function (for incore DFCCSD)
     Qmn_ = std::make_shared<Matrix>("Qmn (Fitted Integrals)", auxiliary_->nbf(), ntri);
     double** Qmnp = Qmn_->pointer();
 
