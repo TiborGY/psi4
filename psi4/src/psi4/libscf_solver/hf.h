@@ -150,6 +150,8 @@ protected:
     double integral_threshold_;
 
     /// The soon to be ubiquitous JK object
+    //the integrals are inside the JK object, see "Main (Q|mn) Tensor" in jk.h in libfock
+    //if they could be extracted with a getter, all the passing could be avoided
     std::shared_ptr<JK> jk_;
 
     /// Are we to do MOM?

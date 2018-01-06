@@ -199,6 +199,8 @@ void export_mints(py::module& m)
     // is going to contain std::shared_ptr's we MUST set the no_proxy flag to true
     // (as it is) to tell Boost.Python to not create a proxy class to handle
     // the vector's data type.
+    
+    //Boost is long gone, are these still relevant/needed?
     py::bind_vector<std::vector<std::shared_ptr<Matrix>>>(m, "VectorMatrix");
 
     // Other vector types

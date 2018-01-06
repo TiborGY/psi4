@@ -400,6 +400,8 @@ void DFJK::preiterations() {
     is_core_ = is_core();
 
     if (is_core_)
+        //integrals could be returned here and passed up the call chain,
+        //like this return initialize_JK_core();
         initialize_JK_core();
     else
         initialize_JK_disk();
@@ -454,7 +456,7 @@ void DFJK::initialize_JK_core() {
 #ifdef _OPENMP
     nthread = df_ints_num_threads_;
 #endif
-
+    //Qmn_ seems to be a shared pointer that could be returned by value in this function (for incore DFCCSD)
     Qmn_ = std::make_shared<Matrix>("Qmn (Fitted Integrals)", auxiliary_->nbf(), ntri);
     double** Qmnp = Qmn_->pointer();
 
@@ -633,6 +635,8 @@ void DFJK::initialize_JK_core() {
     }
 }
 void DFJK::initialize_JK_disk() {
+    //This does not seem to be doing anything. Might be a stub?
+    //It certainly does not try to load anything at all.
     // Try to load
     if (df_ints_io_ == "LOAD") {
         return;
