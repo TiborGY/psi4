@@ -48,13 +48,17 @@ PsiException::PsiException(std::string msg, const char *_file, int _line) noexce
 
 // Disable stack trace printing on Windows
 #ifndef _MSC_VER
-
-    std::vector<void *> Stack(5);
+    #ifdef DEBUG
+        const int trace_depth = 20;
+    #else
+        const int trace_depth = 5;
+    #endif
+    std::vector<void *> Stack(trace_depth);
     char **strings;
-    int size = backtrace(&Stack[0], 5);
+    int size = backtrace(&Stack[0], trace_depth);
     int status = -1;
 
-    message << "The most recent " << (size < 5 ? size : 5) << " function calls were:" << std::endl << std::endl;
+    message << "The most recent " << (size < trace_depth ? size : trace_depth) << " function calls were:" << std::endl << std::endl;
     strings = backtrace_symbols(&Stack[0], size);
 
     for (int i = 0; i < size; i++) {
