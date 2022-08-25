@@ -52,9 +52,9 @@ macro(psi4_add_module binlib libname sources)
   add_library(${libname} STATIC "${${sources}}")
   set_target_properties(${libname}
     PROPERTIES
-      CXX_VISIBILITY_PRESET hidden
+      CXX_VISIBILITY_PRESET default
       POSITION_INDEPENDENT_CODE 1
-      VISIBILITY_INLINES_HIDDEN 1
+      VISIBILITY_INLINES_HIDDEN 0
     )
 
   # This provides OpenMP flags and access to BLAS/LAPACK headers
