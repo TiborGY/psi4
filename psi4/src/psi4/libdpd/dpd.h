@@ -396,6 +396,14 @@ class PSI_API DPD {
     int buf4_print(dpdbuf4 *Buf, std::string out_fname, int print_data);
     int buf4_copy(dpdbuf4 *InBuf, int outfilenum, const std::string& label);
     bool buf4_sort_incore_decide(const dpdbuf4 &InBuf, const int32_t nirreps, const int32_t my_irrep);
+
+    template <bool axpy>
+    void buf4_sort_pqsr_incore(dpdbuf4 &OutBuf, const dpdbuf4 &InBuf, const int32_t nirreps, const int32_t my_irrep,
+                               const double alpha = 1.0);
+    template <bool axpy>
+    void buf4_sort_prqs_incore(dpdbuf4 &OutBuf, const dpdbuf4 &InBuf, const int32_t nirreps, const int32_t my_irrep,
+                               const double alpha = 1.0);
+
     int buf4_sort(dpdbuf4 *InBuf, int outfilenum, enum indices index, int pqnum, int rsnum, const std::string& label);
     int buf4_sort(dpdbuf4 *InBuf, int outfilenum, enum indices index, std::string pq, std::string rs,
                   const std::string& label);
