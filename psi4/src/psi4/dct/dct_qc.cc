@@ -2113,7 +2113,7 @@ void DCTSolver::run_davidson() {
         // Orthogonalize the new vectors against the subspace, and add if nececssary
         int added_vectors = 0;
         double **delta_p = delta->pointer();
-        int subspace_size = b_dim_;
+        const int subspace_size = b_dim_;
         for (int k = subspace_size - 1; k >= 0; --k) {
             if (augment_b(delta_p[k], vec_add_tol_)) {
                 added_vectors++;
@@ -2131,7 +2131,7 @@ void DCTSolver::run_davidson() {
 
     // Perform the stability analysis by analyzing the eigenvector of the Hessian for several largest contributions
     outfile->Printf("\tLowest %d eigenvalues of the electronic Hessian: \n", nevals_);
-    int values_to_print = 5;
+    const int values_to_print = 5;
     int n_neg = 0;
     int nvecs = nevals_ < b_dim_ ? nevals_ : b_dim_;
     for (int k = 0; k < nvecs; k++) {
@@ -2177,7 +2177,7 @@ void DCTSolver::run_davidson() {
 
 void DCTSolver::davidson_guess() {
     int count = 0;
-    int dimension = nguess_ < nidp_ ? nguess_ : nidp_;
+    const int dimension = nguess_ < nidp_ ? nguess_ : nidp_;
     while (count < dimension) {
         Vector temp("Temp", nidp_);
         temp.set(count, 1.0);
@@ -2189,7 +2189,7 @@ void DCTSolver::davidson_guess() {
     }
 }
 
-bool DCTSolver::augment_b(double *vec, double tol) {
+bool DCTSolver::augment_b(double *vec, const double tol) {
     // Normalize the vec array first
     double vec_norm = std::sqrt(C_DDOT(nidp_, vec, 1, vec, 1));
     double inv_norm = 1.0 / vec_norm;
