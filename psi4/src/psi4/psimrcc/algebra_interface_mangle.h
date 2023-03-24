@@ -41,7 +41,6 @@
 #define F_DROT FC_GLOBAL(drot, DROT)
 #define F_DSCAL FC_GLOBAL(dscal, DSCAL)
 #define F_DGEMV FC_GLOBAL(dgemv, DGEMV)
-#define F_DSPMV FC_GLOBAL(dfpmv, DSPMV)
 #define F_DDOT FC_GLOBAL(ddot, DDOT)
 #define F_DGEEV FC_GLOBAL(dgeev, DGEEV)
 #define F_DGESV FC_GLOBAL(dgesv, DGESV)
@@ -57,7 +56,6 @@
 #define F_DROT drot_
 #define F_DSCAL dscal_
 #define F_DGEMV dgemv_
-#define F_DSPMV dspmv_
 #define F_DDOT ddot_
 #define F_DGEEV dgeev_
 #define F_DGESV dgesv_
@@ -72,7 +70,6 @@
 #define F_DROT drot
 #define F_DSCAL dscal
 #define F_DGEMV dgemv
-#define F_DSPMV dspmv
 #define F_DDOT ddot
 #define F_DGEEV dgeev
 #define F_DGESV dgesv
@@ -87,7 +84,6 @@
 #define F_DROT DROT
 #define F_DSCAL DSCAL
 #define F_DGEMV DGEMV
-#define F_DSPMV DSPMV
 #define F_DDOT DDOT
 #define F_DGEEV DGEEV
 #define F_DGESV DGESV
@@ -102,7 +98,6 @@
 #define F_DROT DROT_
 #define F_DSCAL DSCAL_
 #define F_DGEMV DGEMV_
-#define F_DSPMV DSPMV_
 #define F_DDOT DDOT_
 #define F_DGEEV DGEEV_
 #define F_DGESV DGESV_

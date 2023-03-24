@@ -73,8 +73,6 @@ extern void F_DGEMV(char *transa, int *m, int *n, double *alpha, double *A, int 
                     double *beta, double *Y, int *inc_y);
 extern void F_DSYMV(char *uplo, int *n, double *alpha, double *A, int *lda, double *X, int *inc_x, double *beta,
                     double *Y, int *inc_y);
-extern void F_DSPMV(char *uplo, int *n, double *alpha, double *A, double *X, int *inc_x, double *beta, double *Y,
-                    int *inc_y);
 extern double F_DDOT(int *n, const double *x, int *incx, const double *y, int *incy);
 extern double F_DNRM2(int *n, double *x, int *incx);
 extern double F_DASUM(int *n, double *x, int *incx);
