@@ -96,6 +96,9 @@ void C_DAXPY(size_t length, double a, const double* x, int inc_x, double* y, int
 void C_DAXPBY(size_t length, double a, const double* x, int inc_x, double b, double* y, int inc_y);
 double C_DDOT(size_t n, const double* const X, int inc_x, const double* const Y, int inc_y);
 double C_DNRM2(size_t n, double* X, int inc_x);
+PSI_DEPRECATED(
+    "DASUM wrappers are being deprecated due to a lack of users. Unless someone speaks up, 1.8 will be the last "
+    "release to have them.")
 double C_DASUM(size_t n, double* X, int inc_x);
 size_t C_IDAMAX(size_t n, double* X, int inc_x);
 

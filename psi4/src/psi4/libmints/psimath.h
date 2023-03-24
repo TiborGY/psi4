@@ -109,6 +109,9 @@ double PSI_DDOT(int irrep, size_t n, std::shared_ptr<Vector> x, int incx, std::s
 /// PSI_DNRM2, a wrapper to C_DNRM2 using objects
 double PSI_DNRM2(int irrep, size_t n, std::shared_ptr<Vector> x, int incx);
 /// PSI_DASUM, a wrapper to C_DASUM using objects
+PSI_DEPRECATED(
+    "DASUM wrappers are being deprecated due to a lack of users. Unless someone speaks up, 1.8 will be the last "
+    "release to have them.")
 double PSI_DASUM(int irrep, size_t n, std::shared_ptr<Vector> x, int incx);
 /// PSI_IDAMAX, a wrapper to C_IDAMAX using objects
 size_t PSI_IDAMAX(int irrep, size_t n, std::shared_ptr<Vector> x, int incx);

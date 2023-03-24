@@ -308,7 +308,9 @@ double PSI_API C_DNRM2(size_t length, double *x, int inc_x) {
  *
  * \ingroup QT
  */
-
+PSI_DEPRECATED(
+    "DASUM wrappers are being deprecated due to a lack of users. Unless someone speaks up, 1.8 will be the last "
+    "release to have them.")
 double PSI_API C_DASUM(size_t length, double *x, int inc_x) {
     if (length == 0) return 0.0;
 
