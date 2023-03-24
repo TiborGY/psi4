@@ -60,7 +60,7 @@ void export_blas_lapack(py::module& m) {
     m.def("DDOT", &psi::PSI_DDOT, "docstring");
     m.def("DNRM2", &psi::PSI_DNRM2, "docstring");
     m.def("DASUM", &psi::PSI_DASUM, "Deprecated, do not use.");
-    m.def("IDAMAX", &psi::PSI_IDAMAX, "docstring");
+    m.def("IDAMAX", &psi::PSI_IDAMAX, "Deprecated, do not use.");
 
     // LAPACK static wrappers
 

@@ -114,6 +114,9 @@ PSI_DEPRECATED(
     "release to have them.")
 double PSI_DASUM(int irrep, size_t n, std::shared_ptr<Vector> x, int incx);
 /// PSI_IDAMAX, a wrapper to C_IDAMAX using objects
+PSI_DEPRECATED(
+    "IDAMAX wrappers are being deprecated due to a lack of users. Unless someone speaks up, 1.8 will be the last "
+    "release to have them.")
 size_t PSI_IDAMAX(int irrep, size_t n, std::shared_ptr<Vector> x, int incx);
 /// LAPACK
 /// PSI_DBDSDC, a wrapper to return C_DBDSDC using objects

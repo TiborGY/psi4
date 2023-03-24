@@ -100,6 +100,9 @@ PSI_DEPRECATED(
     "DASUM wrappers are being deprecated due to a lack of users. Unless someone speaks up, 1.8 will be the last "
     "release to have them.")
 double C_DASUM(size_t n, double* X, int inc_x);
+PSI_DEPRECATED(
+    "IDAMAX wrappers are being deprecated due to a lack of users. Unless someone speaks up, 1.8 will be the last "
+    "release to have them.")
 size_t C_IDAMAX(size_t n, double* X, int inc_x);
 
 // BLAS 2 Double routines
