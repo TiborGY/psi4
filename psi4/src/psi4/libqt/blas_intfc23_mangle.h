@@ -54,7 +54,6 @@
 #define F_DSYRK FC_GLOBAL(dsyrk, DSYRK)
 #define F_DTBMV FC_GLOBAL(dtbmv, DTBMV)
 #define F_DTBSV FC_GLOBAL(dtbsv, DTBSV)
-#define F_DTPSV FC_GLOBAL(dtpsv, DTPSV)
 #define F_DTRMM FC_GLOBAL(dtrmm, DTRMM)
 #define F_DTRMV FC_GLOBAL(dtrmv, DTRMV)
 #define F_DTRSM FC_GLOBAL(dtrsm, DTRSM)
@@ -73,7 +72,6 @@
 #define F_DSYRK dsyrk_
 #define F_DTBMV dtbmv_
 #define F_DTBSV dtbsv_
-#define F_DTPSV dtpsv_
 #define F_DTRMM dtrmm_
 #define F_DTRMV dtrmv_
 #define F_DTRSM dtrsm_
@@ -91,7 +89,6 @@
 #define F_DSYRK dsyrk
 #define F_DTBMV dtbmv
 #define F_DTBSV dtbsv
-#define F_DTPSV dtpsv
 #define F_DTRMM dtrmm
 #define F_DTRMV dtrmv
 #define F_DTRSM dtrsm
@@ -109,7 +106,6 @@
 #define F_DSYRK DSYRK
 #define F_DTBMV DTBMV
 #define F_DTBSV DTBSV
-#define F_DTPSV DTPSV
 #define F_DTRMM DTRMM
 #define F_DTRMV DTRMV
 #define F_DTRSM DTRSM
@@ -127,7 +123,6 @@
 #define F_DSYRK DSYRK_
 #define F_DTBMV DTBMV_
 #define F_DTBSV DTBSV_
-#define F_DTPSV DTPSV_
 #define F_DTRMM DTRMM_
 #define F_DTRMV DTRMV_
 #define F_DTRSM DTRSM_

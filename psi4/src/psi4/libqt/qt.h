@@ -112,7 +112,6 @@ void C_DSYR(char uplo, int n, double alpha, double* x, int incx, double* a, int 
 void C_DSYR2(char uplo, int n, double alpha, double* x, int incx, double* y, int incy, double* a, int lda);
 void C_DTBMV(char uplo, char trans, char diag, int n, int k, double* a, int lda, double* x, int incx);
 void C_DTBSV(char uplo, char trans, char diag, int n, int k, double* a, int lda, double* x, int incx);
-void C_DTPSV(char uplo, char trans, char diag, int n, double* ap, double* x, int incx);
 void C_DTRMV(char uplo, char trans, char diag, int n, double* a, int lda, double* x, int incx);
 void C_DTRSM(char side, char uplo, char transa, char diag, int m, int n, double alpha, double* a, int lda, double* b,
              int ldb);

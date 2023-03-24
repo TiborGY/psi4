@@ -54,7 +54,6 @@ extern void F_DSYR2K(char*, char*, int*, int*, double*, double*, int*, double*, 
 extern void F_DSYRK(char*, char*, int*, int*, double*, double*, int*, double*, double*, int*);
 extern void F_DTBMV(char*, char*, char*, int*, int*, double*, int*, double*, int*);
 extern void F_DTBSV(char*, char*, char*, int*, int*, double*, int*, double*, int*);
-extern void F_DTPSV(char*, char*, char*, int*, double*, double*, int*);
 extern void F_DTRMM(char*, char*, char*, char*, int*, int*, double*, double*, int*, double*, int*);
 extern void F_DTRMV(char*, char*, char*, int*, double*, int*, double*, int*);
 extern void F_DTRSM(char*, char*, char*, char*, int*, int*, double*, double*, int*, double*, int*);
@@ -1522,117 +1521,6 @@ void C_DTBSV(char uplo, char trans, char diag, int n, int k, double* a, int lda,
     else
         throw std::invalid_argument("C_DTBSV trans argument is invalid.");
     ::F_DTBSV(&uplo, &trans, &diag, &n, &k, a, &lda, x, &incx);
-}
-
-/**
- *  Purpose
- *  =======
- *
- *  DTPSV  solves one of the systems of equations
- *
- *     A*x = b,   or   A'*x = b,
- *
- *  where b and x are n element vectors and A is an n by n unit, or
- *  non-unit, upper or lower triangular matrix, supplied in packed form.
- *
- *  No test for singularity or near-singularity is included in this
- *  routine. Such tests must be performed before calling this routine.
- *
- *  Arguments
- *  ==========
- *
- *  UPLO   - CHARACTER*1.
- *           On entry, UPLO specifies whether the matrix is an upper or
- *           lower triangular matrix as follows:
- *
- *              UPLO = 'U' or 'u'   A is an upper triangular matrix.
- *
- *              UPLO = 'L' or 'l'   A is a lower triangular matrix.
- *
- *           Unchanged on exit.
- *
- *  TRANS  - CHARACTER*1.
- *           On entry, TRANS specifies the equations to be solved as
- *           follows:
- *
- *              TRANS = 'N' or 'n'   A*x = b.
- *
- *              TRANS = 'T' or 't'   A'*x = b.
- *
- *              TRANS = 'C' or 'c'   A'*x = b.
- *
- *           Unchanged on exit.
- *
- *  DIAG   - CHARACTER*1.
- *           On entry, DIAG specifies whether or not A is unit
- *           triangular as follows:
- *
- *              DIAG = 'U' or 'u'   A is assumed to be unit triangular.
- *
- *              DIAG = 'N' or 'n'   A is not assumed to be unit
- *                                  triangular.
- *
- *           Unchanged on exit.
- *
- *  N      - INTEGER.
- *           On entry, N specifies the order of the matrix A.
- *           N must be at least zero.
- *           Unchanged on exit.
- *
- *  AP     - DOUBLE PRECISION array of DIMENSION at least
- *           ( ( n*( n + 1 ) )/2 ).
- *           Before entry with  UPLO = 'U' or 'u', the array AP must
- *           contain the upper triangular matrix packed sequentially,
- *           column by column, so that AP( 1 ) contains a( 1, 1 ),
- *           AP( 2 ) and AP( 3 ) contain a( 1, 2 ) and a( 2, 2 )
- *           respectively, and so on.
- *           Before entry with UPLO = 'L' or 'l', the array AP must
- *           contain the lower triangular matrix packed sequentially,
- *           column by column, so that AP( 1 ) contains a( 1, 1 ),
- *           AP( 2 ) and AP( 3 ) contain a( 2, 1 ) and a( 3, 1 )
- *           respectively, and so on.
- *           Note that when  DIAG = 'U' or 'u', the diagonal elements of
- *           A are not referenced, but are assumed to be unity.
- *           Unchanged on exit.
- *
- *  X      - DOUBLE PRECISION array of dimension at least
- *           ( 1 + ( n - 1 )*abs( INCX ) ).
- *           Before entry, the incremented array X must contain the n
- *           element right-hand side vector b. On exit, X is overwritten
- *           with the solution vector x.
- *
- *  INCX   - INTEGER.
- *           On entry, INCX specifies the increment for the elements of
- *           X. INCX must not be zero.
- *           Unchanged on exit.
- *
- *
- *  Level 2 Blas routine.
- *
- *  -- Written on 22-October-1986.
- *     Jack Dongarra, Argonne National Lab.
- *     Jeremy Du Croz, Nag Central Office.
- *     Sven Hammarling, Nag Central Office.
- *     Richard Hanson, Sandia National Labs.
- *
- *
- *     .. Parameters ..
- **/
-void C_DTPSV(char uplo, char trans, char diag, int n, double* ap, double* x, int incx) {
-    if (n == 0) return;
-    if (uplo == 'U' || uplo == 'u')
-        uplo = 'L';
-    else if (uplo == 'L' || uplo == 'l')
-        uplo = 'U';
-    else
-        throw std::invalid_argument("C_DTPSV uplo argument is invalid.");
-    if (trans == 'N' || trans == 'n')
-        trans = 'T';
-    else if (trans == 'T' || trans == 't')
-        trans = 'N';
-    else
-        throw std::invalid_argument("C_DTPSV trans argument is invalid.");
-    ::F_DTPSV(&uplo, &trans, &diag, &n, ap, x, &incx);
 }
 
 /**
