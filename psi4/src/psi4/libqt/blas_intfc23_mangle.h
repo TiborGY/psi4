@@ -46,7 +46,6 @@
 #define F_DGEMM FC_GLOBAL(dgemm, DGEMM)
 #define F_DGEMV FC_GLOBAL(dgemv, DGEMV)
 #define F_DGER FC_GLOBAL(dger, DGER)
-#define F_DSPR2 FC_GLOBAL(dspr2, DSPR2)
 #define F_DSYMM FC_GLOBAL(dsymm, DSYMM)
 #define F_DSYMV FC_GLOBAL(dsymv, DSYMV)
 #define F_DSYR FC_GLOBAL(dsyr, DSYR)
@@ -67,7 +66,6 @@
 #define F_DGEMM dgemm_
 #define F_DGEMV dgemv_
 #define F_DGER dger_
-#define F_DSPR2 dspr2_
 #define F_DSYMM dsymm_
 #define F_DSYMV dsymv_
 #define F_DSYR dsyr_
@@ -87,7 +85,6 @@
 #define F_DGEMM dgemm
 #define F_DGEMV dgemv
 #define F_DGER dger
-#define F_DSPR2 dspr2
 #define F_DSYMM dsymm
 #define F_DSYMV dsymv
 #define F_DSYR dsyr
@@ -107,7 +104,6 @@
 #define F_DGEMM DGEMM
 #define F_DGEMV DGEMV
 #define F_DGER DGER
-#define F_DSPR2 DSPR2
 #define F_DSYMM DSYMM
 #define F_DSYMV DSYMV
 #define F_DSYR DSYR
@@ -127,7 +123,6 @@
 #define F_DGEMM DGEMM_
 #define F_DGEMV DGEMV_
 #define F_DGER DGER_
-#define F_DSPR2 DSPR2_
 #define F_DSYMM DSYMM_
 #define F_DSYMV DSYMV_
 #define F_DSYR DSYR_

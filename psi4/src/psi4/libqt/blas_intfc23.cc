@@ -46,7 +46,6 @@ extern void F_DGBMV(char*, int*, int*, int*, int*, double*, double*, int*, doubl
 extern void F_DGEMM(char*, char*, int*, int*, int*, double*, double*, int*, double*, int*, double*, double*, int*);
 extern void F_DGEMV(char*, int*, int*, double*, double*, int*, double*, int*, double*, double*, int*);
 extern void F_DGER(int*, int*, double*, double*, int*, double*, int*, double*, int*);
-extern void F_DSPR2(char*, int*, double*, double*, int*, double*, int*, double*);
 extern void F_DSYMM(char*, char*, int*, int*, double*, double*, int*, double*, int*, double*, double*, int*);
 extern void F_DSYMV(char*, int*, double*, double*, int*, double*, int*, double*, double*, int*);
 extern void F_DSYR(char*, int*, double*, double*, int*, double*, int*);
@@ -506,104 +505,6 @@ PSI_API void C_DGEMV(char trans, int m, int n, double alpha, double* a, int lda,
 PSI_API void C_DGER(int m, int n, double alpha, double* x, int incx, double* y, int incy, double* a, int lda) {
     if (m == 0 || n == 0) return;
     ::F_DGER(&n, &m, &alpha, y, &incy, x, &incx, a, &lda);
-}
-
-/**
- *  Purpose
- *  =======
- *
- *  DSPR2  performs the symmetric rank 2 operation
- *
- *     A := alpha*x*y' + alpha*y*x' + A,
- *
- *  where alpha is a scalar, x and y are n element vectors and A is an
- *  n by n symmetric matrix, supplied in packed form.
- *
- *  Arguments
- *  ==========
- *
- *  UPLO   - CHARACTER*1.
- *           On entry, UPLO specifies whether the upper or lower
- *           triangular part of the matrix A is supplied in the packed
- *           array AP as follows:
- *
- *              UPLO = 'U' or 'u'   The upper triangular part of A is
- *                                  supplied in AP.
- *
- *              UPLO = 'L' or 'l'   The lower triangular part of A is
- *                                  supplied in AP.
- *
- *           Unchanged on exit.
- *
- *  N      - INTEGER.
- *           On entry, N specifies the order of the matrix A.
- *           N must be at least zero.
- *           Unchanged on exit.
- *
- *  ALPHA  - DOUBLE PRECISION.
- *           On entry, ALPHA specifies the scalar alpha.
- *           Unchanged on exit.
- *
- *  X      - DOUBLE PRECISION array of dimension at least
- *           ( 1 + ( n - 1 )*abs( INCX ) ).
- *           Before entry, the incremented array X must contain the n
- *           element vector x.
- *           Unchanged on exit.
- *
- *  INCX   - INTEGER.
- *           On entry, INCX specifies the increment for the elements of
- *           X. INCX must not be zero.
- *           Unchanged on exit.
- *
- *  Y      - DOUBLE PRECISION array of dimension at least
- *           ( 1 + ( n - 1 )*abs( INCY ) ).
- *           Before entry, the incremented array Y must contain the n
- *           element vector y.
- *           Unchanged on exit.
- *
- *  INCY   - INTEGER.
- *           On entry, INCY specifies the increment for the elements of
- *           Y. INCY must not be zero.
- *           Unchanged on exit.
- *
- *  AP     - DOUBLE PRECISION array of DIMENSION at least
- *           ( ( n*( n + 1 ) )/2 ).
- *           Before entry with  UPLO = 'U' or 'u', the array AP must
- *           contain the upper triangular part of the symmetric matrix
- *           packed sequentially, column by column, so that AP( 1 )
- *           contains a( 1, 1 ), AP( 2 ) and AP( 3 ) contain a( 1, 2 )
- *           and a( 2, 2 ) respectively, and so on. On exit, the array
- *           AP is overwritten by the upper triangular part of the
- *           updated matrix.
- *           Before entry with UPLO = 'L' or 'l', the array AP must
- *           contain the lower triangular part of the symmetric matrix
- *           packed sequentially, column by column, so that AP( 1 )
- *           contains a( 1, 1 ), AP( 2 ) and AP( 3 ) contain a( 2, 1 )
- *           and a( 3, 1 ) respectively, and so on. On exit, the array
- *           AP is overwritten by the lower triangular part of the
- *           updated matrix.
- *
- *
- *  Level 2 Blas routine.
- *
- *  -- Written on 22-October-1986.
- *     Jack Dongarra, Argonne National Lab.
- *     Jeremy Du Croz, Nag Central Office.
- *     Sven Hammarling, Nag Central Office.
- *     Richard Hanson, Sandia National Labs.
- *
- *
- *     .. Parameters ..
- **/
-void C_DSPR2(char uplo, int n, double alpha, double* x, int incx, double* y, int incy, double* ap) {
-    if (n == 0) return;
-    if (uplo == 'U' || uplo == 'u')
-        uplo = 'L';
-    else if (uplo == 'L' || uplo == 'l')
-        uplo = 'U';
-    else
-        throw std::invalid_argument("C_DSPR2 uplo argument is invalid.");
-    ::F_DSPR2(&uplo, &n, &alpha, x, &incx, y, &incy, ap);
 }
 
 /**
