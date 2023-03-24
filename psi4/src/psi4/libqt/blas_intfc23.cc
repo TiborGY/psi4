@@ -46,6 +46,7 @@ extern void F_DGBMV(char*, int*, int*, int*, int*, double*, double*, int*, doubl
 extern void F_DGEMM(char*, char*, int*, int*, int*, double*, double*, int*, double*, int*, double*, double*, int*);
 extern void F_DGEMV(char*, int*, int*, double*, double*, int*, double*, int*, double*, double*, int*);
 extern void F_DGER(int*, int*, double*, double*, int*, double*, int*, double*, int*);
+extern void F_DSBMV(char*, int*, int*, double*, double*, int*, double*, int*, double*, double*, int*);
 extern void F_DSYMM(char*, char*, int*, int*, double*, double*, int*, double*, int*, double*, double*, int*);
 extern void F_DSYMV(char*, int*, double*, double*, int*, double*, int*, double*, double*, int*);
 extern void F_DSYR(char*, int*, double*, double*, int*, double*, int*);
@@ -503,6 +504,141 @@ PSI_API void C_DGEMV(char trans, int m, int n, double alpha, double* a, int lda,
 PSI_API void C_DGER(int m, int n, double alpha, double* x, int incx, double* y, int incy, double* a, int lda) {
     if (m == 0 || n == 0) return;
     ::F_DGER(&n, &m, &alpha, y, &incy, x, &incx, a, &lda);
+}
+
+/**
+ *  Purpose
+ *  =======
+ *
+ *  DSBMV  performs the matrix-vector  operation
+ *
+ *     y := alpha*A*x + beta*y,
+ *
+ *  where alpha and beta are scalars, x and y are n element vectors and
+ *  A is an n by n symmetric band matrix, with k super-diagonals.
+ *
+ *  Arguments
+ *  ==========
+ *
+ *  UPLO   - CHARACTER*1.
+ *           On entry, UPLO specifies whether the upper or lower
+ *           triangular part of the band matrix A is being supplied as
+ *           follows:
+ *
+ *              UPLO = 'U' or 'u'   The upper triangular part of A is
+ *                                  being supplied.
+ *
+ *              UPLO = 'L' or 'l'   The lower triangular part of A is
+ *                                  being supplied.
+ *
+ *           Unchanged on exit.
+ *
+ *  N      - INTEGER.
+ *           On entry, N specifies the order of the matrix A.
+ *           N must be at least zero.
+ *           Unchanged on exit.
+ *
+ *  K      - INTEGER.
+ *           On entry, K specifies the number of super-diagonals of the
+ *           matrix A. K must satisfy  0 .le. K.
+ *           Unchanged on exit.
+ *
+ *  ALPHA  - DOUBLE PRECISION.
+ *           On entry, ALPHA specifies the scalar alpha.
+ *           Unchanged on exit.
+ *
+ *  A      - DOUBLE PRECISION array of DIMENSION ( LDA, n ).
+ *           Before entry with UPLO = 'U' or 'u', the leading ( k + 1 )
+ *           by n part of the array A must contain the upper triangular
+ *           band part of the symmetric matrix, supplied column by
+ *           column, with the leading diagonal of the matrix in row
+ *           ( k + 1 ) of the array, the first super-diagonal starting at
+ *           position 2 in row k, and so on. The top left k by k triangle
+ *           of the array A is not referenced.
+ *           The following program segment will transfer the upper
+ *           triangular part of a symmetric band matrix from conventional
+ *           full matrix storage to band storage:
+ *
+ *                 DO 20, J = 1, N
+ *                    M = K + 1 - J
+ *                    DO 10, I = MAX( 1, J - K ), J
+ *                       A( M + I, J ) = matrix( I, J )
+ *              10    CONTINUE
+ *              20 CONTINUE
+ *
+ *           Before entry with UPLO = 'L' or 'l', the leading ( k + 1 )
+ *           by n part of the array A must contain the lower triangular
+ *           band part of the symmetric matrix, supplied column by
+ *           column, with the leading diagonal of the matrix in row 1 of
+ *           the array, the first sub-diagonal starting at position 1 in
+ *           row 2, and so on. The bottom right k by k triangle of the
+ *           array A is not referenced.
+ *           The following program segment will transfer the lower
+ *           triangular part of a symmetric band matrix from conventional
+ *           full matrix storage to band storage:
+ *
+ *                 DO 20, J = 1, N
+ *                    M = 1 - J
+ *                    DO 10, I = J, MIN( N, J + K )
+ *                       A( M + I, J ) = matrix( I, J )
+ *              10    CONTINUE
+ *              20 CONTINUE
+ *
+ *           Unchanged on exit.
+ *
+ *  LDA    - INTEGER.
+ *           On entry, LDA specifies the first dimension of A as declared
+ *           in the calling (sub) program. LDA must be at least
+ *           ( k + 1 ).
+ *           Unchanged on exit.
+ *
+ *  X      - DOUBLE PRECISION array of DIMENSION at least
+ *           ( 1 + ( n - 1 )*abs( INCX ) ).
+ *           Before entry, the incremented array X must contain the
+ *           vector x.
+ *           Unchanged on exit.
+ *
+ *  INCX   - INTEGER.
+ *           On entry, INCX specifies the increment for the elements of
+ *           X. INCX must not be zero.
+ *           Unchanged on exit.
+ *
+ *  BETA   - DOUBLE PRECISION.
+ *           On entry, BETA specifies the scalar beta.
+ *           Unchanged on exit.
+ *
+ *  Y      - DOUBLE PRECISION array of DIMENSION at least
+ *           ( 1 + ( n - 1 )*abs( INCY ) ).
+ *           Before entry, the incremented array Y must contain the
+ *           vector y. On exit, Y is overwritten by the updated vector y.
+ *
+ *  INCY   - INTEGER.
+ *           On entry, INCY specifies the increment for the elements of
+ *           Y. INCY must not be zero.
+ *           Unchanged on exit.
+ *
+ *
+ *  Level 2 Blas routine.
+ *
+ *  -- Written on 22-October-1986.
+ *     Jack Dongarra, Argonne National Lab.
+ *     Jeremy Du Croz, Nag Central Office.
+ *     Sven Hammarling, Nag Central Office.
+ *     Richard Hanson, Sandia National Labs.
+ *
+ *
+ *     .. Parameters ..
+ **/
+void C_DSBMV(char uplo, int n, int k, double alpha, double* a, int lda, double* x, int incx, double beta, double* y,
+             int incy) {
+    if (n == 0) return;
+    if (uplo == 'U' || uplo == 'u')
+        uplo = 'L';
+    else if (uplo == 'L' || uplo == 'l')
+        uplo = 'U';
+    else
+        throw std::invalid_argument("C_DSBMV uplo argument is invalid.");
+    ::F_DSBMV(&uplo, &n, &k, &alpha, a, &lda, x, &incx, &beta, y, &incy);
 }
 
 /**

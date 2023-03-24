@@ -39,6 +39,7 @@ void export_blas_lapack(py::module& m) {
     m.def("DGEMM", &psi::PSI_DGEMM, "docstring");
     m.def("DGEMV", &psi::PSI_DGEMV, "docstring");
     m.def("DGER", &psi::PSI_DGER, "docstring");
+    m.def("DSBMV", &psi::PSI_DSBMV, "docstring");
     m.def("DSYMM", &psi::PSI_DSYMM, "docstring");
     m.def("DSYMV", &psi::PSI_DSYMV, "docstring");
     m.def("DSYR", &psi::PSI_DSYR, "docstring");

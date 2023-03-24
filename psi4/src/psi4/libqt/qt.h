@@ -107,6 +107,8 @@ void C_DGEMV(char trans, int m, int n, double alpha, double* a, int lda, double*
              int incy);
 PSI_API
 void C_DGER(int m, int n, double alpha, double* x, int incx, double* y, int incy, double* a, int lda);
+void C_DSBMV(char uplo, int n, int k, double alpha, double* a, int lda, double* x, int incx, double beta, double* y,
+             int incy);
 void C_DSYMV(char uplo, int n, double alpha, double* a, int lda, double* x, int incx, double beta, double* y, int incy);
 void C_DSYR(char uplo, int n, double alpha, double* x, int incx, double* a, int lda);
 void C_DSYR2(char uplo, int n, double alpha, double* x, int incx, double* y, int incy, double* a, int lda);

@@ -56,6 +56,11 @@ void PSI_DGER(int irrep, int m, int n, double alpha, std::shared_ptr<Vector> x, 
               int incy, SharedMatrix a, int lda) {
     C_DGER(m, n, alpha, x->pointer(irrep), incx, y->pointer(irrep), incy, a->pointer(irrep)[0], lda);
 }
+/// PSI_DSBMV, a wrapper to C_DSBMV using objects
+void PSI_DSBMV(int irrep, char uplo, int n, int k, double alpha, SharedMatrix a, int lda, std::shared_ptr<Vector> x,
+               int incx, double beta, std::shared_ptr<Vector> y, int incy) {
+    C_DSBMV(uplo, n, k, alpha, a->pointer(irrep)[0], lda, x->pointer(irrep), incx, beta, y->pointer(irrep), incy);
+}
 /// PSI_DSYMM, a wrapper to C_DSYMM using objects
 void PSI_DSYMM(int irrep, char side, char uplo, int m, int n, double alpha, SharedMatrix a, int lda, SharedMatrix b,
                int ldb, double beta, SharedMatrix c, int ldc) {
