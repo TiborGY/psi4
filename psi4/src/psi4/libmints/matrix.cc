@@ -122,26 +122,6 @@ Matrix::Matrix(const Matrix *c) : rowspi_(c->rowspi_), colspi_(c->colspi_) {
     copy_from(c->matrix_);
 }
 
-Matrix::Matrix(int l_nirreps, const int *l_rowspi, const int *l_colspi, int symmetry)
-    : rowspi_(l_nirreps), colspi_(l_nirreps) {
-    matrix_ = nullptr;
-    nirrep_ = l_nirreps;
-    symmetry_ = symmetry;
-    rowspi_ = l_rowspi;
-    colspi_ = l_colspi;
-    alloc();
-}
-
-Matrix::Matrix(const std::string &name, int l_nirreps, const int *l_rowspi, const int *l_colspi, int symmetry)
-    : rowspi_(l_nirreps), colspi_(l_nirreps), name_(name) {
-    matrix_ = nullptr;
-    nirrep_ = l_nirreps;
-    symmetry_ = symmetry;
-    rowspi_ = l_rowspi;
-    colspi_ = l_colspi;
-    alloc();
-}
-
 Matrix::Matrix(const std::string &name, int rows, int cols) : rowspi_(1), colspi_(1), name_(name) {
     matrix_ = nullptr;
     nirrep_ = 1;
