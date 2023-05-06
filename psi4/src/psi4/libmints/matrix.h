@@ -169,6 +169,7 @@ class PSI_API Matrix : public std::enable_shared_from_this<Matrix> {
      * @param rowspi Array of length nirreps giving row dimensionality.
      * @param colspi Array of length nirreps giving column dimensionality.
      */
+    PSI_DEPRECATED("MTX DEPRECATE TEST")
     Matrix(int nirrep, const int* rowspi, const int* colspi, int symmetry = 0);
     /**
      * Constructor, sets name_, and sets up the matrix
@@ -178,6 +179,7 @@ class PSI_API Matrix : public std::enable_shared_from_this<Matrix> {
      * @param rowspi Array of length nirreps giving row dimensionality.
      * @param colspi Array of length nirreps giving column dimensionality.
      */
+    PSI_DEPRECATED("MTX DEPRECATE TEST")
     Matrix(const std::string& name, int nirrep, const int* rowspi, const int* colspi, int symmetry = 0);
     /**
      * Constructor, forms non-standard matrix.
