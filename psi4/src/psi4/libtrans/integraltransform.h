@@ -289,9 +289,9 @@ class PSI_API IntegralTransform {
     // A list of the arrays to pass into libDPD
     std::vector<int *> spaceArray_;
     // The alpha orbitals per irrep for each space
-    std::map<char, int *> aOrbsPI_;
+    std::map<char, Dimension> aOrbsPI_;
     // The beta orbitals per irrep for each space
-    std::map<char, int *> bOrbsPI_;
+    std::map<char, Dimension> bOrbsPI_;
     // The alpha MO coefficients for all unique spaces needed
     std::map<char, SharedMatrix> aMOCoefficients_;
     // The beta MO coefficients for all unique spaces needed
