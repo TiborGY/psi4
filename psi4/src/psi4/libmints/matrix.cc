@@ -2718,7 +2718,7 @@ void Matrix::remove_symmetry(const SharedMatrix &a, const SharedMatrix &SO2AO) {
     zero();
 
     // Create temporary matrix of proper size.
-    Matrix temp(SO2AO->nirrep(), a->rowspi(), SO2AO->colspi());
+    Matrix temp(a->rowspi(), SO2AO->colspi());
 
     char ta = 'n';
     char tb = 'n';
