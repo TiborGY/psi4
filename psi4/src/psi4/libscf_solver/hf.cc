@@ -1352,52 +1352,6 @@ void HF::reset_occupation() {
     nbeta_ = original_nbeta_;
 }
 
-SharedMatrix HF::form_Fia(SharedMatrix Fso, SharedMatrix Cso, int* noccpi) {
-    const int* nsopi = Cso->rowspi();
-    const int* nmopi = Cso->colspi();
-    int* nvirpi = new int[nirrep_];
-
-    for (int h = 0; h < nirrep_; h++) nvirpi[h] = nmopi[h] - noccpi[h];
-
-    auto Fia = std::make_shared<Matrix>("Fia (Some Basis)", noccpi, nvirpi);
-
-    // Hack to get orbital e for this Fock
-    auto C2 = std::make_shared<Matrix>("C2", Cso->rowspi(), Cso->colspi());
-    auto E2 = std::make_shared<Vector>("E2", Cso->colspi());
-    diagonalize_F(Fso, C2, E2);
-
-    for (int h = 0; h < nirrep_; h++) {
-        int nmo = nmopi[h];
-        int nso = nsopi[h];
-        int nvir = nvirpi[h];
-        int nocc = noccpi[h];
-
-        if (nmo == 0 || nso == 0 || nvir == 0 || nocc == 0) continue;
-
-        // double** C = Cso->pointer(h);
-        double** C = C2->pointer(h);
-        double** F = Fso->pointer(h);
-        double** Fiap = Fia->pointer(h);
-
-        double** Temp = block_matrix(nocc, nso);
-
-        C_DGEMM('T', 'N', nocc, nso, nso, 1.0, C[0], nmo, F[0], nso, 0.0, Temp[0], nso);
-        C_DGEMM('N', 'N', nocc, nvir, nso, 1.0, Temp[0], nso, &C[0][nocc], nmo, 0.0, Fiap[0], nvir);
-
-        free_block(Temp);
-
-        // double* eps = E2->pointer(h);
-        // for (int i = 0; i < nocc; i++)
-        //    for (int a = 0; a < nvir; a++)
-        //        Fiap[i][a] /= eps[a + nocc] - eps[i];
-    }
-
-    // Fia->print();
-
-    delete[] nvirpi;
-
-    return Fia;
-}
 SharedMatrix HF::form_FDSmSDF(SharedMatrix Fso, SharedMatrix Dso) {
     auto FDSmSDF = linalg::triplet(Fso, Dso, S_, false, false, false);
     auto SDF = FDSmSDF->transpose();
