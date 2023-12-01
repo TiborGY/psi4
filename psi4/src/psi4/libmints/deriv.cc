@@ -98,11 +98,9 @@ class PSI_API CorrelatedFunctor {
 
     void load_tpdm(size_t id) {
         // TODO, make this work with threads (each thread needs its own buffer)
-        auto *toc = new char[40];
-        sprintf(toc, "SO_TPDM_FOR_PAIR_%zd", id);
+        const std::string toc = "SO_TPDM_FOR_PAIR_" + std::to_string(id);
         size_t buffer_size = buffer_sizes_[id];
-        psio_->read_entry(PSIF_AO_TPDM, toc, (char *)tpdm_buffer_, buffer_size * sizeof(double));
-        delete[] toc;
+        psio_->read_entry(PSIF_AO_TPDM, toc.c_str(), (char *)tpdm_buffer_, buffer_size * sizeof(double));
         tpdm_ptr_ = tpdm_buffer_;
     }
 
