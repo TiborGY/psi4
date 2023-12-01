@@ -90,7 +90,6 @@ void DPD::cc3_sigma_RHF_ic(dpdbuf4 *CIjAb, dpdbuf4 *WAbEi, dpdbuf4 *WMbIj, int d
     double value_ia, value_ka, denom_ia, denom_ka;
     dpdfile2 fIJ, fAB, *SIA_local;
     dpdbuf4 buf4_tmp, *SIjAb_local;
-    char lbl[32];
 
     std::vector<thread_data> thread_data_array(nthreads);
 
@@ -153,12 +152,12 @@ void DPD::cc3_sigma_RHF_ic(dpdbuf4 *CIjAb, dpdbuf4 *WAbEi, dpdbuf4 *WMbIj, int d
 
     for (i = 0; i < nthreads; ++i) {
         if (do_singles) {
-            sprintf(lbl, "%s %d", "CC3 SIA", i);
+            const std::string lbl = "CC3 SIA " + std::to_string(i);
             file2_init(&(SIA_local[i]), PSIF_CC_TMP1, GS, 0, 1, lbl);
             file2_mat_init(&(SIA_local[i]));
         }
         if (do_doubles) {
-            sprintf(lbl, "%s %d", "CC3 SIjAb", i);
+            const std::string lbl = "CC3 SIjAb " + std::to_string(i);
             buf4_init(&(SIjAb_local[i]), PSIF_CC_TMP1, GS, 0, 5, 0, 5, 0, lbl);
             for (h = 0; h < nirreps; ++h) {
                 buf4_mat_irrep_init(&(SIjAb_local[i]), h);
@@ -270,12 +269,10 @@ void DPD::cc3_sigma_RHF_ic(dpdbuf4 *CIjAb, dpdbuf4 *WAbEi, dpdbuf4 *WMbIj, int d
 
     for (i = 0; i < nthreads; ++i) {
         if (do_singles) {
-            sprintf(lbl, "%s %d", "CC3 SIA", i);
             file2_mat_close(&(SIA_local[i]));
             file2_close(&(SIA_local[i]));
         }
         if (do_doubles) {
-            sprintf(lbl, "%s %d", "CC3 SIjAb", i);
             for (h = 0; h < nirreps; ++h) buf4_mat_irrep_close(&(SIjAb_local[i]), h);
             buf4_close(&(SIjAb_local[i]));
         }
