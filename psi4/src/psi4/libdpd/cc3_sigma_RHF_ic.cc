@@ -28,7 +28,7 @@
 
 /*! \file
     \ingroup DPD
-    \brief Enter brief description of file here
+    \brief Computes contributions to singles and doubles of matrix elements of triples
 */
 #include <cstdio>
 #include <cstdlib>
