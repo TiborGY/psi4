@@ -338,9 +338,9 @@ void LibXCFunctional::set_tweak(std::map<std::string, double> values, bool quiet
             // after https://gitlab.com/libxc/libxc/-/issues/285 resolved, set parameters successively in loop
             // xc_func_set_ext_params_name(xc_functional_.get(), tweak.first.c_str(), tweak.second);
         } else {
-            auto msg = new char[800];
-            sprintf(msg, "LibXCfunctional: set_tweak: requested parameter (%s=%f) not among allowed parameters (%s).\n",
-                    tweak.first.c_str(), tweak.second, allowed_keys_join.c_str());
+            const std::string msg = "LibXCfunctional: set_tweak: requested parameter ("
+                + tweak.first + '=' + std::to_string(tweak.second)
+                + ") not among allowed parameters (" + allowed_keys_join + ").\n";
             throw PSIEXCEPTION(msg);
         }
     }
