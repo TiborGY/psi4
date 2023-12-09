@@ -41,18 +41,15 @@
 
 namespace psi {
 
-MOInfoBase::MOInfoBase(Wavefunction& ref_wfn_, Options& options_, bool silent_)
-    : options(options_), silent(silent_), ref_wfn(ref_wfn_) {
-    startup();
-    charge = ref_wfn.molecule()->molecular_charge();
-    multiplicity = ref_wfn.molecule()->multiplicity();
-}
-
-MOInfoBase::~MOInfoBase() { cleanup(); }
-
-void MOInfoBase::startup() {
+/// @brief Constructor for MOInfoBase class
+/// @param ref_wfn_
+/// @param options_
+MOInfoBase::MOInfoBase(Wavefunction& ref_wfn_, Options& options_)
+    : options(options_),
+      ref_wfn(ref_wfn_),
+      nirreps(ref_wfn_.nirrep()),
+      charge(ref_wfn_.molecule()->molecular_charge()) {
     nso = 0;
-    nmo = 0;
     ndocc = 0;
     nactv = 0;
     nael = 0;
@@ -68,10 +65,13 @@ void MOInfoBase::startup() {
 void MOInfoBase::cleanup() {}
 
 void MOInfoBase::read_data() {
-    nirreps = ref_wfn.nirrep();
     nso = ref_wfn.nso();
     // Read sopi and save as a STL vector
-    sopi = convert_int_array_to_vector(nirreps, ref_wfn.nsopi());
+    if (nirreps != ref_wfn.nsopi().n())
+        throw PSIEXCEPTION(
+            "\n\n  MOInfoBase::read_data(): Suspicious condition! The number of irreps in the reference wavefunction "
+            "is not equal to the size of the number of SOs per irrep array.\n\n");
+    sopi = ref_wfn.nsopi().blocks();
     irr_labs = ref_wfn.molecule()->irrep_labels();
     nuclear_energy = ref_wfn.molecule()->nuclear_repulsion_energy(ref_wfn.get_dipole_field_strength());
 }
@@ -91,19 +91,13 @@ void MOInfoBase::compute_number_of_electrons() {
     nbel = nel - nael;
 }
 
-void MOInfoBase::compute_ioff() {
-    ioff.resize(IOFF);
-    ioff[0] = 0;
-    for (size_t i = 1; i < IOFF; i++) ioff[i] = ioff[i - 1] + i;
-}
-
-void MOInfoBase::read_mo_space(int nirreps_ref, int& n, intvec& mo, std::string labels) {
+void MOInfoBase::read_mo_space(const int nirreps_ref, int& n, intvec& mo, const std::string& labels) {
     bool read = false;
 
-    std::vector<std::string> label_vec = split(labels);
+    const std::vector<std::string> label_vec = split(labels);
     for (size_t k = 0; k < label_vec.size(); ++k) {
         // Does the array exist in the input?
-        std::string& label = label_vec[k];
+        const std::string& label = label_vec[k];
         if (!options[label].has_changed()) continue;  // The user didn't specify this, it's just the default
         int size = options[label].size();
         // Defaults is to set all to zero
@@ -129,7 +123,7 @@ void MOInfoBase::read_mo_space(int nirreps_ref, int& n, intvec& mo, std::string 
     }
 }
 
-void MOInfoBase::print_mo_space(int& n, intvec& mo, std::string labels) {
+void MOInfoBase::print_mo_space(int n, const intvec& mo, const std::string& labels) {
     outfile->Printf("\n  %s", labels.c_str());
 
     for (int i = nirreps; i < 8; i++) outfile->Printf("     ");

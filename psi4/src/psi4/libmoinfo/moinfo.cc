@@ -37,7 +37,6 @@
 #include <numeric>
 
 // PSI Libraries
-#include "psi4/liboptions/liboptions.h"
 #include "psi4/libciomr/libciomr.h"
 #include "psi4/libpsi4util/libpsi4util.h"
 #include "psi4/psi4-dec.h"
@@ -54,7 +53,7 @@
 
 namespace psi {
 
-MOInfo::MOInfo(Wavefunction& ref_wfn_, Options& options_, bool silent_) : MOInfoBase(ref_wfn_, options_, silent_) {
+MOInfo::MOInfo(Wavefunction& ref_wfn_, Options& options_, bool silent_/* = false*/) : MOInfoBase(ref_wfn_, options_) {
     /***************
     Set defaults
   ***************/
@@ -85,6 +84,7 @@ MOInfo::MOInfo(Wavefunction& ref_wfn_, Options& options_, bool silent_) : MOInfo
     dgemm_timing = 0.0;
     scf = nullptr;
 
+    nmo = 0;
     nfocc = 0;
     nfvir = 0;
     nactv_docc = 0;
@@ -98,42 +98,48 @@ MOInfo::MOInfo(Wavefunction& ref_wfn_, Options& options_, bool silent_) : MOInfo
     read_mo_spaces();
     compute_mo_mappings();
 
-    if (!silent) {
+    if (!silent_) {
         print_info();
         print_mo();
     }
 }
 
-MOInfo::~MOInfo() { free_memory(); }
+MOInfo::~MOInfo() {
+    if (scf != nullptr) free_block(scf);
+    for (int i = 0; i < nirreps; i++) free_block(scf_irrep[i]);
+    delete[] scf_irrep;
+}
 
+/// @brief Read Nuclear, SCF and other stuff
 void MOInfo::read_info() {
-    /*
-     * Read Nuclear, SCF and other stuff
-     */
     read_data();
     nmo = ref_wfn.nmo();
     compute_number_of_electrons();
     scf_energy = ref_wfn.energy();
-    mopi = convert_int_array_to_vector(nirreps, ref_wfn.nmopi());
+    if (nirreps != ref_wfn.nmopi().n())
+        throw PSIEXCEPTION(
+            "MOInfo::read_info(): Suspicious condition! The number of irreps in the reference wavefunction is not "
+            "equal to the size of the number of MOs per irrep array.");
+    mopi = ref_wfn.nmopi().blocks();
     SharedMatrix matCa = ref_wfn.Ca();
-    scf = block_matrix(nso, nmo);
+    scf = block_matrix(get_nso(), nmo);
     size_t soOffset = 0;
     size_t moOffset = 0;
     for (int h = 0; h < nirreps; ++h) {
-        for (int so = 0; so < sopi[h]; ++so) {
+        for (int so = 0; so < get_sopi_ref(h); ++so) {
             for (int mo = 0; mo < mopi[h]; ++mo) {
                 scf[so + soOffset][mo + moOffset] = matCa->get(h, so, mo);
             }
         }
-        soOffset += sopi[h];
+        soOffset += get_sopi_ref(h);
         moOffset += mopi[h];
     }
     scf_irrep = new double**[nirreps];
     for (int i = 0; i < nirreps; i++) {
         scf_irrep[i] = nullptr;
-        if (sopi[i] && mopi[i]) {
-            scf_irrep[i] = block_matrix(sopi[i], mopi[i]);
-            ::memcpy(scf_irrep[i][0], matCa->pointer(i)[0], sizeof(double) * mopi[i] * sopi[i]);
+        if (get_sopi_ref(i) && mopi[i]) {
+            scf_irrep[i] = block_matrix(get_sopi_ref(i), mopi[i]);
+            ::memcpy(scf_irrep[i][0], matCa->pointer(i)[0], sizeof(double) * mopi[i] * get_sopi_ref(i));
         }
     }
 
@@ -145,7 +151,7 @@ void MOInfo::read_info() {
 
     auto ps = options.get_str("PARENT_SYMMETRY");
     if (ps != "") {
-        auto old_pg = std::make_shared<PointGroup> (ps);
+        auto old_pg = std::make_shared<PointGroup>(ps);
         for (int h = 0; h < nirreps; ++h) {
             std::string irr_label_str = old_pg->char_table().gamma(h).symbol_ns();
             trim_spaces(irr_label_str);
@@ -163,7 +169,7 @@ void MOInfo::read_info() {
         }
     } else {
         for (int h = 0; h < nirreps; ++h) {
-            std::string irr_label_str = irr_labs[h];
+            std::string irr_label_str = get_irr_lab(h);
             trim_spaces(irr_label_str);
             to_upper(irr_label_str);
             if (wavefunction_sym_str == irr_label_str) {
@@ -201,20 +207,17 @@ void MOInfo::setup_model_space() {
     make_internal_excitations();
 }
 
-/*!
-    \fn MOInfo::print_info()
- */
 void MOInfo::print_info() {
     outfile->Printf("\n");
     outfile->Printf("\n  ==============================================================================");
     outfile->Printf("\n  System Info:");
     outfile->Printf("\n  ------------------------------------------------------------------------------");
-    outfile->Printf("\n  Nuclear Energy   = %-15.9f  SCF Energy       = %-15.9f", nuclear_energy, scf_energy);
+    outfile->Printf("\n  Nuclear Energy   = %-15.9f  SCF Energy       = %-15.9f", get_nuclear_energy(), scf_energy);
     outfile->Printf("\n");
     outfile->Printf("\n  MOs and Symmetry:");
     outfile->Printf("\n  ------------------------------------------------------------------------------");
     outfile->Printf("\n  nirreps          = %-10d       root             = %-10d", nirreps, root);
-    outfile->Printf("\n  nso              = %-10d       nmo              = %-10d", nso, nmo);
+    outfile->Printf("\n  nso              = %-10d       nmo              = %-10d", get_nso(), nmo);
     outfile->Printf("\n  nael             = %-10d       nbel             = %-10d", nael, nbel);
     outfile->Printf("\n  nactive_ael      = %-10d       nactive_bel      = %-10d", nactive_ael, nactive_bel);
     outfile->Printf("\n");
@@ -222,18 +225,10 @@ void MOInfo::print_info() {
     outfile->Printf("\n  ------------------------------------------------------------------------------");
 }
 
-/*!
-    \fn MOInfo::read_mo_spaces()
- */
+/// @brief      See if we're in a subgroup for finite difference calculations, by looking to see what OptKing has
+/// written to the checkpoint file. Reassign the occupation vectors as appropriate. N.B. the SOCC and DOCC are handled
+/// by Input (ACS)
 void MOInfo::read_mo_spaces() {
-    /*****************************************************
-     See if we're in a subgroup for finite difference
-     calculations, by looking to see what OptKing has
-     written to the checkpoint file.  Reassign the
-     occupation vectors as appropriate.  N.B. the
-     SOCC and DOCC are handled by Input (ACS)
-  *****************************************************/
-
     focc.assign(nirreps, 0);
     docc.assign(nirreps, 0);
     actv.assign(nirreps, 0);
@@ -247,7 +242,7 @@ void MOInfo::read_mo_spaces() {
     // Map the symmetry of the input occupations, to account for displacements
     auto ps = options.get_str("PARENT_SYMMETRY");
     if (ps != "") {
-        auto old_pg = std::make_shared<PointGroup> (ps);
+        auto old_pg = std::make_shared<PointGroup>(ps);
         // This is one of a series of displacements;  check the dimension against the parent point group
         int nirreps_ref = old_pg->char_table().nirrep();
         intvec focc_ref;
@@ -256,9 +251,21 @@ void MOInfo::read_mo_spaces() {
         intvec fvir_ref;
 
         // Read the dimensioning information for the subgroup from the wfn object
-        focc_ref = convert_int_array_to_vector(nirreps, ref_wfn.frzcpi());
-        docc_ref = convert_int_array_to_vector(nirreps, ref_wfn.doccpi());
-        actv_ref = convert_int_array_to_vector(nirreps, ref_wfn.soccpi());
+        if (nirreps != ref_wfn.frzcpi().n())
+            throw PSIEXCEPTION(
+                "MOInfo::read_mo_spaces(): Suspicious condition! The number of irreps in the reference wavefunction is "
+                "not equal to the size of the number of frozen core orbitals per irrep array.");
+        if (nirreps != ref_wfn.doccpi().n())
+            throw PSIEXCEPTION(
+                "MOInfo::read_mo_spaces(): Suspicious condition! The number of irreps in the reference wavefunction is "
+                "not equal to the size of the DOCC per irrep array.");
+        if (nirreps != ref_wfn.soccpi().n())
+            throw PSIEXCEPTION(
+                "MOInfo::read_mo_spaces(): Suspicious condition! The number of irreps in the reference wavefunction is "
+                "not equal to the size of the SOCC per irrep array.");
+        focc_ref = ref_wfn.frzcpi().blocks();
+        docc_ref = ref_wfn.doccpi().blocks();
+        actv_ref = ref_wfn.soccpi().blocks();
         for (int h = 0; h < nirreps; h++) docc_ref[h] -= focc_ref[h];
         nfocc = std::accumulate(focc_ref.begin(), focc_ref.end(), 0);
         ndocc = std::accumulate(docc_ref.begin(), docc_ref.end(), 0);
@@ -276,7 +283,7 @@ void MOInfo::read_mo_spaces() {
         read_mo_space(nirreps_ref, nactv, actv_ref, "ACTIVE");
         read_mo_space(nirreps_ref, nfvir, fvir_ref, "FROZEN_UOCC");
 
-        auto full = std::make_shared<PointGroup> (options.get_str("PARENT_SYMMETRY"));
+        auto full = std::make_shared<PointGroup>(options.get_str("PARENT_SYMMETRY"));
         std::shared_ptr<PointGroup> sub = ref_wfn.molecule()->point_group();
         // Build the correlation table between full, and subgroup
         CorrelationTable corrtab(full, sub);
@@ -297,9 +304,21 @@ void MOInfo::read_mo_spaces() {
         // For a single-point only
         outfile->Printf("\n  For a single-point only");
 
-        focc = convert_int_array_to_vector(nirreps, ref_wfn.frzcpi());
-        docc = convert_int_array_to_vector(nirreps, ref_wfn.doccpi());
-        actv = convert_int_array_to_vector(nirreps, ref_wfn.soccpi());
+        if (nirreps != ref_wfn.frzcpi().n())
+            throw PSIEXCEPTION(
+                "MOInfo::read_mo_spaces(): Suspicious condition! The number of irreps in the reference wavefunction is "
+                "not equal to the size of the number of frozen core orbitals per irrep array.");
+        if (nirreps != ref_wfn.doccpi().n())
+            throw PSIEXCEPTION(
+                "MOInfo::read_mo_spaces(): Suspicious condition! The number of irreps in the reference wavefunction is "
+                "not equal to the size of the DOCC per irrep array.");
+        if (nirreps != ref_wfn.soccpi().n())
+            throw PSIEXCEPTION(
+                "MOInfo::read_mo_spaces(): Suspicious condition! The number of irreps in the reference wavefunction is "
+                "not equal to the size of the SOCC per irrep array.");
+        focc = ref_wfn.frzcpi().blocks();
+        docc = ref_wfn.doccpi().blocks();
+        actv = ref_wfn.soccpi().blocks();
 
         for (int h = 0; h < nirreps; h++) docc[h] -= focc[h];
 
@@ -404,16 +423,14 @@ void MOInfo::read_mo_spaces() {
     //  }
 }
 
-/**
-    MOInfo::print_mo_spaces()
- */
+/// @brief MOInfo::print_mo_spaces()
 void MOInfo::print_mo() {
     /// @todo implement me
     outfile->Printf("\n");
     outfile->Printf("\n  MOs per irrep:                  ");
 
     for (int i = nirreps; i < 8; i++) outfile->Printf("     ");
-    for (int i = 0; i < nirreps; i++) outfile->Printf("  %s", irr_labs[i].c_str());
+    for (int i = 0; i < nirreps; i++) outfile->Printf("  %s", get_irr_lab(i).c_str());
     outfile->Printf(" Total");
     outfile->Printf("\n  ------------------------------------------------------------------------------");
     print_mo_space(nmo, mopi, "Total                           ");
@@ -425,15 +442,6 @@ void MOInfo::print_mo() {
     }
     print_mo_space(nextr, extr, "External                        ");
     print_mo_space(nfvir, fvir, "Frozen Virtual                  ");
-}
-
-/**
- *   MOInfo::free_memory()
- */
-void MOInfo::free_memory() {
-    if (scf != nullptr) free_block(scf);
-    for (int i = 0; i < nirreps; i++) free_block(scf_irrep[i]);
-    delete[] scf_irrep;
 }
 
 }  // namespace psi

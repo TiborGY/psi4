@@ -43,15 +43,18 @@ namespace psi {
 
 class MOInfoSCF : public MOInfoBase {
    public:
-    MOInfoSCF(Wavefunction& ref_wfn_, Options& options_, bool silent_ = false);
+    MOInfoSCF(Wavefunction& ref_wfn_, Options& options_);
     ~MOInfoSCF();
+
+    bool get_guess_occupation_flag() const { return (guess_occupation_flag); }
 
    private:
     void read_mo_spaces();
     void print_mo();
+    bool guess_occupation_flag;
 };
 
-extern MOInfoSCF* moinfo_scf;
+extern MOInfoSCF* moinfo_scf;  // Unfortunate, but psi::mcscf assumes that this is declared.
 
 }  // namespace psi
 
