@@ -44,10 +44,13 @@ using boolvec = std::vector<bool>;
 class Options;
 class Wavefunction;
 
+/// @brief This class stores all the basic info regarding MOs
 class MOInfoBase {
    public:
     MOInfoBase(Wavefunction& ref_wfn_, Options& options_, bool silent_ = false);
 
+    /// @brief Get the nuclear energy stored in the MOInfoBase class
+    /// @return The nuclear repulsion energy
     double get_nuclear_energy() const { return (nuclear_energy); }
 
     /// @brief Get one of the irrep labels that are stored in the MOInfoBase class. Not bounds-checked.
@@ -98,7 +101,7 @@ class MOInfoBase {
     bool guess_occupation;
     bool silent;
 
-    double nuclear_energy;
+    double nuclear_energy; //The nuclear repulsion energy
 
     double** scf;         // MO coefficients
     double*** scf_irrep;  // MO coefficients
