@@ -75,7 +75,7 @@ class MOInfoBase {
     void read_data();
     void compute_number_of_electrons();
     void read_mo_space(int nirreps_ref, int& n, intvec& mo, std::string labels);
-    void print_mo_space(int& nmo, intvec& mo, std::string labels);
+    void print_mo_space(int nmo, intvec& mo, std::string labels);
     intvec convert_int_array_to_vector(int n, const int* array);
 
     void startup();
