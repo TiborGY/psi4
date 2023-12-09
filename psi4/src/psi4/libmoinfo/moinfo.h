@@ -130,7 +130,6 @@ class MOInfo : public MOInfoBase {
     int get_nocc() const { return (nocc); }
     int get_nvir() const { return (nvir); }
 
-    intvec get_sopi() const { return (sopi); }
     intvec get_mopi() const { return (mopi); }
     intvec get_docc() const { return (docc); }
     intvec get_actv() const { return (actv); }
@@ -141,7 +140,6 @@ class MOInfo : public MOInfoBase {
     intvec get_vir() const { return (vir); }
     intvec get_all() const { return (all); }
 
-    int get_sopi(int i) const { return (sopi[i]); }
     int get_mopi(int i) const { return (mopi[i]); }
     int get_focc(int i) const { return (focc[i]); }
     int get_docc(int i) const { return (docc[i]); }
