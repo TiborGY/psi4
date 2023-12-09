@@ -80,7 +80,7 @@ class MOInfoBase {
 
     Wavefunction& ref_wfn;
     Options& options;
-    int nirreps;
+    const int nirreps;
     int wfn_sym;
     int charge;
     int multiplicity;
