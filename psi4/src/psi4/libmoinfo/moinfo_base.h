@@ -101,7 +101,6 @@ class MOInfoBase {
     Options& options;
     const int nirreps; //The # of irreps this object has been constructed with
     int wfn_sym;
-    const int charge; //The charge this object has been constructed with
     int multiplicity;
 
     int nso;  // PSI nso (# of symmetry-adapted atomic orbitals)
@@ -128,6 +127,7 @@ class MOInfoBase {
 
    private:
     intvec convert_int_array_to_vector(int n, const int* array);
+    const int charge; //The charge this object has been constructed with
 };
 
 }  // namespace psi
