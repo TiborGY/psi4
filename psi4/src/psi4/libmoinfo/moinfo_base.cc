@@ -90,13 +90,13 @@ void MOInfoBase::compute_number_of_electrons() {
     nbel = nel - nael;
 }
 
-void MOInfoBase::read_mo_space(int nirreps_ref, int& n, intvec& mo, std::string labels) {
+void MOInfoBase::read_mo_space(const int nirreps_ref, int& n, intvec& mo, const std::string& labels) {
     bool read = false;
 
-    std::vector<std::string> label_vec = split(labels);
+    const std::vector<std::string> label_vec = split(labels);
     for (size_t k = 0; k < label_vec.size(); ++k) {
         // Does the array exist in the input?
-        std::string& label = label_vec[k];
+        const std::string& label = label_vec[k];
         if (!options[label].has_changed()) continue;  // The user didn't specify this, it's just the default
         int size = options[label].size();
         // Defaults is to set all to zero
@@ -122,7 +122,7 @@ void MOInfoBase::read_mo_space(int nirreps_ref, int& n, intvec& mo, std::string 
     }
 }
 
-void MOInfoBase::print_mo_space(int n, intvec& mo, std::string labels) {
+void MOInfoBase::print_mo_space(int n, const intvec& mo, const std::string& labels) {
     outfile->Printf("\n  %s", labels.c_str());
 
     for (int i = nirreps; i < 8; i++) outfile->Printf("     ");
