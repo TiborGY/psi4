@@ -34,22 +34,12 @@
     \brief   This class stores all the basic info regarding MOs
 */
 
-#define PSI_nullptr(args) args = nullptr;
-#define PSI_FREE(args) \
-    if (args != nullptr) free(args);
-#define PSI_DELETE(args) \
-    if (args != nullptr) delete args;
-#define PSI_DELETE_ARRAY(args) \
-    if (args != nullptr) delete[] args;
-#define IOFF 5000000
-
 #include <string>
 #include "psi4/libpsi4util/libpsi4util.h"
 
-typedef std::vector<int> intvec;
-typedef std::vector<bool> boolvec;
-
 namespace psi {
+using intvec = std::vector<int>;
+using boolvec = std::vector<bool>;
 
 class Options;
 class Wavefunction;
@@ -67,7 +57,6 @@ class MOInfoBase {
     int get_nirreps() const { return (nirreps); }
     int get_nso() const { return (nso); }
 
-    const size_t* get_ioff() const { return (ioff.data()); }
     intvec get_sopi() const { return (sopi); }
     intvec get_docc() const { return (docc); }
     intvec get_actv() const { return (actv); }
@@ -79,13 +68,6 @@ class MOInfoBase {
     int get_nbel() const { return (nbel); }  // # of  beta electrons including frozen
 
     double** get_scf_mos() const { return (scf); }
-    double** get_scf_mos(int i) const { return (scf_irrep[i]); }
-    double get_scf_mos(int i, int j) const {
-        if ((i < nmo) && (j < nso))
-            return (scf[i][j]);
-        else
-            return (0.0);
-    }
 
    protected:
     void read_data();
@@ -97,7 +79,6 @@ class MOInfoBase {
 
     void startup();
     void cleanup();
-    void compute_ioff();
 
     Wavefunction& ref_wfn;
     Options& options;
@@ -115,7 +96,6 @@ class MOInfoBase {
     int nactive_ael;
     int nactive_bel;
 
-    std::vector<size_t> ioff;
     intvec sopi;
     intvec docc;
     intvec actv;
