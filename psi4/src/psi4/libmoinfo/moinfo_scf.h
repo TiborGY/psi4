@@ -54,7 +54,7 @@ class MOInfoSCF : public MOInfoBase {
     bool guess_occupation_flag;
 };
 
-extern MOInfoSCF* moinfo_scf;
+extern MOInfoSCF* moinfo_scf; // Unfortunate, but psi::mcscf assumes that this is declared.
 
 }  // namespace psi
 
