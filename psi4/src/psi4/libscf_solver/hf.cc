@@ -1149,13 +1149,12 @@ void HF::guess() {
         if (print_) outfile->Printf("  SCF Guess: Generalized Wolfsberg-Helmholtz applied to core Hamiltonian.\n\n");
 
         Fa_->zero();  // Try Fa_{mn} = S_{mn} (H_{mm} + H_{nn})/2
-        int h, i, j;
         const int* opi = S_->rowspi();
-        int nirreps = S_->nirrep();
-        for (h = 0; h < nirreps; ++h) {
-            for (i = 0; i < opi[h]; ++i) {
+        const int nirreps = S_->nirrep();
+        for (int h = 0; h < nirreps; ++h) {
+            for (int i = 0; i < opi[h]; ++i) {
                 Fa_->set(h, i, i, H_->get(h, i, i));
-                for (j = 0; j < i; ++j) {
+                for (int j = 0; j < i; ++j) {
                     Fa_->set(h, i, j, 0.875 * S_->get(h, i, j) * (H_->get(h, i, i) + H_->get(h, j, j)));
                     Fa_->set(h, j, i, Fa_->get(h, i, j));
                 }
