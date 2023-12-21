@@ -63,7 +63,7 @@ int dpd_set_default(int dpd_num) {
 }
 
 extern int dpd_init(int dpd_num, int nirreps, long int memory, int cachetype, int *cachefiles, int **cachelist,
-                    dpd_file4_cache_entry *priority, int num_subspaces, std::vector<int *> &spaceArrays) {
+                    dpd_file4_cache_entry *priority, int num_subspaces, const std::vector<std::vector<int>>& spaceArrays) {
     if (dpd_list[dpd_num])
         throw PSIEXCEPTION("Attempting to initialize new DPD instance before the old one was freed.");
     dpd_list[dpd_num] =
@@ -104,7 +104,7 @@ DPD::DPD()
       params4(nullptr) {}
 
 DPD::DPD(int dpd_num, int nirreps, long int memory, int cachetype, int *cachefiles, int **cachelist,
-         dpd_file4_cache_entry *priority, int num_subspaces, std::vector<int *> &spaceArrays) {
+         dpd_file4_cache_entry *priority, int num_subspaces, const std::vector<std::vector<int>>& spaceArrays) {
     init(dpd_num, nirreps, memory, cachetype, cachefiles, cachelist, priority, num_subspaces, spaceArrays);
 }
 
@@ -153,10 +153,9 @@ int DPD::init(int dpd_num, int nirreps, long int memory, int cachetype, int *cac
  * easier to construct for some code that creates an arbitrary number of spaces */
 int DPD::init(int dpd_num_in, int nirreps_in, long int memory_in, int cachetype_in, int *cachefiles_in,
               int **cachelist_in, dpd_file4_cache_entry *priority_in, int num_subspaces_in,
-              std::vector<int *> &spaceArrays_in) {
+              const std::vector<std::vector<int>>& spaceArrays_in) {
     int h, h0, h1, cnt, ***dp, l_irrep, r_irrep, p, q;
     int i, j, k, l, *count, offset1, offset2;
-    int *tmparray;
     dpdpair *pairs;
     int nump, nrows, Gp, offset;
 
@@ -194,7 +193,7 @@ int DPD::init(int dpd_num_in, int nirreps_in, long int memory_in, int cachetype_
     numorbs = (int *)malloc(num_subspaces * sizeof(int));
     for (i = 0; i < num_subspaces; i++) {
         orbspi[i] = (int *)malloc(sizeof(int) * nirreps);
-        tmparray = spaceArrays_in[2 * i];
+        const auto& tmparray = spaceArrays_in[2 * i];
         for (j = 0; j < nirreps; j++) orbspi[i][j] = tmparray[j];
 
         /* Compute the number of orbitals in this subspace */
@@ -202,7 +201,7 @@ int DPD::init(int dpd_num_in, int nirreps_in, long int memory_in, int cachetype_
         for (h = 0; h < nirreps; h++) numorbs[i] += orbspi[i][h];
 
         orbsym[i] = (int *)malloc(sizeof(int) * numorbs[i]);
-        tmparray = spaceArrays_in[2 * i + 1];
+        const auto& tmparray = spaceArrays_in[2 * i + 1];
         for (j = 0; j < numorbs[i]; j++) orbsym[i][j] = tmparray[j];
     }
 
