@@ -1354,7 +1354,7 @@ void HF::reset_occupation() {
 SharedMatrix HF::form_Fia(SharedMatrix Fso, SharedMatrix Cso, int* noccpi) {
     const Dimension& nsopi = Cso->rowspi();
     const Dimension& nmopi = Cso->colspi();
-    int* nvirpi = new int[nirrep_];
+    std::vector<int> nvirpi(nirrep_);
 
     for (int h = 0; h < nirrep_; h++) nvirpi[h] = nmopi[h] - noccpi[h];
 
@@ -1390,11 +1390,7 @@ SharedMatrix HF::form_Fia(SharedMatrix Fso, SharedMatrix Cso, int* noccpi) {
         //    for (int a = 0; a < nvir; a++)
         //        Fiap[i][a] /= eps[a + nocc] - eps[i];
     }
-
     // Fia->print();
-
-    delete[] nvirpi;
-
     return Fia;
 }
 SharedMatrix HF::form_FDSmSDF(SharedMatrix Fso, SharedMatrix Dso) {
