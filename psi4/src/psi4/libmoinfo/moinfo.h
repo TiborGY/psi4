@@ -36,6 +36,8 @@
 
 #include "moinfo_base.h"
 
+#define size_det 2048
+
 namespace psi {
 
 enum ReferenceType { AllRefs, UniqueRefs, ClosedShellRefs, UniqueOpenShellRefs };
