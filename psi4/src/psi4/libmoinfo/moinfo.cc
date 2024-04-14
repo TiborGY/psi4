@@ -28,7 +28,6 @@
 
 // Standard Libraries
 #include <cmath>
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -40,15 +39,11 @@
 #include "psi4/liboptions/liboptions.h"
 #include "psi4/libciomr/libciomr.h"
 #include "psi4/libpsi4util/libpsi4util.h"
-#include "psi4/psi4-dec.h"
 #include "psi4/libmints/corrtab.h"
 #include "psi4/libmints/matrix.h"
 #include "psi4/libmints/molecule.h"
 #include "psi4/libmints/wavefunction.h"
-#include "psi4/libqt/qt.h"
-#include "psi4/psifiles.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
-#include "psi4/libpsi4util/process.h"
 
 #include "moinfo.h"
 
@@ -226,7 +221,7 @@ void MOInfo::print_info() {
     outfile->Printf("\n  ------------------------------------------------------------------------------");
 }
 
-/// @brief      See if we're in a subgroup for finite difference calculations, by looking to see what OptKing has
+/// @brief See if we're in a subgroup for finite difference calculations, by looking to see what OptKing has
 /// written to the checkpoint file. Reassign the occupation vectors as appropriate. N.B. the SOCC and DOCC are handled
 /// by Input (ACS)
 void MOInfo::read_mo_spaces() {
@@ -424,9 +419,9 @@ void MOInfo::read_mo_spaces() {
     //  }
 }
 
-/// @brief MOInfo::print_mo_spaces()
+/// @brief print_mo
+/// @todo implement me
 void MOInfo::print_mo() {
-    /// @todo implement me
     outfile->Printf("\n");
     outfile->Printf("\n  MOs per irrep:                  ");
 
