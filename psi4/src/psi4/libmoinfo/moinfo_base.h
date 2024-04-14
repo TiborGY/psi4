@@ -121,7 +121,7 @@ class MOInfoBase {
     double*** scf_irrep;  // MO coefficients
 
    private:
-    intvec convert_int_array_to_vector(int n, const int* array);
+    intvec convert_int_array_to_vector(int n, const int* array) const;
 
     double nuclear_energy;  // The nuclear repulsion energy
     const int charge;  // The charge this object has been constructed with
