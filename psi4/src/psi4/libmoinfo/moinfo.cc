@@ -187,8 +187,8 @@ void MOInfo::read_info() {
     root = options.get_int("FOLLOW_ROOT") - 1;
 }
 
+/// @brief NB This code could be places elsewhere
 void MOInfo::setup_model_space() {
-    // NB This code could be places elsewhere
     references.clear();
     alpha_internal_excitations.clear();
     beta_internal_excitations.clear();
