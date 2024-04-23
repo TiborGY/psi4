@@ -52,7 +52,7 @@ class MOInfoBase {
 
     /// @brief Get the nuclear energy stored in an MOInfoBase object (or derived object).
     /// @return The nuclear repulsion energy
-    double get_nuclear_energy() const { return (nuclear_energy); }
+    double get_nuc_E() const { return (nuclear_energy); }
 
     /// @brief Get one of the irrep labels that are stored in an MOInfoBase object (or derived object). Not bounds-checked!
     /// @param i : Index of the irrep label

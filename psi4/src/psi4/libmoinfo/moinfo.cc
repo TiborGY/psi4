@@ -208,7 +208,7 @@ void MOInfo::print_info() {
     outfile->Printf("\n  ==============================================================================");
     outfile->Printf("\n  System Info:");
     outfile->Printf("\n  ------------------------------------------------------------------------------");
-    outfile->Printf("\n  Nuclear Energy   = %-15.9f  SCF Energy       = %-15.9f", get_nuclear_energy(), scf_energy);
+    outfile->Printf("\n  Nuclear Energy   = %-15.9f  SCF Energy       = %-15.9f", get_nuc_E(), scf_energy);
     outfile->Printf("\n");
     outfile->Printf("\n  MOs and Symmetry:");
     outfile->Printf("\n  ------------------------------------------------------------------------------");
