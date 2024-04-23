@@ -95,7 +95,7 @@ class MOInfoBase {
    protected:
     /// @brief Get a const & to an element of the array holding the numbers of SOs per irrep, from an MOInfoBase object (or derived object).
     /// @return A const & to an element of the array holding the numbers of SOs per irrep
-    const int& get_sopi_ref(size_t i) const { return sopi[i]; }
+    const int& get_sopi(size_t i) const { return sopi[i]; }
 
     void read_data();
     void compute_number_of_electrons();
