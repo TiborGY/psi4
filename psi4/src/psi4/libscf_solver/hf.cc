@@ -93,7 +93,14 @@ HF::HF(SharedWavefunction ref_wfn, std::shared_ptr<SuperFunctional> func, Option
     common_init();
 }
 
-HF::~HF() {}
+HF::~HF() {
+    // Clean up DFT potential resources (grid, functionals, point workers) if present
+    // This prevents memory leaks when running repeated DFT calculations in the same process
+    auto potential = V_potential();
+    if (potential) {
+        potential->finalize();
+    }
+}
 
 void HF::common_init() {
     attempt_number_ = 1;
