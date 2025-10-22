@@ -41,6 +41,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 
 namespace psi {
 
@@ -300,11 +301,63 @@ int ras_set3(int nirreps, int nmo, int *orbspi, int *docc, int *socc, int *frdoc
             // be restricted or frozen core, not RAS 1
             for (irrep = 0; irrep < nirreps; irrep++) ras_opi[0][irrep] = 0;
 
+            // First validate that ACTIVE specification is compatible with available orbitals
+            for (irrep = 0; irrep < nirreps; irrep++) {
+                int requested = frdocc[irrep] + restrdocc[irrep] + ras_opi[0][irrep] + ras_opi[1][irrep];
+                if (is_mcscf) {
+                    requested += fruocc[irrep];
+                } else {
+                    requested += restruocc[irrep];
+                }
+
+                if (requested > orbspi[irrep]) {
+                    std::string err_msg = "Orbital specification exceeds available orbitals for irrep " +
+                                         std::to_string(irrep) + ".\n";
+                    err_msg += "  Available orbitals in this irrep: " + std::to_string(orbspi[irrep]) + "\n";
+                    err_msg += "  Frozen DOCC:      " + std::to_string(frdocc[irrep]) + "\n";
+                    err_msg += "  Restricted DOCC:  " + std::to_string(restrdocc[irrep]) + "\n";
+                    err_msg += "  RAS 1:            " + std::to_string(ras_opi[0][irrep]) + "\n";
+                    err_msg += "  ACTIVE (RAS 2):   " + std::to_string(ras_opi[1][irrep]) + "\n";
+                    if (is_mcscf) {
+                        err_msg += "  Frozen UOCC:      " + std::to_string(fruocc[irrep]) + "\n";
+                    } else {
+                        err_msg += "  Restricted UOCC:  " + std::to_string(restruocc[irrep]) + "\n";
+                    }
+                    err_msg += "  Total requested:  " + std::to_string(requested) + "\n";
+                    err_msg += "Please adjust your ACTIVE, DOCC, FROZEN_DOCC, RESTRICTED_DOCC, " +
+                               std::string("FROZEN_UOCC, or RESTRICTED_UOCC specification.");
+                    throw InputException(err_msg, "ACTIVE", __FILE__, __LINE__);
+                }
+
+                // Check that we have enough orbitals for the occupied electrons
+                if (frdocc[irrep] + restrdocc[irrep] + ras_opi[0][irrep] + ras_opi[1][irrep] <
+                    docc[irrep] + socc[irrep]) {
+                    std::string err_msg = "Insufficient ACTIVE orbitals for occupied electrons in irrep " +
+                                         std::to_string(irrep) + ".\n";
+                    err_msg += "  DOCC in this irrep:  " + std::to_string(docc[irrep]) + "\n";
+                    err_msg += "  SOCC in this irrep:  " + std::to_string(socc[irrep]) + "\n";
+                    err_msg += "  Total electrons:     " + std::to_string(docc[irrep] + socc[irrep]) + "\n";
+                    err_msg += "  Frozen DOCC:         " + std::to_string(frdocc[irrep]) + "\n";
+                    err_msg += "  Restricted DOCC:     " + std::to_string(restrdocc[irrep]) + "\n";
+                    err_msg += "  RAS 1:               " + std::to_string(ras_opi[0][irrep]) + "\n";
+                    err_msg += "  ACTIVE (RAS 2):      " + std::to_string(ras_opi[1][irrep]) + "\n";
+                    err_msg += "  Total orbital space: " + std::to_string(frdocc[irrep] + restrdocc[irrep] +
+                                                                         ras_opi[0][irrep] + ras_opi[1][irrep]) + "\n";
+                    err_msg += "Please increase your ACTIVE space or adjust DOCC/SOCC.";
+                    throw InputException(err_msg, "ACTIVE", __FILE__, __LINE__);
+                }
+            }
+
             // if not MCSCF, default remaining virts to FROZEN_UOCC
             if (!is_mcscf && !parsed_frozen_uocc) {
                 for (irrep = 0; irrep < nirreps; irrep++) {
                     fruocc[irrep] = orbspi[irrep] - frdocc[irrep] - restrdocc[irrep] - ras_opi[0][irrep] -
                                     ras_opi[1][irrep] - restruocc[irrep];
+                    if (fruocc[irrep] < 0) {
+                        std::string err_msg = "Calculated negative frozen virtual orbitals for irrep " +
+                                             std::to_string(irrep) + ". This indicates an over-specified active space.";
+                        throw InputException(err_msg, "ACTIVE", __FILE__, __LINE__);
+                    }
                 }
                 parsed_frozen_uocc = true;
             }
@@ -313,15 +366,13 @@ int ras_set3(int nirreps, int nmo, int *orbspi, int *docc, int *socc, int *frdoc
                 for (irrep = 0; irrep < nirreps; irrep++) {
                     restruocc[irrep] = orbspi[irrep] - frdocc[irrep] - restrdocc[irrep] - ras_opi[0][irrep] -
                                        ras_opi[1][irrep] - fruocc[irrep];
+                    if (restruocc[irrep] < 0) {
+                        std::string err_msg = "Calculated negative restricted virtual orbitals for irrep " +
+                                             std::to_string(irrep) + ". This indicates an over-specified active space.";
+                        throw InputException(err_msg, "ACTIVE", __FILE__, __LINE__);
+                    }
                 }
                 parsed_restr_uocc = true;
-            }
-
-            // do a quick check
-            for (irrep = 0; irrep < nirreps; irrep++) {
-                if (frdocc[irrep] + restrdocc[irrep] + ras_opi[0][irrep] + ras_opi[1][irrep] <
-                    docc[irrep] + socc[irrep])
-                    outfile->Printf("ras_set3():Warning:Occupied electrons beyond ACTIVE orbs!\n");
             }
         }       // end case where we found ACTIVE keyword
         else {  // we didn't find ACTIVE keyword, so we need to determine RAS 2
