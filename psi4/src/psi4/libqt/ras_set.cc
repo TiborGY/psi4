@@ -41,6 +41,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 
 namespace psi {
 
@@ -241,6 +242,17 @@ int ras_set3(int nirreps, int nmo, int *orbspi, int *docc, int *socc, int *frdoc
             throw InputException("ras_set3(): Wrong size of array", "RAS1", __FILE__, __LINE__);
         }
         options.fill_int_array("RAS1", ras_opi[0]);
+
+        // Validate that RAS1 values don't exceed available orbitals in each irrep
+        for (irrep = 0; irrep < nirreps; irrep++) {
+            if (ras_opi[0][irrep] > orbspi[irrep]) {
+                throw InputException("ras_set3(): RAS1[" + std::to_string(irrep) + "] = " +
+                                    std::to_string(ras_opi[0][irrep]) + " exceeds available orbitals (" +
+                                    std::to_string(orbspi[irrep]) + ") in irrep " + std::to_string(irrep),
+                                    "RAS1", __FILE__, __LINE__);
+            }
+        }
+
         parsed_ras1 = true;
     }
     if (options["RAS2"].has_changed()) {
@@ -248,6 +260,17 @@ int ras_set3(int nirreps, int nmo, int *orbspi, int *docc, int *socc, int *frdoc
             throw InputException("ras_set3(): Wrong size of array", "RAS2", __FILE__, __LINE__);
         }
         options.fill_int_array("RAS2", ras_opi[1]);
+
+        // Validate that RAS2 values don't exceed available orbitals in each irrep
+        for (irrep = 0; irrep < nirreps; irrep++) {
+            if (ras_opi[1][irrep] > orbspi[irrep]) {
+                throw InputException("ras_set3(): RAS2[" + std::to_string(irrep) + "] = " +
+                                    std::to_string(ras_opi[1][irrep]) + " exceeds available orbitals (" +
+                                    std::to_string(orbspi[irrep]) + ") in irrep " + std::to_string(irrep),
+                                    "RAS2", __FILE__, __LINE__);
+            }
+        }
+
         parsed_ras2 = true;
     }
     if (options["RAS3"].has_changed()) {
@@ -255,6 +278,17 @@ int ras_set3(int nirreps, int nmo, int *orbspi, int *docc, int *socc, int *frdoc
             throw InputException("ras_set3(): Wrong size of array", "RAS3", __FILE__, __LINE__);
         }
         options.fill_int_array("RAS3", ras_opi[2]);
+
+        // Validate that RAS3 values don't exceed available orbitals in each irrep
+        for (irrep = 0; irrep < nirreps; irrep++) {
+            if (ras_opi[2][irrep] > orbspi[irrep]) {
+                throw InputException("ras_set3(): RAS3[" + std::to_string(irrep) + "] = " +
+                                    std::to_string(ras_opi[2][irrep]) + " exceeds available orbitals (" +
+                                    std::to_string(orbspi[irrep]) + ") in irrep " + std::to_string(irrep),
+                                    "RAS3", __FILE__, __LINE__);
+            }
+        }
+
         parsed_ras3 = true;
     }
     if (options["RAS4"].has_changed()) {
@@ -262,6 +296,17 @@ int ras_set3(int nirreps, int nmo, int *orbspi, int *docc, int *socc, int *frdoc
             throw InputException("ras_set3(): Wrong size of array", "RAS4", __FILE__, __LINE__);
         }
         options.fill_int_array("RAS4", ras_opi[3]);
+
+        // Validate that RAS4 values don't exceed available orbitals in each irrep
+        for (irrep = 0; irrep < nirreps; irrep++) {
+            if (ras_opi[3][irrep] > orbspi[irrep]) {
+                throw InputException("ras_set3(): RAS4[" + std::to_string(irrep) + "] = " +
+                                    std::to_string(ras_opi[3][irrep]) + " exceeds available orbitals (" +
+                                    std::to_string(orbspi[irrep]) + ") in irrep " + std::to_string(irrep),
+                                    "RAS4", __FILE__, __LINE__);
+            }
+        }
+
         parsed_ras4 = true;
     }
 
@@ -295,6 +340,16 @@ int ras_set3(int nirreps, int nmo, int *orbspi, int *docc, int *socc, int *frdoc
                 throw InputException("ras_set3(): Wrong size of array", "ACTIVE", __FILE__, __LINE__);
             }
             options.fill_int_array("ACTIVE", ras_opi[1]);  // fill RAS 2 with ACTIVE
+
+            // Validate that ACTIVE values don't exceed available orbitals in each irrep
+            for (irrep = 0; irrep < nirreps; irrep++) {
+                if (ras_opi[1][irrep] > orbspi[irrep]) {
+                    throw InputException("ras_set3(): ACTIVE[" + std::to_string(irrep) + "] = " +
+                                        std::to_string(ras_opi[1][irrep]) + " exceeds available orbitals (" +
+                                        std::to_string(orbspi[irrep]) + ") in irrep " + std::to_string(irrep),
+                                        "ACTIVE", __FILE__, __LINE__);
+                }
+            }
 
             // ACTIVE overrides RAS 1 ... any occupieds not in RAS 2 should
             // be restricted or frozen core, not RAS 1
