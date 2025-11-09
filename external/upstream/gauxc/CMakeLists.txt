@@ -55,10 +55,15 @@ if(${ENABLE_gauxc})
         message(STATUS "Suitable gauxc could not be located, ${Magenta}Building gauxc${ColourReset} instead.")
 
         include(ExternalProject)
+
+        # Build dependency list - only include external projects, not dummy interface libraries
+        set(_gauxc_dependencies lapack_external gau2grid_external)
+        if(NOT ${Libxc_FOUND})
+            list(APPEND _gauxc_dependencies libxc_external)
+        endif()
+
         ExternalProject_Add(gauxc_external
-            DEPENDS lapack_external 
-                    libxc_external
-                    gau2grid_external
+            DEPENDS ${_gauxc_dependencies}
             URL https://github.com/wavefunction91/GauXC/archive/5c85f6b.tar.gz  # edit in codedeps
             UPDATE_COMMAND ""
             CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
