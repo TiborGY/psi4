@@ -51,7 +51,7 @@ namespace psi {
 ** target buffers can be stored in core.
 **
 ** Arguments:
-**   dpdbuf4 *InBuf: A pointer to the alread-initialized input
+**   dpdbuf4 *InBuf: A pointer to the already-initialized input
 **     buffer.
 **   int outfilenum: The PSI unit number for the target data.
 **   enum indices index: The desired sorting pattern (see dpd.h).
@@ -480,7 +480,7 @@ int DPD::buf4_sort_axpy(dpdbuf4 *InBuf, int outfilenum, enum indices index, int 
             timer_on("prsq");
 #endif
 
-            /* p->p; r->q; s->r; q->s = psqr */
+            /* p->p; r->q; s->r; q->s = prsq */
 
             if (incore) {
                 for (h = 0; h < nirreps; h++) {
@@ -705,7 +705,7 @@ int DPD::buf4_sort_axpy(dpdbuf4 *InBuf, int outfilenum, enum indices index, int 
             timer_on("psqr");
 #endif
 
-            /* p->p; s->q; q->r; r->s = prsq */
+            /* p->p; s->q; q->r; r->s = psqr */
 
             if (incore) {
                 for (h = 0; h < nirreps; h++) {
@@ -883,7 +883,7 @@ int DPD::buf4_sort_axpy(dpdbuf4 *InBuf, int outfilenum, enum indices index, int 
             timer_on("qrps");
 #endif
 
-            /* q->p; r->q; p->r; s->s = rpqs */
+            /* q->p; r->q; p->r; s->s = qrps */
 
             if (incore) {
                 for (h = 0; h < nirreps; h++) {
@@ -1052,7 +1052,7 @@ int DPD::buf4_sort_axpy(dpdbuf4 *InBuf, int outfilenum, enum indices index, int 
             timer_on("rqsp");
 #endif
 
-            /* r->p; q->q; s->r; p->s = sqpr */
+            /* r->p; q->q; s->r; p->s = rqsp */
 
             if (incore) {
                 for (h = 0; h < nirreps; h++) {
@@ -1105,7 +1105,7 @@ int DPD::buf4_sort_axpy(dpdbuf4 *InBuf, int outfilenum, enum indices index, int 
             timer_on("rpqs");
 #endif
 
-            /* r->p; p->q; q->r; s->s = qrps */
+            /* r->p; p->q; q->r; s->s = rpqs */
 
             if (incore) {
                 for (h = 0; h < nirreps; h++) {
@@ -1330,7 +1330,7 @@ int DPD::buf4_sort_axpy(dpdbuf4 *InBuf, int outfilenum, enum indices index, int 
             timer_on("rpsq");
 #endif
 
-            /* r->p; p->q; s->r; q->s = qspr */
+            /* r->p; p->q; s->r; q->s = rpsq */
 
             if (incore) {
                 for (h = 0; h < nirreps; h++) {
@@ -1555,7 +1555,7 @@ int DPD::buf4_sort_axpy(dpdbuf4 *InBuf, int outfilenum, enum indices index, int 
             timer_on("rsqp");
 #endif
 
-            /* r->p; s->q; q->r; p->s = srpq */
+            /* r->p; s->q; q->r; p->s = rsqp */
 
             if (incore) {
                 for (h = 0; h < nirreps; h++) {
@@ -1945,7 +1945,7 @@ int DPD::buf4_sort_axpy(dpdbuf4 *InBuf, int outfilenum, enum indices index, int 
             timer_on("srpq");
 #endif
 
-            /* s->p; r->q; p->r; q->s = rsqp */
+            /* s->p; r->q; p->r; q->s = srpq */
             if (incore) {
                 for (h = 0; h < nirreps; h++) {
                     r_irrep = h ^ my_irrep;
@@ -1981,7 +1981,7 @@ int DPD::buf4_sort_axpy(dpdbuf4 *InBuf, int outfilenum, enum indices index, int 
             timer_on("spqr");
 #endif
 
-            /* s->p; p->q; q->r; r->s = qrsp */
+            /* s->p; p->q; q->r; r->s = spqr */
             if (incore) {
                 for (h = 0; h < nirreps; h++) {
                     r_irrep = h ^ my_irrep;
@@ -2032,7 +2032,7 @@ int DPD::buf4_sort_axpy(dpdbuf4 *InBuf, int outfilenum, enum indices index, int 
             timer_on("sprq");
 #endif
 
-            /* s->p; p->q; r->r; q->s = qsrp */
+            /* s->p; p->q; r->r; q->s = sprq */
             if (incore) {
                 for (h = 0; h < nirreps; h++) {
                     r_irrep = h ^ my_irrep;
