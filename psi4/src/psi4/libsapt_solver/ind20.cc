@@ -520,10 +520,14 @@ void SAPT0::ind20rA_B_aio() {
     SAPTDFInts C_p_AR = set_C_AR();
 
     double *X = init_array(ndf_);
-    double **xAA = block_matrix(nthreads, noccA_ * noccA_);
-    double **xAR = block_matrix(nthreads, noccA_ * nvirA_);
-    double **xRR = block_matrix(nthreads, nvirA_ * nvirA_);
-    double **tAR_dump = block_matrix(nthreads, noccA_ * nvirA_);
+    auto xAA = std::make_shared<Matrix>("xAA", nthreads, noccA_ * noccA_);
+    double **xAAp = xAA->pointer();
+    auto xAR = std::make_shared<Matrix>("xAR", nthreads, noccA_ * nvirA_);
+    double **xARp = xAR->pointer();
+    auto xRR = std::make_shared<Matrix>("xRR", nthreads, nvirA_ * nvirA_);
+    double **xRRp = xRR->pointer();
+    auto tAR_dump = std::make_shared<Matrix>("tAR_dump", nthreads, noccA_ * nvirA_);
+    double **tAR_dumpp = tAR_dump->pointer();
 
     long int block_length = mem_ / (2L * noccA_ * noccA_ + 2L * nvirA_ * (nvirA_ + 1) / 2);
     if (block_length > ndf_) block_length = ndf_;
@@ -738,10 +742,14 @@ void SAPT0::ind20rB_A_aio() {
     SAPTDFInts C_p_BS = set_C_BS();
 
     double *X = init_array(ndf_);
-    double **xBB = block_matrix(nthreads, noccB_ * noccB_);
-    double **xBS = block_matrix(nthreads, noccB_ * nvirB_);
-    double **xSS = block_matrix(nthreads, nvirB_ * nvirB_);
-    double **tBS_dump = block_matrix(nthreads, noccB_ * nvirB_);
+    auto xBB = std::make_shared<Matrix>("xBB", nthreads, noccB_ * noccB_);
+    double **xBBp = xBB->pointer();
+    auto xBS = std::make_shared<Matrix>("xBS", nthreads, noccB_ * nvirB_);
+    double **xBSp = xBS->pointer();
+    auto xSS = std::make_shared<Matrix>("xSS", nthreads, nvirB_ * nvirB_);
+    double **xSSp = xSS->pointer();
+    auto tBS_dump = std::make_shared<Matrix>("tBS_dump", nthreads, noccB_ * nvirB_);
+    double **tBS_dumpp = tBS_dump->pointer();
 
     long int block_length = mem_ / (2L * noccB_ * noccB_ + 2L * nvirB_ * (nvirB_ + 1) / 2);
     if (block_length > ndf_) block_length = ndf_;
