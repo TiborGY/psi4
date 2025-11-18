@@ -65,8 +65,7 @@ void OCCWave::trans_ints_rmp2() {
     // (OV|OV) -> <OO|VV>
     global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), 0,
                            "MO Ints (OV|OV)");
-    libtrans::IntegralPermutations::chemist_to_physicist(&K, PSIF_LIBTRANS_DPD, ID("[O,O]"), ID("[V,V]"),
-                                                          "MO Ints <OO|VV>");
+    libtrans::IntegralPermutations::ovov_to_oovv(&K, PSIF_LIBTRANS_DPD);
     global_dpd_->buf4_close(&K);
     timer_off("Sort (OV|OV) -> <OO|VV>");
     timer_off("Sort chem -> phys");
