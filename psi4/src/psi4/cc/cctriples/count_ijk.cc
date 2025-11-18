@@ -31,7 +31,7 @@
     \brief Enter brief description of file here
 */
 #include <cstdio>
-#include "MOInfo.h"
+
 #include "Params.h"
 #define EXTERN
 #include "globals.h"

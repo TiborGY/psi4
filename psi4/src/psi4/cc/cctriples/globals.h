@@ -38,6 +38,7 @@
 #include "psi4/libdpd/dpd.h"
 #include "psi4/libciomr/libciomr.h"
 #include "psi4/libpsio/psio.h"
+#include "psi4/cc/ccmoinfo/CCMOInfo.h"
 
 namespace psi {
 
@@ -51,7 +52,7 @@ namespace cctriples {
 #define EXTERN
 #endif
 
-EXTERN struct MOInfo moinfo;
+EXTERN ccmoinfo::CCMOInfo moinfo;
 EXTERN struct Params params;
 }
 }  // namespace psi
