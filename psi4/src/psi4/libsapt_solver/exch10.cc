@@ -31,6 +31,7 @@
 #include "psi4/libpsi4util/process.h"
 #include "psi4/libciomr/libciomr.h"
 #include "psi4/libqt/qt.h"
+#include "psi4/libmints/matrix.h"
 
 namespace psi {
 namespace sapt {
@@ -60,7 +61,8 @@ void SAPT0::exch10_s2() {
     B_p_AB.clear();
 
     double *Ap_diag = init_array(ndf_ + 3);
-    double **X_AA = block_matrix(nthreads, noccA_ * noccA_);
+    auto X_AA = std::make_shared<Matrix>("X_AA", nthreads, noccA_ * noccA_);
+    double **X_AAp = X_AA->pointer();
 
     Iterator E2_iter = get_iterator(mem_, &A_p_AA, &B_p_AB);
 
@@ -75,11 +77,11 @@ void SAPT0::exch10_s2() {
                 rank = omp_get_thread_num();
 #endif
 
-                C_DGEMM('N', 'T', noccA_, noccA_, noccB_, 1.0, B_p_AB.B_p_[j], noccB_, sAB_[0], nmoB_, 0.0, X_AA[rank],
+                C_DGEMM('N', 'T', noccA_, noccA_, noccB_, 1.0, B_p_AB.B_p_[j], noccB_, sAB_[0], nmoB_, 0.0, X_AAp[rank],
                         noccA_);
-                ex2 -= C_DDOT(noccA_ * noccA_, X_AA[rank], 1, A_p_AA.B_p_[j], 1);
+                ex2 -= C_DDOT(noccA_ * noccA_, X_AAp[rank], 1, A_p_AA.B_p_[j], 1);
                 for (int a = 0, aa = 0; a < noccA_; a++, aa += noccA_ + 1) {
-                    Ap_diag[j + off] += X_AA[rank][aa];
+                    Ap_diag[j + off] += X_AAp[rank][aa];
                 }
             }
         }
@@ -90,13 +92,13 @@ void SAPT0::exch10_s2() {
     ex2 += 2.0 * C_DDOT(ndf_ + 3, Ap_diag, 1, diagAA_, 1);
 
     free(Ap_diag);
-    free_block(X_AA);
 
     A_p_AA.clear();
     B_p_AB.done();
 
     double *Bp_diag = init_array(ndf_ + 3);
-    double **X_BB = block_matrix(nthreads, noccB_ * noccB_);
+    auto X_BB = std::make_shared<Matrix>("X_BB", nthreads, noccB_ * noccB_);
+    double **X_BBp = X_BB->pointer();
 
     Iterator E3_iter = get_iterator(mem_, &A_p_AB, &B_p_BB);
 
@@ -111,11 +113,11 @@ void SAPT0::exch10_s2() {
                 rank = omp_get_thread_num();
 #endif
 
-                C_DGEMM('T', 'N', noccB_, noccB_, noccA_, 1.0, A_p_AB.B_p_[j], noccB_, sAB_[0], nmoB_, 0.0, X_BB[rank],
+                C_DGEMM('T', 'N', noccB_, noccB_, noccA_, 1.0, A_p_AB.B_p_[j], noccB_, sAB_[0], nmoB_, 0.0, X_BBp[rank],
                         noccB_);
-                ex3 -= C_DDOT(noccB_ * noccB_, X_BB[rank], 1, B_p_BB.B_p_[j], 1);
+                ex3 -= C_DDOT(noccB_ * noccB_, X_BBp[rank], 1, B_p_BB.B_p_[j], 1);
                 for (int b = 0, bb = 0; b < noccB_; b++, bb += noccB_ + 1) {
-                    Bp_diag[j + off] += X_BB[rank][bb];
+                    Bp_diag[j + off] += X_BBp[rank][bb];
                 }
             }
         }
@@ -126,23 +128,24 @@ void SAPT0::exch10_s2() {
     ex3 += 2.0 * C_DDOT(ndf_ + 3, Bp_diag, 1, diagBB_, 1);
 
     free(Bp_diag);
-    free_block(X_BB);
 
     A_p_AB.done();
     B_p_BB.clear();
 
-    double **S_AA = block_matrix(noccA_, noccA_);
+    auto S_AA = std::make_shared<Matrix>("S_AA", noccA_, noccA_);
 
-    C_DGEMM('N', 'T', noccA_, noccA_, noccB_, 1.0, &(sAB_[0][0]), nmoB_, &(sAB_[0][0]), nmoB_, 0.0, &(S_AA[0][0]),
+    C_DGEMM('N', 'T', noccA_, noccA_, noccB_, 1.0, &(sAB_[0][0]), nmoB_, &(sAB_[0][0]), nmoB_, 0.0, S_AA->get_pointer(),
             noccA_);
 
-    double **S_BB = block_matrix(noccB_, noccB_);
+    auto S_BB = std::make_shared<Matrix>("S_BB", noccB_, noccB_);
 
-    C_DGEMM('T', 'N', noccB_, noccB_, noccA_, 1.0, &(sAB_[0][0]), nmoB_, &(sAB_[0][0]), nmoB_, 0.0, &(S_BB[0][0]),
+    C_DGEMM('T', 'N', noccB_, noccB_, noccA_, 1.0, &(sAB_[0][0]), nmoB_, &(sAB_[0][0]), nmoB_, 0.0, S_BB->get_pointer(),
             noccB_);
 
-    double **A_AB = block_matrix(nthreads, noccA_ * noccB_);
-    double **B_AB = block_matrix(nthreads, noccA_ * noccB_);
+    auto A_AB = std::make_shared<Matrix>("A_AB", nthreads, noccA_ * noccB_);
+    double **A_ABp = A_AB->pointer();
+    auto B_AB = std::make_shared<Matrix>("B_AB", nthreads, noccA_ * noccB_);
+    double **B_ABp = B_AB->pointer();
     double *AA_ints = init_array(ndf_ + 3);
     double *BB_ints = init_array(ndf_ + 3);
     Iterator E4_iter = get_iterator(mem_, &A_p_AA, &B_p_BB);
@@ -150,9 +153,9 @@ void SAPT0::exch10_s2() {
     for (int i = 0, off = 0; i < E4_iter.num_blocks; i++) {
         read_block(&E4_iter, &A_p_AA, &B_p_BB);
 
-        C_DGEMV('n', E4_iter.curr_size, noccA_ * noccA_, 1.0, &(A_p_AA.B_p_[0][0]), noccA_ * noccA_, S_AA[0], 1, 0.0,
+        C_DGEMV('n', E4_iter.curr_size, noccA_ * noccA_, 1.0, &(A_p_AA.B_p_[0][0]), noccA_ * noccA_, S_AA->get_pointer(), 1, 0.0,
                 &(AA_ints[off]), 1);
-        C_DGEMV('n', E4_iter.curr_size, noccB_ * noccB_, 1.0, &(B_p_BB.B_p_[0][0]), noccB_ * noccB_, S_BB[0], 1, 0.0,
+        C_DGEMV('n', E4_iter.curr_size, noccB_ * noccB_, 1.0, &(B_p_BB.B_p_[0][0]), noccB_ * noccB_, S_BB->get_pointer(), 1, 0.0,
                 &(BB_ints[off]), 1);
 
 #pragma omp parallel
@@ -163,11 +166,11 @@ void SAPT0::exch10_s2() {
                 rank = omp_get_thread_num();
 #endif
 
-                C_DGEMM('N', 'N', noccA_, noccB_, noccA_, 1.0, A_p_AA.B_p_[j], noccA_, sAB_[0], nmoB_, 0.0, A_AB[rank],
+                C_DGEMM('N', 'N', noccA_, noccB_, noccA_, 1.0, A_p_AA.B_p_[j], noccA_, sAB_[0], nmoB_, 0.0, A_ABp[rank],
                         noccB_);
-                C_DGEMM('N', 'N', noccA_, noccB_, noccB_, 1.0, sAB_[0], nmoB_, B_p_BB.B_p_[j], noccB_, 0.0, B_AB[rank],
+                C_DGEMM('N', 'N', noccA_, noccB_, noccB_, 1.0, sAB_[0], nmoB_, B_p_BB.B_p_[j], noccB_, 0.0, B_ABp[rank],
                         noccB_);
-                ex6 += C_DDOT(noccA_ * noccB_, A_AB[rank], 1, B_AB[rank], 1);
+                ex6 += C_DDOT(noccA_ * noccB_, A_ABp[rank], 1, B_ABp[rank], 1);
             }
         }
         off += E4_iter.curr_size;
@@ -179,13 +182,8 @@ void SAPT0::exch10_s2() {
     A_p_AA.done();
     B_p_BB.done();
 
-    free_block(S_AA);
-    free_block(S_BB);
-
     free(AA_ints);
     free(BB_ints);
-    free_block(A_AB);
-    free_block(B_AB);
 
     e_exch10_s2_ = -2.0 * (ex1 + ex2 + ex3 - ex4 - ex5 + ex6);
 
