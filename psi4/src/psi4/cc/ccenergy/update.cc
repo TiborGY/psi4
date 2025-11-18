@@ -31,7 +31,6 @@
     \brief Enter brief description of file here
 */
 
-#include "MOInfo.h"
 #include "psi4/cc/ccwave.h"
 
 #include "psi4/psi4-dec.h"

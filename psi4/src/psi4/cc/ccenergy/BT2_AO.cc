@@ -31,7 +31,6 @@
     \brief Enter brief description of file here
 */
 #include "Params.h"
-#include "MOInfo.h"
 #include "psi4/cc/ccwave.h"
 
 #include "psi4/libciomr/libciomr.h"

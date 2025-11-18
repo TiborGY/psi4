@@ -33,7 +33,6 @@
 
 #include "psi4/libdpd/dpd.h"
 #include "psi4/psifiles.h"
-#include "MOInfo.h"
 #include "Params.h"
 
 #include "psi4/liboptions/liboptions.h"

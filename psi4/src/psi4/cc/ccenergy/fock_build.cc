@@ -37,7 +37,6 @@
 #include "psi4/libiwl/iwl.h"
 #include "psi4/libqt/qt.h"
 #include "psi4/psifiles.h"
-#include "MOInfo.h"
 #include "psi4/cc/ccwave.h"
 
 #include "psi4/libmints/wavefunction.h"

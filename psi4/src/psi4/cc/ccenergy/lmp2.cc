@@ -33,7 +33,6 @@
 
 #include "Params.h"
 #include "Local.h"
-#include "MOInfo.h"
 #include "psi4/cc/ccwave.h"
 
 #include "psi4/libpsi4util/PsiOutStream.h"

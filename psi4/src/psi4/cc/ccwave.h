@@ -34,7 +34,7 @@
 #include "psi4/libmints/wavefunction.h"
 #include "psi4/libdpd/dpd.h"
 
-#include "ccenergy/MOInfo.h"
+#include "psi4/cc/ccmoinfo/CCMOInfo.h"
 #include "ccenergy/Params.h"
 #include "ccenergy/Local.h"
 
@@ -201,7 +201,7 @@ class CCEnergyWavefunction : public Wavefunction {
     /* member variables */
     Dimension act_occpi_;
     Dimension act_virpi_;
-    MOInfo moinfo_;
+    ccmoinfo::CCMOInfo moinfo_;
     Params params_;
     Local local_;
     std::array<dpd_file4_cache_entry, 113> cache_priority_list_;
