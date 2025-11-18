@@ -37,6 +37,6 @@
 Property
 ========
 
-.. autofunction:: psi4.properties(name [, properties, molecule])
+.. autofunction:: psi4.properties(name [, properties, molecule, return_wfn])
    :noindex:
 

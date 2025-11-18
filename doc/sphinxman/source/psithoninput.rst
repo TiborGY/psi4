@@ -438,7 +438,7 @@ For more elaborate post-processing of computations, adding
 
     # print gradient array and its rms
     wfn.gradient.print_out()
-    print wfn.gradient().rms()
+    print(wfn.gradient().rms())
 
     # format output for other programs
     molden(wfn, 'mycalc.molden')

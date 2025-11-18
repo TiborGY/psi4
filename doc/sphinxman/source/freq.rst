@@ -51,10 +51,10 @@ the scenes, :py:func:`~psi4.driver.frequency` is a light wrapper over
 :py:func:`~psi4.driver.hessian` that computes the Hessian then adds a
 thermochemical analysis.
 
-.. autofunction:: psi4.frequency(name [, molecule, return_wfn, func, mode, dertype, irrep])
+.. autofunction:: psi4.frequency(name [, molecule, return_wfn, func, dertype, irrep])
    :noindex:
 
-.. autofunction:: psi4.hessian(name [, molecule, return_wfn, func, dertype, irrep])
+.. autofunction:: psi4.hessian(name [, molecule, return_wfn, irrep])
    :noindex:
 
 It's handy to collect the wavefunction after a frequency

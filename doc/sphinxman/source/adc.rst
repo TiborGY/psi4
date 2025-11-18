@@ -40,6 +40,8 @@ ADC: Ab Initio Polarization Propagator
 ======================================
 .. sectionauthor:: Michael F. Herbst
 
+.. warning:: The ADC module is deprecated and may be removed in a future version of Psi4.
+
 *Module:* :ref:`Keywords <apdx:adc>`, :ref:`PSI Variables <apdx:adc_psivar>`
 
 Algebraic-diagrammatic construction methods for the polarization propagator (ADC)

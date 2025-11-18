@@ -45,7 +45,7 @@ Basis Set Superposition Corrections
 
 .. codeauthor:: Daniel G. A. Smith
 
-.. autofunction:: psi4.driver.driver_nbody.nbody(func, method_string [, molecule, bsse_type, max_nbody, ptype, return_total_data, supersystem_ie_only])
+.. autofunction:: psi4.driver.driver_nbody.nbody
 
 
 The nbody function computes counterpoise-corrected (CP), non-CP (noCP), and Valiron-Mayer Function Counterpoise (VMFC) interaction energies for complexes composed of arbitrary numbers of monomers.

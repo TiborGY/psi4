@@ -411,17 +411,17 @@ functional information overrides any user-specified dispersion parameters.
 * Two of the four four dispersion corrections/gradients from the section above::
 
    >>> E, G = nene.run_dftd3('pbe', 'd3bj')
-   >>> print G
+   >>> print(G)
    [[0.0, 0.0, -1.1809087569358e-05], [0.0, 0.0, 1.1809087569358e-05]]
 
-   >>> print nene.run_dftd3(dashlvl='d3', dashparam={'s8': 2.0, 'alpha6': 14.0, 'sr6': 1.261, 's6': 1.0}, dertype=0)
+   >>> print(nene.run_dftd3(dashlvl='d3', dashparam={'s8': 2.0, 'alpha6': 14.0, 'sr6': 1.261, 's6': 1.0}, dertype=0))
    -0.00024762
 
-.. comment   >>> print nene.run_dftd3('bp86', 'd', dertype=0)
+.. comment   >>> print(nene.run_dftd3('bp86', 'd', dertype=0))
 .. comment   -7.735e-05
 
 .. comment   >>> E, G = nene.run_dftd3('b3lyp', 'd2', {'s6': 1.20})
-.. comment   >>> print E
+.. comment   >>> print(E)
 .. comment   -8.84e-05
 
 .. autofunction:: qcdb.Molecule.run_sdftd3

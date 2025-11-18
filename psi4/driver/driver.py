@@ -1576,7 +1576,7 @@ def frequency(name, **kwargs):
     >>> # [2] Frequency calculation for b2 modes through finite difference of gradients
     >>> #     printing lowest mode frequency to screen and Hessian to output
     >>> E, wfn = frequencies('scf', dertype=1, irrep=4, return_wfn=True)
-    >>> print wfn.frequencies().get(0, 0)
+    >>> print(wfn.frequencies().get(0, 0))
     >>> wfn.hessian().print_out()
 
     >>> # [3] Frequency calculation at default conditions and Hessian reuse at STP

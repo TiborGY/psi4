@@ -52,9 +52,9 @@ the scenes, :py:func:`~psi4.driver.optimize` is a wrapper that repeatedly
 calls :py:func:`~psi4.driver.gradient` that computes the gradient then adds a
 call to the :ref:`geometry optimization module <sec:optking>`.
 
-.. autofunction:: psi4.optimize(name [, molecule, return_wfn, func, mode, dertype, hessian_with])
+.. autofunction:: psi4.optimize(name [, molecule, return_wfn, return_history, engine, optimizer_keywords, func, dertype, hessian_with])
    :noindex:
 
-.. autofunction:: psi4.gradient(name [, molecule, return_wfn, func, dertype])
+.. autofunction:: psi4.gradient(name [, molecule, return_wfn])
    :noindex:
 
