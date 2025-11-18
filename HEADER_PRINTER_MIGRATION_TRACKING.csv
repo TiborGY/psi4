@@ -1,0 +1,43 @@
+Phase,Priority,Module,File,Line,Class,Params,Complexity,Estimated_Hours,Status,Assignee,Notes
+1,High,libfock,DirectJK.cc,109,DirectJK,1,Easy,0.25,Not Started,,Similar to LinK (completed)
+1,High,libfock,DiskJK.cc,58,DiskJK,1,Easy,0.25,Not Started,,Similar to LinK (completed)
+1,High,libfock,PKJK.cc,72,PKJK,1,Easy,0.25,Not Started,,Similar to LinK (completed)
+1,High,libfock,DirectDFJ.cc,79,DirectDFJ,1,Easy,0.25,Not Started,,Simple arrow style
+1,High,libfock,CDJK.cc,145,CDJK,3,Easy,0.33,Not Started,,3 parameters
+1,High,libfock,COSK.cc,314,COSK,5,Medium,0.5,Not Started,,5 parameters
+1,High,libfock,snLinK.cc,420,snLinK,2,Easy,0.33,Not Started,,Conditional compilation (USING_gauxc)
+1,High,libfock,v.cc,728,VBase,4,Easy,0.33,Not Started,,Base class pattern
+1,High,libfock,v.cc,1118,SAP,2,Easy,0.25,Not Started,,Extends VBase
+1,High,libfock,v.cc,1260,RV,0,Trivial,0.1,Not Started,,Delegates to VBase - may not need changes
+1,High,libfock,v.cc,2594,UV,0,Trivial,0.1,Not Started,,Delegates to VBase - may not need changes
+1,High,libfock,hamiltonian.cc,90,CPHFRHamiltonian,1,Trivial,0.25,Not Started,,Very simple (2 lines)
+1,High,libfock,solver.cc,110,CGRSolver,3,Easy,0.33,Not Started,,Simple solver
+1,High,libfock,apps.cc,144,RCPHF,Multiple,Medium,0.5,Not Started,,Needs investigation
+1,High,lib3index,dfhelper.cc,278,DFHelper,10,Medium,0.75,Not Started,,Configuration heavy - many parameters
+1,High,lib3index,dftensor.cc,123,DFTensor,8,Medium,0.75,Not Started,,Configuration heavy - many parameters
+0,Completed,libfock,LinK.cc,86,LinK,1,Easy,0.25,Completed,,✅ Example implementation
+0,Completed,libfock,MemDFJK.cc,113,MemDFJK,9,Medium,0.5,Completed,,✅ Example with conditional params
+0,Completed,dfmp2,mp2.cc,796,RDFMP2,Complex,Medium,0.75,Completed,,✅ Example BOX style with authors
+2,Medium,dfmp2,mp2.cc,2609,UDFMP2,Complex,Medium,0.75,Not Started,,95% similar to RDFMP2 (completed)
+2,Medium,dfmp2,mp2.cc,3235,RODFMP2,Complex,Medium,0.75,Not Started,,95% similar to RDFMP2 (completed)
+2,Medium,dfmp2,corr_grad.cc,108,DFCorrGrad,Complex,Medium,0.75,Not Started,,80% similar to RDFMP2
+2,Medium,libsapt_solver,sapt0.cc,171,SAPT0,Complex,Medium,0.75,Not Started,,BOX + authors pattern
+2,Medium,libsapt_solver,usapt0.cc,180,USAPT0,Complex,Medium,0.75,Not Started,,BOX + authors pattern
+2,Medium,libsapt_solver,sapt2.cc,182,SAPT2,Complex,Medium,0.75,Not Started,,BOX + authors pattern
+2,Medium,libsapt_solver,sapt2p.cc,143,SAPT2p,Complex,Medium,0.75,Not Started,,BOX + authors pattern
+2,Medium,libsapt_solver,sapt2p3.cc,166,SAPT2p3,Complex,Medium,0.75,Not Started,,BOX + authors pattern
+2,Medium,f12,mp2.cc,92,MP2F12,Complex,Medium,0.75,Not Started,,F12 correction - BOX style
+2,Medium,dlpno,mp2.cc,304,DLPNOMP2,Complex,Medium,0.75,Not Started,,Local correlation - BOX style
+3,Low,libscf_solver,hf.cc,490,HF,47-lines,Very Hard,2.0,Not Started,,⚠️ Most complex - consider partial migration
+3,Low,libfock,DiskDFJK.cc,270,DiskDFJK,Complex,Hard,1.0,Not Started,,Complex conditional parameters
+3,Low,libfock,CompositeJK.cc,201,CompositeJK,Recursive,Hard,1.0,Not Started,,Recursive sub-algorithm printing
+3,Low,scfgrad,jk_grad.cc,156,DFJKGrad,Medium,Medium,0.75,Not Started,,Gradient-specific parameters
+3,Low,scfgrad,jk_grad.cc,2213,DirectJKGrad,Medium,Medium,0.75,Not Started,,Similar to DFJKGrad
+3,Low,fisapt,fisapt.cc,96,FISAPT,Medium,Medium,0.75,Not Started,,Fragment-specific information
+3,Low,fisapt,local2.cc,97,IBOLocalizer2,Low,Easy,0.5,Not Started,,Simple localizer
+3,Low,libmints,thc_eri.cc,59,LS_THC_Computer,Medium,Medium,0.75,Not Started,,THC-specific parameters
+4,Lowest,libmints,local.cc,142,BoysLocalizer,3,Easy,0.33,Not Started,,3 parameters - good starter task
+4,Lowest,libmints,local.cc,341,PMLocalizer,3,Easy,0.33,Not Started,,3 parameters - good starter task
+4,Lowest,libmints,oeprop.cc,783,OEProp,Multiple,Medium,0.5,Not Started,,Multiple properties
+4,Lowest,libcubeprop,cubeprop.cc,99,CubeProperties,Medium,Easy,0.5,Not Started,,Grid parameters
+4,Lowest,libcubeprop,csg.cc,202,CubicScalarGrid,Medium,Easy,0.5,Not Started,,Grid parameters
