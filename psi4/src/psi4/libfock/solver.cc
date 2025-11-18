@@ -41,6 +41,7 @@
 #include "psi4/libmints/vector.h"
 #include "psi4/libmints/matrix.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/libpsi4util/header_printer.h"
 #include "psi4/libpsi4util/process.h"
 
 #include "points.h"
@@ -109,11 +110,12 @@ std::shared_ptr<CGRSolver> CGRSolver::build_solver(Options& options, std::shared
 }
 void CGRSolver::print_header() const {
     if (print_) {
-        outfile->Printf("  ==> CGRSolver (by Rob Parrish) <==\n\n");
-        outfile->Printf("   Number of roots    = %9zu\n", b_.size());
-        outfile->Printf("   Preconditioning    = %9s\n", precondition_.c_str());
-        outfile->Printf("   Convergence cutoff = %9.0E\n", criteria_);
-        outfile->Printf("   Maximum iterations = %9d\n\n", maxiter_);
+        HeaderPrinter header("CGRSolver (by Rob Parrish)");
+        header.add_parameter("Number of roots", static_cast<long>(b_.size()), 18)
+              .add_parameter("Preconditioning", precondition_, 18)
+              .add_parameter("Convergence cutoff", criteria_, "%9.0E", 18)
+              .add_parameter("Maximum iterations", maxiter_, 18)
+              .print();
     }
 }
 size_t CGRSolver::memory_estimate() {

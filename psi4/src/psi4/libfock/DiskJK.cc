@@ -41,6 +41,7 @@
 #include "psi4/libmints/mintshelper.h"
 #include <sstream>
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/libpsi4util/header_printer.h"
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -57,14 +58,16 @@ size_t DiskJK::memory_estimate() {
 }
 void DiskJK::print_header() const {
     if (print_) {
-        outfile->Printf("  ==> DiskJK: Disk-Based J/K Matrices <==\n\n");
-
-        outfile->Printf("    J tasked:          %11s\n", (do_J_ ? "Yes" : "No"));
-        outfile->Printf("    K tasked:          %11s\n", (do_K_ ? "Yes" : "No"));
-        outfile->Printf("    wK tasked:         %11s\n", (do_wK_ ? "Yes" : "No"));
-        outfile->Printf("    Memory [MiB]:      %11ld\n", (memory_ * 8L) / (1024L * 1024L));
-        if (do_wK_) outfile->Printf("    Omega:             %11.3E\n", omega_);
-        outfile->Printf("    Schwarz Cutoff:    %11.0E\n\n", cutoff_);
+        HeaderPrinter header("DiskJK: Disk-Based J/K Matrices");
+        header.add_parameter("J tasked", do_J_)
+              .add_parameter("K tasked", do_K_)
+              .add_parameter("wK tasked", do_wK_)
+              .add_parameter("Memory [MiB]", (memory_ * 8L) / (1024L * 1024L));
+        if (do_wK_) {
+            header.add_parameter("Omega", omega_, "%11.3E");
+        }
+        header.add_parameter("Schwarz Cutoff", cutoff_, "%11.0E")
+              .print();
     }
 }
 void DiskJK::preiterations() {

@@ -52,6 +52,7 @@
 #include "psi4/libmints/basisset.h"
 #include "psi4/libmints/twobody.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/libpsi4util/header_printer.h"
 #include "psi4/libqt/qt.h"
 #include "psi4/libpsi4util/process.h"
 #include "psi4/libpsio/psio.hpp"
@@ -279,21 +280,22 @@ void DFHelper::print_header() {
     // Preps any required metadata, safe to call multiple times
     get_core_size();
 
-    outfile->Printf("  ==> DFHelper <==\n");
-    outfile->Printf("    NBF:                     %11ld\n", nbf_);
-    outfile->Printf("    NAux:                    %11ld\n", naux_);
-    outfile->Printf("    Schwarz Cutoff:          %11.0E\n", cutoff_);
-    outfile->Printf("    Mask sparsity (%%):       %11.0f\n", 100. * ao_sparsity());
-    outfile->Printf("    DFH Avail. Memory [GiB]: %11.3f\n", (memory_ * 8L) / ((double)(1024L * 1024L * 1024L)));
-    outfile->Printf("    OpenMP threads:          %11zu\n", nthreads_);
-    outfile->Printf("    Algorithm:               %11s\n", method_.c_str());
-    outfile->Printf("    AO Core:                 %11s\n", (AO_core_ ? "True" : "False"));
-    outfile->Printf("    MO Core:                 %11s\n", (MO_core_ ? "True" : "False"));
-    outfile->Printf("    Hold Metric:             %11s\n", (hold_met_ ? "True" : "False"));
-    outfile->Printf("    Metric Power:            %11.3f\n", mpower_);
-    outfile->Printf("    Fitting Condition:       %11.0E\n", condition_);
-    outfile->Printf("    Q Shell Max:             %11d\n", (int)Qshell_max_);
-    outfile->Printf("\n\n");
+    HeaderPrinter header("DFHelper");
+    header.add_parameter("NBF", nbf_, 24)
+          .add_parameter("NAux", naux_, 24)
+          .add_parameter("Schwarz Cutoff", cutoff_, "%11.0E", 24)
+          .add_parameter("Mask sparsity (%)", 100. * ao_sparsity(), "%11.0f", 24)
+          .add_parameter("DFH Avail. Memory [GiB]", (memory_ * 8L) / ((double)(1024L * 1024L * 1024L)), "%11.3f", 24)
+          .add_parameter("OpenMP threads", static_cast<long>(nthreads_), 24)
+          .add_parameter("Algorithm", method_, 24)
+          .add_parameter("AO Core", AO_core_ ? "True" : "False", 24)
+          .add_parameter("MO Core", MO_core_ ? "True" : "False", 24)
+          .add_parameter("Hold Metric", hold_met_ ? "True" : "False", 24)
+          .add_parameter("Metric Power", mpower_, "%11.3f", 24)
+          .add_parameter("Fitting Condition", condition_, "%11.0E", 24)
+          .add_parameter("Q Shell Max", static_cast<int>(Qshell_max_), 24)
+          .print();
+    outfile->Printf("\n");
 }
 
 void DFHelper::prepare_sparsity() {

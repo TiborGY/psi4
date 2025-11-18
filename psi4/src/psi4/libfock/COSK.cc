@@ -40,6 +40,7 @@
 #include "psi4/liboptions/liboptions.h"
 #include "psi4/lib3index/dftensor.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/libpsi4util/header_printer.h"
 
 #include <algorithm>
 #include <limits>
@@ -312,15 +313,12 @@ size_t COSK::num_computed_shells() {
 }
 
 void COSK::print_header() const {
-    if (print_) {
-        outfile->Printf("\n");
-        outfile->Printf("  ==> COSX: Chain-of-Spheres Semi-Numerical K <==\n\n");
-
-        outfile->Printf("    K Screening Cutoff: %11.0E\n", kscreen_);
-        outfile->Printf("    K Density Cutoff:   %11.0E\n", dscreen_);
-        outfile->Printf("    K Basis Cutoff:     %11.0E\n", basis_tol_);
-        outfile->Printf("    K Overlap Fitting:  %11s\n", (overlap_fitted_ ? "Yes" : "No"));
-    }
+    HeaderPrinter header("COSX: Chain-of-Spheres Semi-Numerical K");
+    header.add_parameter("K Screening Cutoff", kscreen_)
+          .add_parameter("K Density Cutoff", dscreen_)
+          .add_parameter("K Basis Cutoff", basis_tol_)
+          .add_parameter("K Overlap Fitting", overlap_fitted_)
+          .print_if(print_);
 }
 
 // build the K matrix using Neeses's Chain-of-Spheres Exchange algorithm

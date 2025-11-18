@@ -45,6 +45,7 @@
 #include "psi4/libmints/petitelist.h"
 #include "psi4/libmints/vector.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/libpsi4util/header_printer.h"
 #include "psi4/libpsi4util/process.h"
 
 #include <cstdlib>
@@ -726,7 +727,8 @@ void VBase::set_grac_shift(double grac_shift) {
     }
 }
 void VBase::print_header() const {
-    outfile->Printf("  ==> DFT Potential <==\n\n");
+    HeaderPrinter header("DFT Potential");
+    header.print();
     functional_->print("outfile", print_);
     grid_->print("outfile", print_);
     if (print_ > 2) grid_->print_details("outfile", print_);
@@ -1116,7 +1118,8 @@ void SAP::initialize() {
 }
 void SAP::finalize() { VBase::finalize(); }
 void SAP::print_header() const {
-    outfile->Printf("  ==> SAP guess <==\n\n");
+    HeaderPrinter header("SAP guess");
+    header.print();
     grid_->print("outfile", print_);
     if (print_ > 2) grid_->print_details("outfile", print_);
 }

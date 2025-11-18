@@ -32,6 +32,7 @@
 #include "psi4/libmints/mintshelper.h"
 #include "psi4/libmints/integral.h"
 #include "psi4/lib3index/dftensor.h"
+#include "psi4/libpsi4util/header_printer.h"
 #include "jk.h"
 #include "SplitJK.h"
 
@@ -77,12 +78,9 @@ size_t DirectDFJ::num_computed_shells() {
 }
 
 void DirectDFJ::print_header() const {
-    if (print_) {
-        outfile->Printf("\n");
-        outfile->Printf("  ==> DF-DirJ: Integral-Direct Density-Fitted J <==\n\n");
-
-        outfile->Printf("    J Screening Cutoff:%11.0E\n", cutoff_);
-    }
+    HeaderPrinter header("DF-DirJ: Integral-Direct Density-Fitted J");
+    header.add_parameter("J Screening Cutoff", cutoff_)
+          .print_if(print_);
 }
 
 // build the J matrix using Weigend's integral-direct density fitting algorithm

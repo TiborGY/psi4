@@ -43,6 +43,7 @@
 #include "psi4/libmints/basisset.h"
 #include "psi4/libmints/twobody.h"
 #include "psi4/libmints/integral.h"
+#include "psi4/libpsi4util/header_printer.h"
 
 namespace psi {
 
@@ -121,7 +122,8 @@ void DFTensor::common_init() {
     build_metric();
 }
 void DFTensor::print_header() {
-    outfile->Printf("  ==> DF Tensor (by Rob Parrish) <==\n\n");
+    HeaderPrinter header("DF Tensor (by Rob Parrish)");
+    header.print();
 
     outfile->Printf(" => Primary Basis Set <= \n\n");
     primary_->print_by_level("outfile", print_);

@@ -42,6 +42,7 @@
 
 #include <sstream>
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/libpsi4util/header_printer.h"
 #ifdef _OPENMP
 #include <omp.h>
 #include "psi4/libpsi4util/process.h"
@@ -71,15 +72,17 @@ bool PKJK::C1() const { return true; }
 
 void PKJK::print_header() const {
     if (print_) {
-        outfile->Printf("  ==> DiskJK: Disk-Based J/K Matrices <==\n\n");
-
-        outfile->Printf("    J tasked:          %11s\n", (do_J_ ? "Yes" : "No"));
-        outfile->Printf("    K tasked:          %11s\n", (do_K_ ? "Yes" : "No"));
-        outfile->Printf("    wK tasked:         %11s\n", (do_wK_ ? "Yes" : "No"));
-        if (do_wK_) outfile->Printf("    Omega:             %11.3E\n", omega_);
-        outfile->Printf("    Memory [MiB]:      %11ld\n", (memory_ * 8L) / (1024L * 1024L));
-        outfile->Printf("    Schwarz Cutoff:    %11.0E\n\n", cutoff_);
-        outfile->Printf("    OpenMP threads:    %11d\n\n", nthreads_);
+        HeaderPrinter header("PKJK: PK-Formatted Disk-Based J/K Matrices");
+        header.add_parameter("J tasked", do_J_)
+              .add_parameter("K tasked", do_K_)
+              .add_parameter("wK tasked", do_wK_);
+        if (do_wK_) {
+            header.add_parameter("Omega", omega_, "%11.3E");
+        }
+        header.add_parameter("Memory [MiB]", (memory_ * 8L) / (1024L * 1024L))
+              .add_parameter("Schwarz Cutoff", cutoff_, "%11.0E")
+              .add_parameter("OpenMP threads", nthreads_)
+              .print();
     }
 }
 

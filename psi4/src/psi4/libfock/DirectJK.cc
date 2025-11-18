@@ -42,6 +42,7 @@
 #include "psi4/libmints/integral.h"
 #include "psi4/lib3index/cholesky.h"
 #include "psi4/libpsi4util/process.h"
+#include "psi4/libpsi4util/header_printer.h"
 #include "psi4/liboptions/liboptions.h"
 
 #include <algorithm>
@@ -107,20 +108,20 @@ size_t DirectJK::memory_estimate() {
 }
 
 void DirectJK::print_header() const {
-    std::string screen_type = options_.get_str("SCREENING");
     if (print_) {
-        outfile->Printf("  ==> DirectJK: Integral-Direct J/K Matrices <==\n\n");
-
-        outfile->Printf("    J tasked:          %11s\n", (do_J_ ? "Yes" : "No"));
-        outfile->Printf("    K tasked:          %11s\n", (do_K_ ? "Yes" : "No"));
-        outfile->Printf("    wK tasked:         %11s\n", (do_wK_ ? "Yes" : "No"));
-        if (do_wK_) outfile->Printf("    Omega:             %11.3E\n", omega_);
-        outfile->Printf("    Integrals threads: %11d\n", df_ints_num_threads_);
-        // outfile->Printf( "    Memory [MiB]:      %11ld\n", (memory_ *8L) / (1024L * 1024L));
-        outfile->Printf("    Screening Type:    %11s\n", screen_type.c_str());
-        outfile->Printf("    Screening Cutoff:  %11.0E\n", cutoff_);
-        outfile->Printf("    Incremental Fock:  %11s\n", incfock_ ? "Yes" : "No");
-        outfile->Printf("\n");
+        std::string screen_type = options_.get_str("SCREENING");
+        HeaderPrinter header("DirectJK: Integral-Direct J/K Matrices");
+        header.add_parameter("J tasked", do_J_)
+              .add_parameter("K tasked", do_K_)
+              .add_parameter("wK tasked", do_wK_);
+        if (do_wK_) {
+            header.add_parameter("Omega", omega_, "%11.3E");
+        }
+        header.add_parameter("Integrals threads", df_ints_num_threads_)
+              .add_parameter("Screening Type", screen_type)
+              .add_parameter("Screening Cutoff", cutoff_, "%11.0E")
+              .add_parameter("Incremental Fock", incfock_)
+              .print();
     }
 }
 void DirectJK::preiterations() {

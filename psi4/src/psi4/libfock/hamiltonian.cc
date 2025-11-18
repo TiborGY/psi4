@@ -36,6 +36,7 @@
 #include "psi4/libmints/vector.h"
 #include "psi4/libmints/matrix.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/libpsi4util/header_printer.h"
 
 #include <sstream>
 
@@ -88,9 +89,8 @@ CPHFRHamiltonian::CPHFRHamiltonian(std::shared_ptr<JK> jk, SharedMatrix Caocc, S
     : RHamiltonian(jk, v), Caocc_(Caocc), Cavir_(Cavir), eps_aocc_(eps_aocc), eps_avir_(eps_avir) {}
 CPHFRHamiltonian::~CPHFRHamiltonian() {}
 void CPHFRHamiltonian::print_header() const {
-    if (print_) {
-        outfile->Printf("  ==> CPHFRHamiltonian (by Rob Parrish) <== \n\n");
-    }
+    HeaderPrinter header("CPHFRHamiltonian (by Rob Parrish)");
+    header.print_if(print_);
 }
 std::shared_ptr<Vector> CPHFRHamiltonian::diagonal() {
     int nirrep = eps_aocc_->nirrep();
