@@ -45,39 +45,37 @@ namespace psi {
 namespace sapt {
 
 void SAPT0::ind20() {
-    double **tAR = block_matrix(noccA_, nvirA_);
+    auto tAR = std::make_shared<Matrix>("tAR", noccA_, nvirA_);
+    double **tARp = tAR->pointer();
 
     for (int a = 0; a < noccA_; a++) {
         for (int r = 0; r < nvirA_; r++) {
-            tAR[a][r] = wBAR_[a][r] / (evalsA_[a] - evalsA_[r + noccA_]);
+            tARp[a][r] = wBAR_[a][r] / (evalsA_[a] - evalsA_[r + noccA_]);
         }
     }
 
-    double indA_B = 2.0 * C_DDOT(noccA_ * nvirA_, tAR[0], 1, wBAR_[0], 1);
+    double indA_B = 2.0 * C_DDOT(noccA_ * nvirA_, tAR->get_pointer(), 1, wBAR_[0], 1);
 
     if (no_response_) {
-        CHFA_ = block_matrix(noccA_, nvirA_);
-        C_DCOPY(noccA_ * nvirA_, tAR[0], 1, CHFA_[0], 1);
+        CHFA_ = block_matrix(noccA_, nvirA_);  // TODO: Defer - class member requires API redesign
+        C_DCOPY(noccA_ * nvirA_, tAR->get_pointer(), 1, CHFA_[0], 1);
     }
 
-    free_block(tAR);
-
-    double **tBS = block_matrix(noccB_, nvirB_);
+    auto tBS = std::make_shared<Matrix>("tBS", noccB_, nvirB_);
+    double **tBSp = tBS->pointer();
 
     for (int b = 0; b < noccB_; b++) {
         for (int s = 0; s < nvirB_; s++) {
-            tBS[b][s] = wABS_[b][s] / (evalsB_[b] - evalsB_[s + noccB_]);
+            tBSp[b][s] = wABS_[b][s] / (evalsB_[b] - evalsB_[s + noccB_]);
         }
     }
 
-    double indB_A = 2.0 * C_DDOT(noccB_ * nvirB_, tBS[0], 1, wABS_[0], 1);
+    double indB_A = 2.0 * C_DDOT(noccB_ * nvirB_, tBS->get_pointer(), 1, wABS_[0], 1);
 
     if (no_response_) {
-        CHFB_ = block_matrix(noccB_, nvirB_);
-        C_DCOPY(noccB_ * nvirB_, tBS[0], 1, CHFB_[0], 1);
+        CHFB_ = block_matrix(noccB_, nvirB_);  // TODO: Defer - class member requires API redesign
+        C_DCOPY(noccB_ * nvirB_, tBS->get_pointer(), 1, CHFB_[0], 1);
     }
-
-    free_block(tBS);
 
     e_ind20_ = indA_B + indB_A;
 
@@ -152,14 +150,18 @@ void SAPT0::ind20rA_B() {
     SAPTDFInts C_p_RR = set_C_RR();
 
     double *X = init_array(ndf_);
-    double **xAA = block_matrix(nthreads, noccA_ * noccA_);
-    double **xAR = block_matrix(nthreads, noccA_ * nvirA_);
-    double **xRR = block_matrix(nthreads, nvirA_ * nvirA_);
-    double **tAR_dump = block_matrix(nthreads, noccA_ * nvirA_);
+    auto xAA = std::make_shared<Matrix>("xAA", nthreads, noccA_ * noccA_);
+    double **xAAp = xAA->pointer();
+    auto xAR = std::make_shared<Matrix>("xAR", nthreads, noccA_ * nvirA_);
+    double **xARp = xAR->pointer();
+    auto xRR = std::make_shared<Matrix>("xRR", nthreads, nvirA_ * nvirA_);
+    double **xRRp = xRR->pointer();
+    auto tAR_dump = std::make_shared<Matrix>("tAR_dump", nthreads, noccA_ * nvirA_);
+    double **tAR_dumpp = tAR_dump->pointer();
 
     do {
         memset(&(Ax[0]), '\0', sizeof(double) * noccA_ * nvirA_);
-        memset(&(tAR_dump[0][0]), '\0', sizeof(double) * nthreads * noccA_ * nvirA_);
+        memset(tAR_dumpp[0], '\0', sizeof(double) * nthreads * noccA_ * nvirA_);
 
         Iterator AR_iter = get_iterator(mem_, &C_p_AR);
 
@@ -180,9 +182,9 @@ void SAPT0::ind20rA_B() {
 #endif
 
                     C_DGEMM('N', 'T', noccA_, noccA_, nvirA_, 1.0, &(C_p_AR.B_p_[j][0]), nvirA_, tAR_old, nvirA_, 0.0,
-                            xAA[rank], noccA_);
-                    C_DGEMM('N', 'N', noccA_, nvirA_, noccA_, 1.0, xAA[rank], noccA_, &(C_p_AR.B_p_[j][0]), nvirA_, 1.0,
-                            tAR_dump[rank], nvirA_);
+                            xAAp[rank], noccA_);
+                    C_DGEMM('N', 'N', noccA_, nvirA_, noccA_, 1.0, xAAp[rank], noccA_, &(C_p_AR.B_p_[j][0]), nvirA_, 1.0,
+                            tAR_dumpp[rank], nvirA_);
                 }
             }
             off += AR_iter.curr_size;
@@ -205,15 +207,15 @@ void SAPT0::ind20rA_B() {
 
                     for (int a = 0, ab = 0; a < nvirA_; a++) {
                         for (int b = 0; b <= a; b++) {
-                            xRR[rank][a * nvirA_ + b] = C_p_RR.B_p_[j][ab];
-                            xRR[rank][b * nvirA_ + a] = C_p_RR.B_p_[j][ab++];
+                            xRRp[rank][a * nvirA_ + b] = C_p_RR.B_p_[j][ab];
+                            xRRp[rank][b * nvirA_ + a] = C_p_RR.B_p_[j][ab++];
                         }
                     }
 
-                    C_DGEMM('N', 'N', noccA_, nvirA_, nvirA_, 1.0, tAR_old, nvirA_, &(xRR[rank][0]), nvirA_, 0.0,
-                            xAR[rank], nvirA_);
-                    C_DGEMM('N', 'N', noccA_, nvirA_, noccA_, 1.0, &(C_p_AA.B_p_[j][0]), noccA_, xAR[rank], nvirA_, 1.0,
-                            tAR_dump[rank], nvirA_);
+                    C_DGEMM('N', 'N', noccA_, nvirA_, nvirA_, 1.0, tAR_old, nvirA_, &(xRRp[rank][0]), nvirA_, 0.0,
+                            xARp[rank], nvirA_);
+                    C_DGEMM('N', 'N', noccA_, nvirA_, noccA_, 1.0, &(C_p_AA.B_p_[j][0]), noccA_, xARp[rank], nvirA_, 1.0,
+                            tAR_dumpp[rank], nvirA_);
                 }
             }
             off += RR_iter.curr_size;
@@ -222,7 +224,7 @@ void SAPT0::ind20rA_B() {
         C_p_AA.clear();
         C_p_RR.clear();
 
-        for (int n = 0; n < nthreads; n++) C_DAXPY(noccA_ * nvirA_, 1.0, tAR_dump[n], 1, Ax, 1);
+        for (int n = 0; n < nthreads; n++) C_DAXPY(noccA_ * nvirA_, 1.0, tAR_dumpp[n], 1, Ax, 1);
 
         for (int a = 0, ar = 0; a < noccA_; a++) {
             for (int r = 0; r < nvirA_; r++, ar++) {
@@ -280,21 +282,17 @@ void SAPT0::ind20rA_B() {
         outfile->Printf("\n    CHF Iterations did not converge\n\n");
     }
 
-    CHFA_ = block_matrix(noccA_, nvirA_);
+    CHFA_ = block_matrix(noccA_, nvirA_);  // TODO: Defer - class member requires API redesign
     C_DCOPY(noccA_ * nvirA_, tAR_new, 1, CHFA_[0], 1);
 
     free(tAR_new);
     free(tAR_old);
-    free_block(tAR_dump);
     free(X);
     free(R_old);
     free(R_new);
     free(z_old);
     free(z_new);
     free(Ax);
-    free_block(xAA);
-    free_block(xAR);
-    free_block(xRR);
 }
 
 void SAPT0::ind20rB_A() {
@@ -338,14 +336,18 @@ void SAPT0::ind20rB_A() {
     SAPTDFInts C_p_SS = set_C_SS();
 
     double *X = init_array(ndf_);
-    double **xBB = block_matrix(nthreads, noccB_ * noccB_);
-    double **xBS = block_matrix(nthreads, noccB_ * nvirB_);
-    double **xSS = block_matrix(nthreads, nvirB_ * nvirB_);
-    double **tBS_dump = block_matrix(nthreads, noccB_ * nvirB_);
+    auto xBB = std::make_shared<Matrix>("xBB", nthreads, noccB_ * noccB_);
+    double **xBBp = xBB->pointer();
+    auto xBS = std::make_shared<Matrix>("xBS", nthreads, noccB_ * nvirB_);
+    double **xBSp = xBS->pointer();
+    auto xSS = std::make_shared<Matrix>("xSS", nthreads, nvirB_ * nvirB_);
+    double **xSSp = xSS->pointer();
+    auto tBS_dump = std::make_shared<Matrix>("tBS_dump", nthreads, noccB_ * nvirB_);
+    double **tBS_dumpp = tBS_dump->pointer();
 
     do {
         memset(&(Ax[0]), '\0', sizeof(double) * noccB_ * nvirB_);
-        memset(&(tBS_dump[0][0]), '\0', sizeof(double) * nthreads * noccB_ * nvirB_);
+        memset(tBS_dumpp[0], '\0', sizeof(double) * nthreads * noccB_ * nvirB_);
 
         Iterator BS_iter = get_iterator(mem_, &C_p_BS);
 
@@ -366,9 +368,9 @@ void SAPT0::ind20rB_A() {
 #endif
 
                     C_DGEMM('N', 'T', noccB_, noccB_, nvirB_, 1.0, &(C_p_BS.B_p_[j][0]), nvirB_, tBS_old, nvirB_, 0.0,
-                            xBB[rank], noccB_);
-                    C_DGEMM('N', 'N', noccB_, nvirB_, noccB_, 1.0, xBB[rank], noccB_, &(C_p_BS.B_p_[j][0]), nvirB_, 1.0,
-                            tBS_dump[rank], nvirB_);
+                            xBBp[rank], noccB_);
+                    C_DGEMM('N', 'N', noccB_, nvirB_, noccB_, 1.0, xBBp[rank], noccB_, &(C_p_BS.B_p_[j][0]), nvirB_, 1.0,
+                            tBS_dumpp[rank], nvirB_);
                 }
             }
             off += BS_iter.curr_size;
@@ -391,15 +393,15 @@ void SAPT0::ind20rB_A() {
 
                     for (int a = 0, ab = 0; a < nvirB_; a++) {
                         for (int b = 0; b <= a; b++) {
-                            xSS[rank][a * nvirB_ + b] = C_p_SS.B_p_[j][ab];
-                            xSS[rank][b * nvirB_ + a] = C_p_SS.B_p_[j][ab++];
+                            xSSp[rank][a * nvirB_ + b] = C_p_SS.B_p_[j][ab];
+                            xSSp[rank][b * nvirB_ + a] = C_p_SS.B_p_[j][ab++];
                         }
                     }
 
-                    C_DGEMM('N', 'N', noccB_, nvirB_, nvirB_, 1.0, tBS_old, nvirB_, &(xSS[rank][0]), nvirB_, 0.0,
-                            xBS[rank], nvirB_);
-                    C_DGEMM('N', 'N', noccB_, nvirB_, noccB_, 1.0, &(C_p_BB.B_p_[j][0]), noccB_, xBS[rank], nvirB_, 1.0,
-                            tBS_dump[rank], nvirB_);
+                    C_DGEMM('N', 'N', noccB_, nvirB_, nvirB_, 1.0, tBS_old, nvirB_, &(xSSp[rank][0]), nvirB_, 0.0,
+                            xBSp[rank], nvirB_);
+                    C_DGEMM('N', 'N', noccB_, nvirB_, noccB_, 1.0, &(C_p_BB.B_p_[j][0]), noccB_, xBSp[rank], nvirB_, 1.0,
+                            tBS_dumpp[rank], nvirB_);
                 }
             }
             off += SS_iter.curr_size;
@@ -408,7 +410,7 @@ void SAPT0::ind20rB_A() {
         C_p_BB.clear();
         C_p_SS.clear();
 
-        for (int n = 0; n < nthreads; n++) C_DAXPY(noccB_ * nvirB_, 1.0, tBS_dump[n], 1, Ax, 1);
+        for (int n = 0; n < nthreads; n++) C_DAXPY(noccB_ * nvirB_, 1.0, tBS_dumpp[n], 1, Ax, 1);
 
         for (int b = 0, bs = 0; b < noccB_; b++) {
             for (int s = 0; s < nvirB_; s++, bs++) {
@@ -466,21 +468,17 @@ void SAPT0::ind20rB_A() {
         outfile->Printf("\n    CHF Iterations did not converge\n\n");
     }
 
-    CHFB_ = block_matrix(noccB_, nvirB_);
+    CHFB_ = block_matrix(noccB_, nvirB_);  // TODO: Defer - class member requires API redesign
     C_DCOPY(noccB_ * nvirB_, tBS_new, 1, CHFB_[0], 1);
 
     free(tBS_new);
     free(tBS_old);
-    free_block(tBS_dump);
     free(X);
     free(R_old);
     free(R_new);
     free(z_old);
     free(z_new);
     free(Ax);
-    free_block(xBB);
-    free_block(xBS);
-    free_block(xSS);
 }
 
 void SAPT0::ind20rA_B_aio() {
@@ -564,9 +562,9 @@ void SAPT0::ind20rA_B_aio() {
 #endif
 
                     C_DGEMM('N', 'T', noccA_, noccA_, nvirA_, 1.0, &(C_p_AR.B_p_[j][0]), nvirA_, tAR_old, nvirA_, 0.0,
-                            xAA[rank], noccA_);
-                    C_DGEMM('N', 'N', noccA_, nvirA_, noccA_, 1.0, xAA[rank], noccA_, &(C_p_AR.B_p_[j][0]), nvirA_, 1.0,
-                            tAR_dump[rank], nvirA_);
+                            xAAp[rank], noccA_);
+                    C_DGEMM('N', 'N', noccA_, nvirA_, noccA_, 1.0, xAAp[rank], noccA_, &(C_p_AR.B_p_[j][0]), nvirA_, 1.0,
+                            tAR_dumpp[rank], nvirA_);
                 }
             }
             off += AR_iter.curr_size;
@@ -688,21 +686,17 @@ void SAPT0::ind20rA_B_aio() {
         outfile->Printf("\n    CHF Iterations did not converge\n\n");
     }
 
-    CHFA_ = block_matrix(noccA_, nvirA_);
+    CHFA_ = block_matrix(noccA_, nvirA_);  // TODO: Defer - class member requires API redesign
     C_DCOPY(noccA_ * nvirA_, tAR_new, 1, CHFA_[0], 1);
 
     free(tAR_new);
     free(tAR_old);
-    free_block(tAR_dump);
     free(X);
     free(R_old);
     free(R_new);
     free(z_old);
     free(z_new);
     free(Ax);
-    free_block(xAA);
-    free_block(xAR);
-    free_block(xRR);
 }
 
 void SAPT0::ind20rB_A_aio() {
@@ -786,9 +780,9 @@ void SAPT0::ind20rB_A_aio() {
 #endif
 
                     C_DGEMM('N', 'T', noccB_, noccB_, nvirB_, 1.0, &(C_p_BS.B_p_[j][0]), nvirB_, tBS_old, nvirB_, 0.0,
-                            xBB[rank], noccB_);
-                    C_DGEMM('N', 'N', noccB_, nvirB_, noccB_, 1.0, xBB[rank], noccB_, &(C_p_BS.B_p_[j][0]), nvirB_, 1.0,
-                            tBS_dump[rank], nvirB_);
+                            xBBp[rank], noccB_);
+                    C_DGEMM('N', 'N', noccB_, nvirB_, noccB_, 1.0, xBBp[rank], noccB_, &(C_p_BS.B_p_[j][0]), nvirB_, 1.0,
+                            tBS_dumpp[rank], nvirB_);
                 }
             }
             off += BS_iter.curr_size;
@@ -910,21 +904,17 @@ void SAPT0::ind20rB_A_aio() {
         outfile->Printf("\n    CHF Iterations did not converge\n\n");
     }
 
-    CHFB_ = block_matrix(noccB_, nvirB_);
+    CHFB_ = block_matrix(noccB_, nvirB_);  // TODO: Defer - class member requires API redesign
     C_DCOPY(noccB_ * nvirB_, tBS_new, 1, CHFB_[0], 1);
 
     free(tBS_new);
     free(tBS_old);
-    free_block(tBS_dump);
     free(X);
     free(R_old);
     free(R_new);
     free(z_old);
     free(z_new);
     free(Ax);
-    free_block(xBB);
-    free_block(xBS);
-    free_block(xSS);
 }
 
 void SAPT2::ind20r() {
