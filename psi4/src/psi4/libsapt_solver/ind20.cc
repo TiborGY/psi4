@@ -928,12 +928,12 @@ void SAPT0::ind20rB_A_aio() {
 }
 
 void SAPT2::ind20r() {
-    CHFA_ = block_matrix(noccA_, nvirA_);
+    CHFA_ = block_matrix(noccA_, nvirA_);  // TODO: Defer - class member requires API redesign
 
     cphf_solver(CHFA_, wBAR_, evalsA_, PSIF_SAPT_AA_DF_INTS, "AA RI Integrals", "AR RI Integrals", "RR RI Integrals",
                 noccA_, nvirA_);
 
-    CHFB_ = block_matrix(noccB_, nvirB_);
+    CHFB_ = block_matrix(noccB_, nvirB_);  // TODO: Defer - class member requires API redesign
 
     cphf_solver(CHFB_, wABS_, evalsB_, PSIF_SAPT_BB_DF_INTS, "BB RI Integrals", "BS RI Integrals", "SS RI Integrals",
                 noccB_, nvirB_);
@@ -954,56 +954,53 @@ void SAPT2::ind20r() {
 
 void SAPT2::cphf_solver(double **tAR, double **wBAR, double *evals, int intfile, const char *AAints, const char *ARints,
                         const char *RRints, size_t nocc, size_t nvir) {
-    double **B_p_AR = block_matrix(nocc * nvir, ndf_ + 3);
+    auto B_p_AR = std::make_shared<Matrix>("B_p_AR", nocc * nvir, ndf_ + 3);
+    double **B_p_ARp = B_p_AR->pointer();
 
-    psio_->read_entry(intfile, ARints, (char *)&(B_p_AR[0][0]), sizeof(double) * nocc * nvir * (ndf_ + 3));
+    psio_->read_entry(intfile, ARints, (char *)B_p_AR->get_pointer(), sizeof(double) * nocc * nvir * (ndf_ + 3));
 
-    double **Amat = block_matrix(nocc * nvir, nocc * nvir);
+    auto Amat = std::make_shared<Matrix>("Amat", nocc * nvir, nocc * nvir);
+    double **Amatp = Amat->pointer();
 
-    C_DGEMM('N', 'T', nocc * nvir, nocc * nvir, ndf_, -4.0, B_p_AR[0], ndf_ + 3, B_p_AR[0], ndf_ + 3, 0.0, Amat[0],
+    C_DGEMM('N', 'T', nocc * nvir, nocc * nvir, ndf_, -4.0, B_p_ARp[0], ndf_ + 3, B_p_ARp[0], ndf_ + 3, 0.0, Amatp[0],
             nocc * nvir);
 
     for (int a = 0, ar = 0; a < nocc; a++) {
         for (int r = 0; r < nvir; r++, ar++) {
-            C_DGEMM('N', 'T', nocc, nvir, ndf_, 1.0, B_p_AR[r], nvir * (ndf_ + 3), B_p_AR[a * nvir], ndf_ + 3, 1.0,
-                    Amat[ar], nvir);
+            C_DGEMM('N', 'T', nocc, nvir, ndf_, 1.0, B_p_ARp[r], nvir * (ndf_ + 3), B_p_ARp[a * nvir], ndf_ + 3, 1.0,
+                    Amatp[ar], nvir);
         }
     }
 
-    free_block(B_p_AR);
+    auto B_p_AA = std::make_shared<Matrix>("B_p_AA", nocc * nocc, ndf_ + 3);
+    double **B_p_AAp = B_p_AA->pointer();
+    auto B_p_R = std::make_shared<Matrix>("B_p_R", nvir, ndf_ + 3);
 
-    double **B_p_AA = block_matrix(nocc * nocc, ndf_ + 3);
-    double **B_p_R = block_matrix(nvir, ndf_ + 3);
-
-    psio_->read_entry(intfile, AAints, (char *)&(B_p_AA[0][0]), sizeof(double) * nocc * nocc * (ndf_ + 3));
+    psio_->read_entry(intfile, AAints, (char *)B_p_AA->get_pointer(), sizeof(double) * nocc * nocc * (ndf_ + 3));
 
     psio_address next_PSIF = PSIO_ZERO;
 
     for (int r = 0; r < nvir; r++) {
-        psio_->read(intfile, RRints, (char *)&(B_p_R[0][0]), sizeof(double) * nvir * (ndf_ + 3), next_PSIF, &next_PSIF);
+        psio_->read(intfile, RRints, (char *)B_p_R->get_pointer(), sizeof(double) * nvir * (ndf_ + 3), next_PSIF, &next_PSIF);
         for (int a = 0; a < nocc; a++) {
             int ar = a * nvir + r;
-            C_DGEMM('N', 'T', nocc, nvir, ndf_, 1.0, B_p_AA[a * nocc], ndf_ + 3, B_p_R[0], ndf_ + 3, 1.0, Amat[ar],
+            C_DGEMM('N', 'T', nocc, nvir, ndf_, 1.0, B_p_AAp[a * nocc], ndf_ + 3, B_p_R->get_pointer(), ndf_ + 3, 1.0, Amatp[ar],
                     nvir);
         }
     }
 
-    free_block(B_p_AA);
-    free_block(B_p_R);
-
     for (int a = 0, ar = 0; a < nocc; a++) {
         for (int r = 0; r < nvir; r++, ar++) {
-            Amat[ar][ar] += (evals[a] - evals[r + nocc]);
+            Amatp[ar][ar] += (evals[a] - evals[r + nocc]);
         }
     }
 
     int *ipiv = init_int_array(nocc * nvir);
 
     C_DCOPY(nocc * nvir, wBAR[0], 1, tAR[0], 1);
-    C_DGESV(nocc * nvir, 1, Amat[0], nocc * nvir, ipiv, tAR[0], nocc * nvir);
+    C_DGESV(nocc * nvir, 1, Amatp[0], nocc * nvir, ipiv, tAR[0], nocc * nvir);
 
     free(ipiv);
-    free_block(Amat);
 }
 }  // namespace sapt
 }  // namespace psi
