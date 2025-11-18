@@ -52,6 +52,7 @@
 #include "psi4/libmints/potential.h"
 #include "psi4/libmints/vector.h"
 #include "psi4/liboptions/liboptions.h"
+#include "psi4/libpsi4util/header_printer.h"
 #include "psi4/libpsi4util/process.h"
 #include "psi4/libqt/qt.h"
 #include "psi4/libmints/mintshelper.h"
@@ -94,16 +95,13 @@ void FISAPT::common_init() {
 }
 
 void FISAPT::print_header() {
-    outfile->Printf("\t --------------------------------------------\n");
-    outfile->Printf("\t                    FISAPT0                  \n");
-    outfile->Printf("\t                  Rob Parrish                \n");
-    outfile->Printf("\t --------------------------------------------\n");
-    outfile->Printf("\n");
-
-    outfile->Printf("    Do F-SAPT = %11s\n", options_.get_bool("FISAPT_DO_FSAPT") ? "Yes" : "No");
-    outfile->Printf("    Do Plot   = %11s\n", options_.get_bool("FISAPT_DO_PLOT") ? "Yes" : "No");
-    outfile->Printf("    Memory    = %11.3f [GiB]\n", (doubles_ * 8) / (1024.0 * 1024.0 * 1024.0));
-    outfile->Printf("\n");
+    HeaderPrinter header("FISAPT0", HeaderPrinter::BannerStyle::BOX, 46);
+    header.add_authors({"Rob Parrish"})
+          .add_blank_line()
+          .add_parameter("Do F-SAPT", options_.get_bool("FISAPT_DO_FSAPT") ? "Yes" : "No")
+          .add_parameter("Do Plot", options_.get_bool("FISAPT_DO_PLOT") ? "Yes" : "No")
+          .add_parameter("Memory", (doubles_ * 8) / (1024.0 * 1024.0 * 1024.0), "%11.3f [GiB]")
+          .print();
 }
 
 void FISAPT::localize() {

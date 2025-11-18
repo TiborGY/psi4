@@ -38,6 +38,7 @@
 #include "psi4/libmints/vector.h"
 #include "psi4/liboptions/liboptions.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/libpsi4util/header_printer.h"
 #include "psi4/libqt/qt.h"
 
 namespace psi {
@@ -95,16 +96,15 @@ std::shared_ptr<IBOLocalizer2> IBOLocalizer2::build(std::shared_ptr<BasisSet> pr
     return local;
 }
 void IBOLocalizer2::print_header() const {
-    outfile->Printf("  ==> IBO Localizer 2 <==\n\n");
-    outfile->Printf("    MinAO Basis = %11s\n", minao_->name().c_str());
-    outfile->Printf("    Use Ghosts  = %11s\n", (use_ghosts_ ? "TRUE" : "FALSE"));
-    outfile->Printf("    Use Stars   = %11s\n", (use_stars_ ? "TRUE" : "FALSE"));
-    outfile->Printf("    Condition   = %11.3E\n", condition_);
-    outfile->Printf("    Power       = %11d\n", power_);
-    outfile->Printf("    Convergence = %11.3E\n", convergence_);
-    outfile->Printf("    Maxiter     = %11d\n", maxiter_);
-    outfile->Printf("\n");
-    // fflush(outfile);
+    HeaderPrinter header("IBO Localizer 2");
+    header.add_parameter("MinAO Basis", minao_->name())
+          .add_parameter("Use Ghosts", use_ghosts_ ? "TRUE" : "FALSE")
+          .add_parameter("Use Stars", use_stars_ ? "TRUE" : "FALSE")
+          .add_parameter("Condition", condition_)
+          .add_parameter("Power", power_)
+          .add_parameter("Convergence", convergence_)
+          .add_parameter("Maxiter", maxiter_)
+          .print();
 }
 void IBOLocalizer2::build_iaos() {
     // => Ghosting <= //

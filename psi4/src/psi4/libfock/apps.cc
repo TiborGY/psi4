@@ -47,6 +47,7 @@
 #include "psi4/libmints/multipolesymmetry.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
 #include "psi4/liboptions/liboptions.h"
+#include "psi4/libpsi4util/header_printer.h"
 #include "psi4/libpsi4util/process.h"
 
 #include <algorithm>
@@ -142,11 +143,9 @@ void RBase::postiterations() { jk_.reset(); }
 RCPHF::RCPHF(SharedWavefunction ref_wfn, Options& options, bool use_symmetry) : RBase(ref_wfn, options, use_symmetry) {}
 RCPHF::~RCPHF() {}
 void RCPHF::print_header() {
-    outfile->Printf("\n");
-    outfile->Printf("         ------------------------------------------------------------\n");
-    outfile->Printf("                                     CPHF                           \n");
-    outfile->Printf("                                  Rob Parrish                       \n");
-    outfile->Printf("         ------------------------------------------------------------\n\n");
+    HeaderPrinter header("CPHF", HeaderPrinter::BannerStyle::BOX, 60);
+    header.add_authors({"Rob Parrish"})
+          .print();
 
     outfile->Printf("  ==> Geometry <==\n\n");
     molecule_->print();

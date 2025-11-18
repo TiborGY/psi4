@@ -34,6 +34,7 @@
 #include "psi4/libqt/qt.h"
 #include "psi4/libfock/cubature.h"
 #include "psi4/lib3index/dftensor.h"
+#include "psi4/libpsi4util/header_printer.h"
 
 #include <algorithm>
 
@@ -57,19 +58,19 @@ LS_THC_Computer::LS_THC_Computer(std::shared_ptr<Molecule> molecule, std::shared
 LS_THC_Computer::~LS_THC_Computer() {}
 
 void LS_THC_Computer::print_header() {
-    outfile->Printf("   --------------------------------------------\n");
-    outfile->Printf("       Least-Squares Tensor Hypercontraction   \n");
-    outfile->Printf("                   by Andy Jiang               \n");
-    outfile->Printf("              doi: 10.1063/1.4768233           \n");
-    outfile->Printf("   --------------------------------------------\n\n");
-    outfile->Printf("  Detailed LS-THC thresholds and cutoffs:\n");
-    outfile->Printf("    LS_THC_SPHERICAL_POINTS   =   %3d \n", options_.get_int("LS_THC_SPHERICAL_POINTS"));
-    outfile->Printf("    LS_THC_RADIAL_POINTS      =   %3d \n", options_.get_int("LS_THC_RADIAL_POINTS"));
-    outfile->Printf("    LS_THC_BASIS_TOLERANCE    = %6.3e \n", options_.get_double("LS_THC_BASIS_TOLERANCE"));
-    outfile->Printf("    LS_THC_WEIGHTS_TOLERANCE  = %6.3e \n", options_.get_double("LS_THC_WEIGHTS_TOLERANCE"));
-    outfile->Printf("    LS_THC_S_EPSILON          = %6.3e \n", options_.get_double("LS_THC_S_EPSILON"));
-    outfile->Printf("    Using DF?                     %3s \n", use_df_ ? "Yes" : "No");
-    outfile->Printf("\n\n");
+    HeaderPrinter header("Least-Squares Tensor Hypercontraction", HeaderPrinter::BannerStyle::BOX, 46);
+    header.add_authors({"Andy Jiang"})
+          .add_line("doi: 10.1063/1.4768233", true)
+          .add_blank_line()
+          .add_line("Detailed LS-THC thresholds and cutoffs:", false)
+          .add_parameter("LS_THC_SPHERICAL_POINTS", options_.get_int("LS_THC_SPHERICAL_POINTS"), "%3d", 25)
+          .add_parameter("LS_THC_RADIAL_POINTS", options_.get_int("LS_THC_RADIAL_POINTS"), "%3d", 25)
+          .add_parameter("LS_THC_BASIS_TOLERANCE", options_.get_double("LS_THC_BASIS_TOLERANCE"), "%6.3e", 25)
+          .add_parameter("LS_THC_WEIGHTS_TOLERANCE", options_.get_double("LS_THC_WEIGHTS_TOLERANCE"), "%6.3e", 25)
+          .add_parameter("LS_THC_S_EPSILON", options_.get_double("LS_THC_S_EPSILON"), "%6.3e", 25)
+          .add_parameter("Using DF?", use_df_ ? "Yes" : "No", "%3s", 25)
+          .print();
+    outfile->Printf("\n");
 }
 
 /// @brief Builds the E intermediate using exact four-center two-electron integrals (Parrish et al. 2012 procedure 2)

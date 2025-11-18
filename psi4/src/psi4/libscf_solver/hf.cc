@@ -53,6 +53,7 @@
 #include "psi4/libfunctional/superfunctional.h"
 
 #include "psi4/libpsi4util/libpsi4util.h"
+#include "psi4/libpsi4util/header_printer.h"
 #include "psi4/libmints/basisset.h"
 #include "psi4/libmints/molecule.h"
 #include "psi4/libmints/mintshelper.h"
@@ -493,15 +494,18 @@ void HF::print_header() {
     nthread = Process::environment.get_n_threads();
 #endif
 
-    outfile->Printf("\n");
-    outfile->Printf("         ---------------------------------------------------------\n");
-    outfile->Printf("                                   SCF\n");
-    outfile->Printf("               by Justin Turney, Rob Parrish, Andy Simmonett\n");
-    outfile->Printf("                          and Daniel G. A. Smith\n");
-    outfile->Printf("                             %4s Reference\n", options_.get_str("REFERENCE").c_str());
-    outfile->Printf("                      %3d Threads, %6ld MiB Core\n", nthread, memory_ / 1048576L);
-    outfile->Printf("         ---------------------------------------------------------\n");
-    outfile->Printf("\n");
+    char subtitle[128];
+    snprintf(subtitle, sizeof(subtitle), "%s Reference", options_.get_str("REFERENCE").c_str());
+    char resources[128];
+    snprintf(resources, sizeof(resources), "%d Threads, %ld MiB Core", nthread, memory_ / 1048576L);
+
+    HeaderPrinter header("SCF", HeaderPrinter::BannerStyle::BOX, 57);
+    header.add_authors({"Justin Turney, Rob Parrish, Andy Simmonett",
+                        "and Daniel G. A. Smith"})
+          .add_line(subtitle, true)
+          .add_line(resources, true)
+          .print();
+
     outfile->Printf("  ==> Geometry <==\n\n");
 
     molecule_->print();

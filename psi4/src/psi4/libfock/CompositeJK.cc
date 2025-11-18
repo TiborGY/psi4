@@ -38,6 +38,7 @@
 #include "psi4/libmints/integral.h"
 #include "psi4/liboptions/liboptions.h"
 #include "psi4/lib3index/dftensor.h"
+#include "psi4/libpsi4util/header_printer.h"
 
 #include <memory>
 #include <unordered_set>
@@ -201,18 +202,18 @@ size_t CompositeJK::memory_estimate() {
 void CompositeJK::print_header() const {
     std::string screen_type = options_.get_str("SCREENING");
     if (print_) {
-        outfile->Printf("  ==> CompositeJK: Mix-and-Match J+K Algorithm Combos <==\n\n");
-
-        outfile->Printf("    J tasked:          %11s\n", (do_J_ ? "Yes" : "No"));
-        if (do_J_) outfile->Printf("    J algorithm:       %11s\n", j_algo_->name().c_str());
-        outfile->Printf("    K tasked:          %11s\n", (do_K_ ? "Yes" : "No"));
-        if (do_K_) outfile->Printf("    K algorithm:       %11s\n", k_algo_->name().c_str());
-        outfile->Printf("    wK tasked:         %11s\n", (do_wK_ ? "Yes" : "No"));
-        if (do_wK_) outfile->Printf("    Omega:             %11.3E\n", omega_);
-        outfile->Printf("    Integrals threads: %11d\n", nthreads_);
-        outfile->Printf("    Memory [MiB]:      %11ld\n", (memory_ *8L) / (1024L * 1024L));
-        outfile->Printf("    Incremental Fock:  %11s\n", (incfock_ ? "Yes" : "No"));
-        outfile->Printf("    Screening Type:    %11s\n", screen_type.c_str());
+        HeaderPrinter header("CompositeJK: Mix-and-Match J+K Algorithm Combos");
+        header.add_parameter("J tasked", do_J_ ? "Yes" : "No");
+        if (do_J_) header.add_parameter("J algorithm", j_algo_->name());
+        header.add_parameter("K tasked", do_K_ ? "Yes" : "No");
+        if (do_K_) header.add_parameter("K algorithm", k_algo_->name());
+        header.add_parameter("wK tasked", do_wK_ ? "Yes" : "No");
+        if (do_wK_) header.add_parameter("Omega", omega_);
+        header.add_parameter("Integrals threads", nthreads_)
+              .add_parameter("Memory [MiB]", (memory_ * 8L) / (1024L * 1024L))
+              .add_parameter("Incremental Fock", incfock_ ? "Yes" : "No")
+              .add_parameter("Screening Type", screen_type)
+              .print();
 
         if (do_J_) {
             j_algo_->print_header();

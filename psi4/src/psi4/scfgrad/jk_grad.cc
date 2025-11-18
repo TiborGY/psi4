@@ -43,6 +43,7 @@
 #include "psi4/libmints/molecule.h"
 #include "psi4/libmints/vector.h"
 #include "psi4/liboptions/liboptions.h"
+#include "psi4/libpsi4util/header_printer.h"
 #include "psi4/libpsi4util/process.h"
 
 #ifdef _OPENMP
@@ -155,20 +156,20 @@ void DFJKGrad::common_init() {
 }
 void DFJKGrad::print_header() const {
     if (print_) {
-        outfile->Printf("  ==> DFJKGrad: Density-Fitted SCF Gradients <==\n\n");
+        HeaderPrinter header("DFJKGrad: Density-Fitted SCF Gradients");
+        header.add_parameter("Gradient", deriv_)
+              .add_parameter("J tasked", do_J_ ? "Yes" : "No")
+              .add_parameter("K tasked", do_K_ ? "Yes" : "No")
+              .add_parameter("wK tasked", do_wK_ ? "Yes" : "No");
+        if (do_wK_) header.add_parameter("Omega", omega_);
+        header.add_parameter("OpenMP threads", omp_num_threads_)
+              .add_parameter("Integrals threads", df_ints_num_threads_)
+              .add_parameter("Memory [MiB]", (memory_ * 8L) / (1024L * 1024L))
+              .add_parameter("Schwarz Cutoff", cutoff_)
+              .add_parameter("Fitting Condition", condition_)
+              .print();
 
-        outfile->Printf("    Gradient:          %11d\n", deriv_);
-        outfile->Printf("    J tasked:          %11s\n", (do_J_ ? "Yes" : "No"));
-        outfile->Printf("    K tasked:          %11s\n", (do_K_ ? "Yes" : "No"));
-        outfile->Printf("    wK tasked:         %11s\n", (do_wK_ ? "Yes" : "No"));
-        if (do_wK_) outfile->Printf("    Omega:             %11.3E\n", omega_);
-        outfile->Printf("    OpenMP threads:    %11d\n", omp_num_threads_);
-        outfile->Printf("    Integrals threads: %11d\n", df_ints_num_threads_);
-        outfile->Printf("    Memory [MiB]:      %11ld\n", (memory_ * 8L) / (1024L * 1024L));
-        outfile->Printf("    Schwarz Cutoff:    %11.0E\n", cutoff_);
-        outfile->Printf("    Fitting Condition: %11.0E\n\n", condition_);
-
-        outfile->Printf("   => Auxiliary Basis Set <=\n\n");
+        outfile->Printf("\n   => Auxiliary Basis Set <=\n\n");
         auxiliary_->print_by_level("outfile", print_);
     }
 }
@@ -2212,16 +2213,15 @@ void DirectJKGrad::common_init() {
 }
 void DirectJKGrad::print_header() const {
     if (print_) {
-        outfile->Printf("  ==> DirectJKGrad: Integral-Direct SCF Gradients <==\n\n");
-
-        outfile->Printf("    Gradient:          %11d\n", deriv_);
-        outfile->Printf("    J tasked:          %11s\n", (do_J_ ? "Yes" : "No"));
-        outfile->Printf("    K tasked:          %11s\n", (do_K_ ? "Yes" : "No"));
-        outfile->Printf("    wK tasked:         %11s\n", (do_wK_ ? "Yes" : "No"));
-        if (do_wK_) outfile->Printf("    Omega:             %11.3E\n", omega_);
-        outfile->Printf("    Integrals threads: %11d\n", ints_num_threads_);
-        outfile->Printf("    Schwarz Cutoff:    %11.0E\n", cutoff_);
-        outfile->Printf("\n");
+        HeaderPrinter header("DirectJKGrad: Integral-Direct SCF Gradients");
+        header.add_parameter("Gradient", deriv_)
+              .add_parameter("J tasked", do_J_ ? "Yes" : "No")
+              .add_parameter("K tasked", do_K_ ? "Yes" : "No")
+              .add_parameter("wK tasked", do_wK_ ? "Yes" : "No");
+        if (do_wK_) header.add_parameter("Omega", omega_);
+        header.add_parameter("Integrals threads", ints_num_threads_)
+              .add_parameter("Schwarz Cutoff", cutoff_)
+              .print();
     }
 }
 void DirectJKGrad::compute_gradient() {

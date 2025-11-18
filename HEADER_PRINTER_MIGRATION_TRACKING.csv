@@ -12,7 +12,7 @@ Phase,Priority,Module,File,Line,Class,Params,Complexity,Estimated_Hours,Status,A
 1,High,libfock,v.cc,2594,UV,0,Trivial,0.1,No Change,,✅ Already delegates to VBase - no changes needed
 1,High,libfock,hamiltonian.cc,91,CPHFRHamiltonian,0,Trivial,0.25,Completed,,✅ Phase 1 - 4→2 lines (50% reduction)
 1,High,libfock,solver.cc,111,CGRSolver,4,Easy,0.33,Completed,,✅ Phase 1 - Cleaner with method chaining
-3,Low,libfock,apps.cc,144,RCPHF,Multiple,Hard,1.0,Deferred,,⏸️ Complex - moved to Phase 3
+3,Low,libfock,apps.cc,145,RCPHF,Multiple,Hard,1.0,Completed,,✅ Phase 3 - Partial migration (header/authors only)
 1,High,lib3index,dfhelper.cc,279,DFHelper,13,Medium,0.75,Completed,,✅ Phase 1 - 18→15 lines with 13 parameters
 1,High,lib3index,dftensor.cc,124,DFTensor,0,Medium,0.75,Completed,,✅ Phase 1 - 7→5 lines
 0,Completed,libfock,LinK.cc,86,LinK,1,Easy,0.25,Completed,,✅ Example implementation
@@ -28,14 +28,14 @@ Phase,Priority,Module,File,Line,Class,Params,Complexity,Estimated_Hours,Status,A
 2,Medium,libsapt_solver,sapt2p3.cc,166,SAPT2p3,Complex,Medium,0.75,Deferred,,⏸️ Custom centered format - not suitable for HeaderPrinter
 2,Medium,f12,mp2.cc,92,MP2F12,Complex,Medium,0.75,Completed,,✅ Phase 2 - BOX style with conditional title (17→16 lines)
 2,Medium,dlpno,mp2.cc,304,DLPNOMP2,Complex,Medium,0.75,Completed,,✅ Phase 2 - BOX style with parameters (18→20 lines)
-3,Low,libscf_solver,hf.cc,490,HF,47-lines,Very Hard,2.0,Not Started,,⚠️ Most complex - consider partial migration
-3,Low,libfock,DiskDFJK.cc,270,DiskDFJK,Complex,Hard,1.0,Not Started,,Complex conditional parameters
-3,Low,libfock,CompositeJK.cc,201,CompositeJK,Recursive,Hard,1.0,Not Started,,Recursive sub-algorithm printing
-3,Low,scfgrad,jk_grad.cc,156,DFJKGrad,Medium,Medium,0.75,Not Started,,Gradient-specific parameters
-3,Low,scfgrad,jk_grad.cc,2213,DirectJKGrad,Medium,Medium,0.75,Not Started,,Similar to DFJKGrad
-3,Low,fisapt,fisapt.cc,96,FISAPT,Medium,Medium,0.75,Not Started,,Fragment-specific information
-3,Low,fisapt,local2.cc,97,IBOLocalizer2,Low,Easy,0.5,Not Started,,Simple localizer
-3,Low,libmints,thc_eri.cc,59,LS_THC_Computer,Medium,Medium,0.75,Not Started,,THC-specific parameters
+3,Low,libscf_solver,hf.cc,491,HF,47-lines,Very Hard,2.0,Completed,,✅ Phase 3 - Partial migration (header/authors only, 47→46 lines)
+3,Low,libfock,DiskDFJK.cc,271,DiskDFJK,Complex,Hard,1.0,Completed,,✅ Phase 3 - Full migration with external auxiliary print (20→18 lines)
+3,Low,libfock,CompositeJK.cc,202,CompositeJK,Recursive,Hard,1.0,Completed,,✅ Phase 3 - Full migration with recursive sub-algo prints preserved (25→24 lines)
+3,Low,scfgrad,jk_grad.cc,157,DFJKGrad,Medium,Medium,0.75,Completed,,✅ Phase 3 - Full migration with external auxiliary print (19→18 lines)
+3,Low,scfgrad,jk_grad.cc,2214,DirectJKGrad,Medium,Medium,0.75,Completed,,✅ Phase 3 - Full migration (14→12 lines, 14% reduction)
+3,Low,fisapt,fisapt.cc,97,FISAPT,Medium,Medium,0.75,Completed,,✅ Phase 3 - BOX style with authors (12→8 lines, 33% reduction)
+3,Low,fisapt,local2.cc,98,IBOLocalizer2,Low,Easy,0.5,Completed,,✅ Phase 3 - Arrow style (12→9 lines, 25% reduction)
+3,Low,libmints,thc_eri.cc,60,LS_THC_Computer,Medium,Medium,0.75,Completed,,✅ Phase 3 - BOX style with authors and DOI (15→14 lines)
 4,Lowest,libmints,local.cc,142,BoysLocalizer,3,Easy,0.33,Not Started,,3 parameters - good starter task
 4,Lowest,libmints,local.cc,341,PMLocalizer,3,Easy,0.33,Not Started,,3 parameters - good starter task
 4,Lowest,libmints,oeprop.cc,783,OEProp,Multiple,Medium,0.5,Not Started,,Multiple properties
