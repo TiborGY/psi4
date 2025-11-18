@@ -110,32 +110,33 @@ void SAPT2p::disp22sdq() {
 double SAPT2p::disp211() {
     double energy = 0.0;
 
-    double **xARBS = block_matrix(aoccA_ * nvirA_, aoccB_ * nvirB_);
-    double **yARBS = block_matrix(aoccA_ * nvirA_, aoccB_ * nvirB_);
+    auto xARBS = std::make_shared<Matrix>("xARBS", aoccA_ * nvirA_, aoccB_ * nvirB_);
+    double **xARBSp = xARBS->pointer();
+    auto yARBS = std::make_shared<Matrix>("yARBS", aoccA_ * nvirA_, aoccB_ * nvirB_);
 
-    psio_->read_entry(PSIF_SAPT_AMPS, "gBSBS x tARBS", (char *)xARBS[0],
+    psio_->read_entry(PSIF_SAPT_AMPS, "gBSBS x tARBS", (char *)xARBS->get_pointer(),
                       sizeof(double) * aoccA_ * nvirA_ * aoccB_ * nvirB_);
 
-    psio_->read_entry(PSIF_SAPT_AMPS, "gARAR x tARBS", (char *)yARBS[0],
+    psio_->read_entry(PSIF_SAPT_AMPS, "gARAR x tARBS", (char *)yARBS->get_pointer(),
                       sizeof(double) * aoccA_ * nvirA_ * aoccB_ * nvirB_);
 
     double **B_p_AR = get_DF_ints(PSIF_SAPT_AA_DF_INTS, "AR RI Integrals", foccA_, noccA_, 0, nvirA_);
-    double **T_p_BS = block_matrix(aoccB_ * nvirB_, ndf_ + 3);
-    psio_->read_entry(PSIF_SAPT_AMPS, "Theta BS Intermediates", (char *)T_p_BS[0],
+    auto T_p_BS = std::make_shared<Matrix>("T_p_BS", aoccB_ * nvirB_, ndf_ + 3);
+    psio_->read_entry(PSIF_SAPT_AMPS, "Theta BS Intermediates", (char *)T_p_BS->get_pointer(),
                       sizeof(double) * aoccB_ * nvirB_ * (ndf_ + 3));
 
-    C_DGEMM('N', 'T', aoccA_ * nvirA_, aoccB_ * nvirB_, ndf_ + 3, 1.0, B_p_AR[0], ndf_ + 3, T_p_BS[0], ndf_ + 3, 1.0,
-            xARBS[0], aoccB_ * nvirB_);
+    C_DGEMM('N', 'T', aoccA_ * nvirA_, aoccB_ * nvirB_, ndf_ + 3, 1.0, B_p_AR[0], ndf_ + 3, T_p_BS->get_pointer(), ndf_ + 3, 1.0,
+            xARBS->get_pointer(), aoccB_ * nvirB_);
 
     free_block(B_p_AR);
 
-    double **T_p_AR = block_matrix(aoccA_ * nvirA_, ndf_ + 3);
-    psio_->read_entry(PSIF_SAPT_AMPS, "Theta AR Intermediates", (char *)T_p_AR[0],
+    auto T_p_AR = std::make_shared<Matrix>("T_p_AR", aoccA_ * nvirA_, ndf_ + 3);
+    psio_->read_entry(PSIF_SAPT_AMPS, "Theta AR Intermediates", (char *)T_p_AR->get_pointer(),
                       sizeof(double) * aoccA_ * nvirA_ * (ndf_ + 3));
     double **B_p_BS = get_DF_ints(PSIF_SAPT_BB_DF_INTS, "BS RI Integrals", foccB_, noccB_, 0, nvirB_);
 
-    C_DGEMM('N', 'T', aoccA_ * nvirA_, aoccB_ * nvirB_, ndf_ + 3, 1.0, T_p_AR[0], ndf_ + 3, B_p_BS[0], ndf_ + 3, 1.0,
-            yARBS[0], aoccB_ * nvirB_);
+    C_DGEMM('N', 'T', aoccA_ * nvirA_, aoccB_ * nvirB_, ndf_ + 3, 1.0, T_p_AR->get_pointer(), ndf_ + 3, B_p_BS[0], ndf_ + 3, 1.0,
+            yARBS->get_pointer(), aoccB_ * nvirB_);
 
     free_block(B_p_BS);
 
@@ -143,27 +144,22 @@ double SAPT2p::disp211() {
         for (int r = 0; r < nvirA_; r++, ar++) {
             for (int b = 0, bs = 0; b < aoccB_; b++) {
                 for (int s = 0; s < nvirB_; s++, bs++) {
-                    xARBS[ar][bs] /=
+                    xARBSp[ar][bs] /=
                         evalsA_[a + foccA_] + evalsB_[b + foccB_] - evalsA_[r + noccA_] - evalsB_[s + noccB_];
                 }
             }
         }
     }
 
-    energy = 8.0 * C_DDOT(aoccA_ * nvirA_ * aoccB_ * nvirB_, xARBS[0], 1, yARBS[0], 1);
+    energy = 8.0 * C_DDOT(aoccA_ * nvirA_ * aoccB_ * nvirB_, xARBS->get_pointer(), 1, yARBS->get_pointer(), 1);
 
-    psio_->read_entry(PSIF_SAPT_AMPS, "tARBS Amplitudes", (char *)xARBS[0],
+    psio_->read_entry(PSIF_SAPT_AMPS, "tARBS Amplitudes", (char *)xARBS->get_pointer(),
                       sizeof(double) * aoccA_ * nvirA_ * aoccB_ * nvirB_);
 
-    C_DGEMM('N', 'T', aoccA_ * nvirA_, aoccB_ * nvirB_, ndf_ + 3, 1.0, T_p_AR[0], ndf_ + 3, T_p_BS[0], ndf_ + 3, 0.0,
-            yARBS[0], aoccB_ * nvirB_);
+    C_DGEMM('N', 'T', aoccA_ * nvirA_, aoccB_ * nvirB_, ndf_ + 3, 1.0, T_p_AR->get_pointer(), ndf_ + 3, T_p_BS->get_pointer(), ndf_ + 3, 0.0,
+            yARBS->get_pointer(), aoccB_ * nvirB_);
 
-    energy += 8.0 * C_DDOT(aoccA_ * nvirA_ * aoccB_ * nvirB_, xARBS[0], 1, yARBS[0], 1);
-
-    free_block(xARBS);
-    free_block(yARBS);
-    free_block(T_p_AR);
-    free_block(T_p_BS);
+    energy += 8.0 * C_DDOT(aoccA_ * nvirA_ * aoccB_ * nvirB_, xARBS->get_pointer(), 1, yARBS->get_pointer(), 1);
 
     return (energy);
 }
@@ -172,35 +168,31 @@ double SAPT2p::disp220s(int ampfile, const char *tlabel, const char *thetalabel,
                         const char *RRlabel, size_t foccA, size_t noccA, size_t nvirA) {
     size_t aoccA = noccA - foccA;
 
-    double **yAR = block_matrix(aoccA, nvirA);
+    auto yAR = std::make_shared<Matrix>("yAR", aoccA, nvirA);
 
-    double **T_p_AR = block_matrix(aoccA * nvirA, ndf_ + 3);
-    psio_->read_entry(ampfile, thetalabel, (char *)T_p_AR[0], sizeof(double) * aoccA * nvirA * (ndf_ + 3));
+    auto T_p_AR = std::make_shared<Matrix>("T_p_AR", aoccA * nvirA, ndf_ + 3);
+    psio_->read_entry(ampfile, thetalabel, (char *)T_p_AR->get_pointer(), sizeof(double) * aoccA * nvirA * (ndf_ + 3));
 
     double **B_p_RR = get_DF_ints(intfile, RRlabel, 0, nvirA, 0, nvirA);
 
-    C_DGEMM('N', 'T', aoccA, nvirA, nvirA * (ndf_ + 3), 1.0, T_p_AR[0], nvirA * (ndf_ + 3), B_p_RR[0],
-            nvirA * (ndf_ + 3), 0.0, yAR[0], nvirA);
+    C_DGEMM('N', 'T', aoccA, nvirA, nvirA * (ndf_ + 3), 1.0, T_p_AR->get_pointer(), nvirA * (ndf_ + 3), B_p_RR[0],
+            nvirA * (ndf_ + 3), 0.0, yAR->get_pointer(), nvirA);
 
     free_block(B_p_RR);
 
     double **B_p_AA = get_DF_ints(intfile, AAlabel, foccA, noccA, foccA, noccA);
 
     for (int a = 0; a < aoccA; a++) {
-        C_DGEMM('N', 'T', aoccA, nvirA, ndf_ + 3, -1.0, B_p_AA[a * aoccA], ndf_ + 3, T_p_AR[a * nvirA], ndf_ + 3, 1.0,
-                yAR[0], nvirA);
+        C_DGEMM('N', 'T', aoccA, nvirA, ndf_ + 3, -1.0, B_p_AA[a * aoccA], ndf_ + 3, T_p_AR->get_pointer(a * nvirA), ndf_ + 3, 1.0,
+                yAR->get_pointer(), nvirA);
     }
 
     free_block(B_p_AA);
-    free_block(T_p_AR);
 
-    double **tAR = block_matrix(aoccA, nvirA);
-    psio_->read_entry(ampfile, tlabel, (char *)tAR[0], sizeof(double) * aoccA * nvirA);
+    auto tAR = std::make_shared<Matrix>("tAR", aoccA, nvirA);
+    psio_->read_entry(ampfile, tlabel, (char *)tAR->get_pointer(), sizeof(double) * aoccA * nvirA);
 
-    double energy = 8.0 * C_DDOT(aoccA * nvirA, tAR[0], 1, yAR[0], 1);
-
-    free_block(tAR);
-    free_block(yAR);
+    double energy = 8.0 * C_DDOT(aoccA * nvirA, tAR->get_pointer(), 1, yAR->get_pointer(), 1);
 
     return (energy);
 }
@@ -209,27 +201,23 @@ double SAPT2p::disp220d_1(int ampfile, const char *tlabel, const char *thetalabe
                           size_t foccA, size_t noccA, size_t nvirA) {
     size_t aoccA = noccA - foccA;
 
-    double *xARAR = init_array((long int)aoccA * nvirA * aoccA * nvirA);
+    std::vector<double> xARAR((long int)aoccA * nvirA * aoccA * nvirA);
     double **B_p_AR = get_DF_ints(intfile, ARlabel, foccA, noccA, 0, nvirA);
-    double **T_p_AR = block_matrix(aoccA * nvirA, ndf_ + 3);
-    psio_->read_entry(ampfile, thetalabel, (char *)T_p_AR[0], sizeof(double) * aoccA * nvirA * (ndf_ + 3));
+    auto T_p_AR = std::make_shared<Matrix>("T_p_AR", aoccA * nvirA, ndf_ + 3);
+    psio_->read_entry(ampfile, thetalabel, (char *)T_p_AR->get_pointer(), sizeof(double) * aoccA * nvirA * (ndf_ + 3));
 
-    C_DGEMM('N', 'T', aoccA * nvirA, aoccA * nvirA, ndf_ + 3, 1.0, T_p_AR[0], ndf_ + 3, B_p_AR[0], ndf_ + 3, 0.0, xARAR,
+    C_DGEMM('N', 'T', aoccA * nvirA, aoccA * nvirA, ndf_ + 3, 1.0, T_p_AR->get_pointer(), ndf_ + 3, B_p_AR[0], ndf_ + 3, 0.0, xARAR.data(),
             aoccA * nvirA);
 
-    symmetrize(xARAR, aoccA, nvirA);
-    antisym(xARAR, aoccA, nvirA);
+    symmetrize(xARAR.data(), aoccA, nvirA);
+    antisym(xARAR.data(), aoccA, nvirA);
 
     free_block(B_p_AR);
-    free_block(T_p_AR);
 
-    double *t2ARAR = init_array((long int)aoccA * nvirA * aoccA * nvirA);
-    psio_->read_entry(ampfile, tlabel, (char *)t2ARAR, sizeof(double) * aoccA * nvirA * aoccA * nvirA);
+    std::vector<double> t2ARAR((long int)aoccA * nvirA * aoccA * nvirA);
+    psio_->read_entry(ampfile, tlabel, (char *)t2ARAR.data(), sizeof(double) * aoccA * nvirA * aoccA * nvirA);
 
-    double energy = 4.0 * C_DDOT((long int)aoccA * nvirA * aoccA * nvirA, xARAR, 1, t2ARAR, 1);
-
-    free(t2ARAR);
-    free(xARAR);
+    double energy = 4.0 * C_DDOT((long int)aoccA * nvirA * aoccA * nvirA, xARAR.data(), 1, t2ARAR.data(), 1);
 
     if (debug_) {
         outfile->Printf("\n    Disp22d_1           = %18.12lf [Eh]\n", energy);
