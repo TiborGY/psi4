@@ -198,11 +198,9 @@ class CCEnergyWavefunction : public Wavefunction {
     void diis_ROHF(int);
     void diis_UHF(int);
     void diis_invert_B(double **B, double *C, int dimension, double tolerance);
-#ifdef USE_LIBDIIS_POC
-    void diis_RHF_libdiis(int);   // POC: libdiis implementation for RHF
-    void diis_ROHF_libdiis(int);  // POC: libdiis implementation for ROHF
-    void diis_UHF_libdiis(int);   // POC: libdiis implementation for UHF
-#endif
+    void diis_RHF_libdiis(int);   // libdiis implementation for RHF
+    void diis_ROHF_libdiis(int);  // libdiis implementation for ROHF
+    void diis_UHF_libdiis(int);   // libdiis implementation for UHF
 
     /* member variables */
     Dimension act_occpi_;
@@ -211,9 +209,7 @@ class CCEnergyWavefunction : public Wavefunction {
     Params params_;
     Local local_;
     std::array<dpd_file4_cache_entry, 113> cache_priority_list_;
-#ifdef USE_LIBDIIS_POC
-    std::shared_ptr<DIISManager> ccsd_diis_manager_;  // POC: DIIS manager for amplitude extrapolation
-#endif
+    std::shared_ptr<DIISManager> ccsd_diis_manager_;  // DIIS manager for amplitude extrapolation
 };
 
 }  // namespace ccenergy

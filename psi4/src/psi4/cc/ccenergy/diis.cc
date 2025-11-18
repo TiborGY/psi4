@@ -49,38 +49,24 @@ namespace ccenergy {
 ** DIIS: Direct inversion in the iterative subspace routine to
 ** accelerate convergence of the CCSD amplitude equations.
 **
-** Substantially improved efficiency of this routine:
-** (1) Keeping at most two error vectors in core at once.
-** (2) Limiting direct product (overlap) calculation to unique pairs.
-** (3) Using LAPACK's linear equation solver DGESV instead of flin.
+** Implementation uses libdiis/DIISManager for all reference types,
+** leveraging centralized DIIS infrastructure and native DPD buffer support.
 **
-** -TDC  12/22/01
-** -Modifications for ROHF and UHF, TDC, 6/03
-**
-** Condition Improvements: applying balanced, conditioned
-** pseudoinversion to prevent convergence errors
-**
-** -RMP 04/02/13
+** Original custom implementations replaced 2025-11-18:
+** - Eliminates ~980 lines of duplicate DIIS code
+** - Uses native DPD operations (file2_axpy, buf4_axpy)
+** - Automatic B matrix construction and linear system solving
+** - Consistent DIIS behavior with occ/dfocc modules
 */
 
 void CCEnergyWavefunction::diis(int iter) {
-#ifdef USE_LIBDIIS_POC
-    // POC: Use libdiis implementation for all reference types
+    // Use libdiis implementation for all reference types
     if (params_.ref == 0)
         diis_RHF_libdiis(iter);
     else if (params_.ref == 1)
         diis_ROHF_libdiis(iter);
     else if (params_.ref == 2)
         diis_UHF_libdiis(iter);
-#else
-    // Original implementation
-    if (params_.ref == 0)
-        diis_RHF(iter);
-    else if (params_.ref == 1)
-        diis_ROHF(iter);
-    else if (params_.ref == 2)
-        diis_UHF(iter);
-#endif
 }
 
 void CCEnergyWavefunction::diis_invert_B(double** B, double* C, int dimension, double tolerance) {

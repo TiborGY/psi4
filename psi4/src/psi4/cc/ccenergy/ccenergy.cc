@@ -48,9 +48,7 @@
 #include "psi4/libpsio/psio.hpp"
 #include "psi4/libpsi4util/PsiOutStream.h"
 #include "psi4/psifiles.h"
-#ifdef USE_LIBDIIS_POC
-#include "psi4/libdiis/diismanager.h"  // POC: For DIISManager
-#endif
+#include "psi4/libdiis/diismanager.h"
 #include "psi4/libpsi4util/process.h"
 #include "psi4/liboptions/liboptions.h"
 
@@ -214,21 +212,19 @@ double CCEnergyWavefunction::compute_energy() {
     update();
     checkpoint();
 
-#ifdef USE_LIBDIIS_POC
-    // POC: Initialize DIISManager for amplitude extrapolation (all reference types)
+    // Initialize DIISManager for amplitude extrapolation (all reference types)
     if (params_.diis) {
         const char* ref_label = (params_.ref == 0) ? "RHF" : (params_.ref == 1) ? "ROHF" : "UHF";
         std::string diis_label = std::string("CCSD DIIS ") + ref_label;
 
         ccsd_diis_manager_ = std::make_shared<DIISManager>(
-            8,                                          // max 8 vectors (same as original)
+            8,                                          // max 8 vectors
             diis_label,                                 // label with reference type
-            DIISManager::RemovalPolicy::LargestError,  // same removal policy
-            DIISManager::StoragePolicy::OnDisk         // same storage policy
+            DIISManager::RemovalPolicy::LargestError,  // removal policy
+            DIISManager::StoragePolicy::OnDisk         // storage policy
         );
-        outfile->Printf("  POC: Using libdiis for DIIS extrapolation (%s)\n", ref_label);
+        outfile->Printf("  Using libdiis for DIIS extrapolation (%s)\n", ref_label);
     }
-#endif
 
     for (moinfo_.iter = 1; moinfo_.iter <= params_.maxiter; moinfo_.iter++) {
         sort_amps();
