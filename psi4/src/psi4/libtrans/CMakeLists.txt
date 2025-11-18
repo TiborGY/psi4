@@ -1,5 +1,6 @@
 list(APPEND sources
   fcidump_helper.cc
+  integral_permutations.cc
   integraltransform.cc
   integraltransform_dpd_id.cc
   integraltransform_moinfo.cc
