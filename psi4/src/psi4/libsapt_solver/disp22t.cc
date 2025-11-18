@@ -164,95 +164,86 @@ void SAPT2p::natural_orbitalify_ccd() {
     int occA = noccA_ - foccA_;
     int occB = noccB_ - foccB_;
 
-    double **tARAR = block_matrix(occA * nvirA_, occA * nvirA_);
+    auto tARAR = std::make_shared<Matrix>("tARAR", occA * nvirA_, occA * nvirA_);
 
-    psio_->read_entry(PSIF_SAPT_CCD, "T ARAR Amplitudes", (char *)tARAR[0],
+    psio_->read_entry(PSIF_SAPT_CCD, "T ARAR Amplitudes", (char *)tARAR->get_pointer(),
                       occA * nvirA_ * occA * nvirA_ * (size_t)sizeof(double));
 
-    double **tARAr = block_matrix(occA * nvirA_, occA * no_nvirA_);
+    auto tARAr = std::make_shared<Matrix>("tARAr", occA * nvirA_, occA * no_nvirA_);
 
-    C_DGEMM('N', 'N', occA * nvirA_ * occA, no_nvirA_, nvirA_, 1.0, tARAR[0], nvirA_, no_CA_[0], no_nvirA_, 0.0,
-            tARAr[0], no_nvirA_);
+    C_DGEMM('N', 'N', occA * nvirA_ * occA, no_nvirA_, nvirA_, 1.0, tARAR->get_pointer(), nvirA_, no_CA_[0], no_nvirA_, 0.0,
+            tARAr->get_pointer(), no_nvirA_);
 
-    free_block(tARAR);
-    double **tArAr = block_matrix(occA * no_nvirA_, occA * no_nvirA_);
+    auto tArAr = std::make_shared<Matrix>("tArAr", occA * no_nvirA_, occA * no_nvirA_);
+    double **tARArp = tARAr->pointer();
+    double **tArArp = tArAr->pointer();
 
     for (int a = 0; a < occA; a++) {
-        C_DGEMM('T', 'N', no_nvirA_, occA * no_nvirA_, nvirA_, 1.0, no_CA_[0], no_nvirA_, tARAr[a * nvirA_],
-                occA * no_nvirA_, 0.0, tArAr[a * no_nvirA_], occA * no_nvirA_);
+        C_DGEMM('T', 'N', no_nvirA_, occA * no_nvirA_, nvirA_, 1.0, no_CA_[0], no_nvirA_, tARArp[a * nvirA_],
+                occA * no_nvirA_, 0.0, tArArp[a * no_nvirA_], occA * no_nvirA_);
     }
 
-    free_block(tARAr);
-
-    psio_->write_entry(PSIF_SAPT_CCD, "T ARAR Natorb Amplitudes", (char *)tArAr[0],
+    psio_->write_entry(PSIF_SAPT_CCD, "T ARAR Natorb Amplitudes", (char *)tArAr->get_pointer(),
                        occA * no_nvirA_ * occA * no_nvirA_ * (size_t)sizeof(double));
 
-    free_block(tArAr);
+    auto tBSBS = std::make_shared<Matrix>("tBSBS", occB * nvirB_, occB * nvirB_);
 
-    double **tBSBS = block_matrix(occB * nvirB_, occB * nvirB_);
-
-    psio_->read_entry(PSIF_SAPT_CCD, "T BSBS Amplitudes", (char *)tBSBS[0],
+    psio_->read_entry(PSIF_SAPT_CCD, "T BSBS Amplitudes", (char *)tBSBS->get_pointer(),
                       occB * nvirB_ * occB * nvirB_ * (size_t)sizeof(double));
 
-    double **tBSBs = block_matrix(occB * nvirB_, occB * no_nvirB_);
+    auto tBSBs = std::make_shared<Matrix>("tBSBs", occB * nvirB_, occB * no_nvirB_);
 
-    C_DGEMM('N', 'N', occB * nvirB_ * occB, no_nvirB_, nvirB_, 1.0, tBSBS[0], nvirB_, no_CB_[0], no_nvirB_, 0.0,
-            tBSBs[0], no_nvirB_);
+    C_DGEMM('N', 'N', occB * nvirB_ * occB, no_nvirB_, nvirB_, 1.0, tBSBS->get_pointer(), nvirB_, no_CB_[0], no_nvirB_, 0.0,
+            tBSBs->get_pointer(), no_nvirB_);
 
-    free_block(tBSBS);
-    double **tBsBs = block_matrix(occB * no_nvirB_, occB * no_nvirB_);
+    auto tBsBs = std::make_shared<Matrix>("tBsBs", occB * no_nvirB_, occB * no_nvirB_);
+    double **tBSBsp = tBSBs->pointer();
+    double **tBsBsp = tBsBs->pointer();
 
     for (int b = 0; b < occB; b++) {
-        C_DGEMM('T', 'N', no_nvirB_, occB * no_nvirB_, nvirB_, 1.0, no_CB_[0], no_nvirB_, tBSBs[b * nvirB_],
-                occB * no_nvirB_, 0.0, tBsBs[b * no_nvirB_], occB * no_nvirB_);
+        C_DGEMM('T', 'N', no_nvirB_, occB * no_nvirB_, nvirB_, 1.0, no_CB_[0], no_nvirB_, tBSBsp[b * nvirB_],
+                occB * no_nvirB_, 0.0, tBsBsp[b * no_nvirB_], occB * no_nvirB_);
     }
 
-    free_block(tBSBs);
-
-    psio_->write_entry(PSIF_SAPT_CCD, "T BSBS Natorb Amplitudes", (char *)tBsBs[0],
+    psio_->write_entry(PSIF_SAPT_CCD, "T BSBS Natorb Amplitudes", (char *)tBsBs->get_pointer(),
                        occB * no_nvirB_ * occB * no_nvirB_ * (size_t)sizeof(double));
 
-    free_block(tBsBs);
+    auto tARBS = std::make_shared<Matrix>("tARBS", occA * nvirA_, occB * nvirB_);
 
-    double **tARBS = block_matrix(occA * nvirA_, occB * nvirB_);
-
-    psio_->read_entry(PSIF_SAPT_CCD, "T ARBS Amplitudes", (char *)tARBS[0],
+    psio_->read_entry(PSIF_SAPT_CCD, "T ARBS Amplitudes", (char *)tARBS->get_pointer(),
                       occA * nvirA_ * occB * nvirB_ * (size_t)sizeof(double));
 
-    double **tARBs = block_matrix(occA * nvirA_, occB * no_nvirB_);
+    auto tARBs = std::make_shared<Matrix>("tARBs", occA * nvirA_, occB * no_nvirB_);
 
-    C_DGEMM('N', 'N', occA * nvirA_ * occB, no_nvirB_, nvirB_, 1.0, tARBS[0], nvirB_, no_CB_[0], no_nvirB_, 0.0,
-            tARBs[0], no_nvirB_);
+    C_DGEMM('N', 'N', occA * nvirA_ * occB, no_nvirB_, nvirB_, 1.0, tARBS->get_pointer(), nvirB_, no_CB_[0], no_nvirB_, 0.0,
+            tARBs->get_pointer(), no_nvirB_);
 
-    free_block(tARBS);
-    double **tArBs = block_matrix(occA * no_nvirA_, occB * no_nvirB_);
+    auto tArBs = std::make_shared<Matrix>("tArBs", occA * no_nvirA_, occB * no_nvirB_);
+    double **tARBsp = tARBs->pointer();
+    double **tArBsp = tArBs->pointer();
 
     for (int a = 0; a < occA; a++) {
-        C_DGEMM('T', 'N', no_nvirA_, occB * no_nvirB_, nvirA_, 1.0, no_CA_[0], no_nvirA_, tARBs[a * nvirA_],
-                occB * no_nvirB_, 0.0, tArBs[a * no_nvirA_], occB * no_nvirB_);
+        C_DGEMM('T', 'N', no_nvirA_, occB * no_nvirB_, nvirA_, 1.0, no_CA_[0], no_nvirA_, tARBsp[a * nvirA_],
+                occB * no_nvirB_, 0.0, tArBsp[a * no_nvirA_], occB * no_nvirB_);
     }
 
-    free_block(tARBs);
-
-    double **tBsAr = block_matrix(occB * no_nvirB_, occA * no_nvirA_);
+    auto tBsAr = std::make_shared<Matrix>("tBsAr", occB * no_nvirB_, occA * no_nvirA_);
+    double **tBsArp = tBsAr->pointer();
 
     for (int a1 = 0, a1r1 = 0; a1 < occA; a1++) {
         for (int r1 = 0; r1 < no_nvirA_; r1++, a1r1++) {
             for (int b1 = 0, b1s1 = 0; b1 < occB; b1++) {
                 for (int s1 = 0; s1 < no_nvirB_; s1++, b1s1++) {
-                    tBsAr[b1s1][a1r1] = tArBs[a1r1][b1s1];
+                    tBsArp[b1s1][a1r1] = tArBsp[a1r1][b1s1];
                 }
             }
         }
     }
 
-    psio_->write_entry(PSIF_SAPT_CCD, "T ARBS Natorb Amplitudes", (char *)tArBs[0],
+    psio_->write_entry(PSIF_SAPT_CCD, "T ARBS Natorb Amplitudes", (char *)tArBs->get_pointer(),
                        occA * no_nvirA_ * occB * no_nvirB_ * (size_t)sizeof(double));
-    psio_->write_entry(PSIF_SAPT_CCD, "T BSAR Natorb Amplitudes", (char *)tBsAr[0],
+    psio_->write_entry(PSIF_SAPT_CCD, "T BSAR Natorb Amplitudes", (char *)tBsAr->get_pointer(),
                        occA * no_nvirA_ * occB * no_nvirB_ * (size_t)sizeof(double));
-
-    free_block(tArBs);
-    free_block(tBsAr);
 }
 
 double SAPT2p::disp220t(int AAfile, const char *AAlabel, const char *ARlabel, const char *RRlabel, int BBfile,
