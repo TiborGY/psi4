@@ -89,8 +89,7 @@ CPHFRHamiltonian::CPHFRHamiltonian(std::shared_ptr<JK> jk, SharedMatrix Caocc, S
     : RHamiltonian(jk, v), Caocc_(Caocc), Cavir_(Cavir), eps_aocc_(eps_aocc), eps_avir_(eps_avir) {}
 CPHFRHamiltonian::~CPHFRHamiltonian() {}
 void CPHFRHamiltonian::print_header() const {
-    HeaderPrinter header("CPHFRHamiltonian (by Rob Parrish)");
-    header.print_if(print_);
+    HeaderPrinter("CPHFRHamiltonian (by Rob Parrish)").print_if(print_);
 }
 std::shared_ptr<Vector> CPHFRHamiltonian::diagonal() {
     int nirrep = eps_aocc_->nirrep();

@@ -12,11 +12,32 @@ The `HeaderPrinter` class consolidates the 30+ duplicate `print_header()` implem
 
 ## Basic Usage
 
-### 1. Simple Arrow-Style Header (Default)
+### 1. Simplest Case - No Parameters
+
+For headers with no parameters, use the temporary object pattern:
 
 ```cpp
 #include "psi4/libpsi4util/header_printer.h"
 
+void MyClass::print_header() const {
+    HeaderPrinter("My Algorithm").print();
+}
+
+// Or with conditional printing:
+void MyClass::print_header() const {
+    HeaderPrinter("My Algorithm").print_if(print_);
+}
+```
+
+**Output:**
+```
+  ==> My Algorithm <==
+
+```
+
+### 2. Simple Arrow-Style Header with Parameters
+
+```cpp
 void MyClass::print_header() const {
     HeaderPrinter header("My Algorithm");
     header.add_parameter("Cutoff", cutoff_value_)
@@ -31,7 +52,7 @@ void MyClass::print_header() const {
     Cutoff:                  1.0E-12
 ```
 
-### 2. Header with Multiple Parameters
+### 3. Header with Multiple Parameters
 
 ```cpp
 void MyJK::print_header() const {
@@ -56,7 +77,7 @@ void MyJK::print_header() const {
     Cutoff:                 1.0E-12
 ```
 
-### 3. Box-Style Header with Authors (DF-MP2 Style)
+### 4. Box-Style Header with Authors (DF-MP2 Style)
 
 ```cpp
 void RDFMP2::print_header() {
@@ -110,6 +131,39 @@ header.set_custom_banner("*****************************",
                          "*****************************")
       .add_parameter("Value", 42)
       .print();
+```
+
+## Best Practices
+
+### When to Use Temporary Object Pattern
+
+Use the simplified form `HeaderPrinter("Title").print()` when:
+- No parameters need to be added
+- No conditional logic is required
+- The header is printed immediately
+
+**Good:**
+```cpp
+HeaderPrinter("SAP guess").print();
+HeaderPrinter("DFT Potential").print_if(print_ > 0);
+```
+
+### When to Use Named Variable
+
+Use a named variable when:
+- Adding parameters (especially with conditionals)
+- Building complex headers incrementally
+- The code is clearer with intermediate steps
+
+**Good:**
+```cpp
+HeaderPrinter header("CDJK: Cholesky-decomposed J/K Matrices");
+header.add_parameter("J tasked", do_J_)
+      .add_parameter("K tasked", do_K_);
+if (do_wK_) {
+    header.add_parameter("Omega", omega_);
+}
+header.print();
 ```
 
 ## Method Chaining

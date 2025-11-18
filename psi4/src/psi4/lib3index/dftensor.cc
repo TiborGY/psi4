@@ -122,8 +122,7 @@ void DFTensor::common_init() {
     build_metric();
 }
 void DFTensor::print_header() {
-    HeaderPrinter header("DF Tensor (by Rob Parrish)");
-    header.print();
+    HeaderPrinter("DF Tensor (by Rob Parrish)").print();
 
     outfile->Printf(" => Primary Basis Set <= \n\n");
     primary_->print_by_level("outfile", print_);

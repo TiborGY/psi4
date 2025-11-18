@@ -727,8 +727,7 @@ void VBase::set_grac_shift(double grac_shift) {
     }
 }
 void VBase::print_header() const {
-    HeaderPrinter header("DFT Potential");
-    header.print();
+    HeaderPrinter("DFT Potential").print();
     functional_->print("outfile", print_);
     grid_->print("outfile", print_);
     if (print_ > 2) grid_->print_details("outfile", print_);
@@ -1118,8 +1117,7 @@ void SAP::initialize() {
 }
 void SAP::finalize() { VBase::finalize(); }
 void SAP::print_header() const {
-    HeaderPrinter header("SAP guess");
-    header.print();
+    HeaderPrinter("SAP guess").print();
     grid_->print("outfile", print_);
     if (print_ > 2) grid_->print_details("outfile", print_);
 }
