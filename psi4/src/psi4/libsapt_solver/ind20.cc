@@ -537,15 +537,17 @@ void SAPT0::ind20rA_B_aio() {
 
     auto aio = std::make_shared<AIOHandler>(psio_);
 
-    double **C_p_AA[2];
-    double **C_p_RR[2];
+    std::shared_ptr<Matrix> C_p_AA[2];
+    double **C_p_AAp[2];
+    std::shared_ptr<Matrix> C_p_RR[2];
+    double **C_p_RRp[2];
 
     psio_address next_C_p_AA;
     psio_address next_C_p_RR;
 
     do {
         memset(&(Ax[0]), '\0', sizeof(double) * noccA_ * nvirA_);
-        memset(&(tAR_dump[0][0]), '\0', sizeof(double) * nthreads * noccA_ * nvirA_);
+        memset(tAR_dumpp[0], '\0', sizeof(double) * nthreads * noccA_ * nvirA_);
 
         Iterator AR_iter = get_iterator(mem_, &C_p_AR);
 
@@ -576,26 +578,30 @@ void SAPT0::ind20rA_B_aio() {
 
         C_p_AR.clear();
 
-        C_p_AA[0] = block_matrix(block_length, noccA_ * noccA_);
-        C_p_AA[1] = block_matrix(block_length, noccA_ * noccA_);
-        C_p_RR[0] = block_matrix(block_length, nvirA_ * (nvirA_ + 1) / 2);
-        C_p_RR[1] = block_matrix(block_length, nvirA_ * (nvirA_ + 1) / 2);
+        C_p_AA[0] = std::make_shared<Matrix>("C_p_AA[0]", block_length, noccA_ * noccA_);
+        C_p_AAp[0] = C_p_AA[0]->pointer();
+        C_p_AA[1] = std::make_shared<Matrix>("C_p_AA[1]", block_length, noccA_ * noccA_);
+        C_p_AAp[1] = C_p_AA[1]->pointer();
+        C_p_RR[0] = std::make_shared<Matrix>("C_p_RR[0]", block_length, nvirA_ * (nvirA_ + 1) / 2);
+        C_p_RRp[0] = C_p_RR[0]->pointer();
+        C_p_RR[1] = std::make_shared<Matrix>("C_p_RR[1]", block_length, nvirA_ * (nvirA_ + 1) / 2);
+        C_p_RRp[1] = C_p_RR[1]->pointer();
 
         next_C_p_AA = PSIO_ZERO;
         next_C_p_RR = PSIO_ZERO;
 
-        psio_->read(PSIF_SAPT_AA_DF_INTS, "AA RI Integrals", (char *)&(C_p_AA[0][0][0]),
+        psio_->read(PSIF_SAPT_AA_DF_INTS, "AA RI Integrals", (char *)C_p_AA[0]->get_pointer(),
                     sizeof(double) * block_length * noccA_ * noccA_, next_C_p_AA, &next_C_p_AA);
-        psio_->read(PSIF_SAPT_AA_DF_INTS, "RR RI Integrals", (char *)&(C_p_RR[0][0][0]),
+        psio_->read(PSIF_SAPT_AA_DF_INTS, "RR RI Integrals", (char *)C_p_RR[0]->get_pointer(),
                     sizeof(double) * block_length * nvirA_ * (nvirA_ + 1) / 2, next_C_p_RR, &next_C_p_RR);
 
         for (int i = 0; i < num_blocks; i++) {
             if (i < num_blocks - 1) {
                 int read_length = block_length;
                 if (i == num_blocks - 2 && ndf_ % block_length) read_length = ndf_ % block_length;
-                aio->read(PSIF_SAPT_AA_DF_INTS, "AA RI Integrals", (char *)&(C_p_AA[(i + 1) % 2][0][0]),
+                aio->read(PSIF_SAPT_AA_DF_INTS, "AA RI Integrals", (char *)C_p_AA[(i + 1) % 2]->get_pointer(),
                           sizeof(double) * read_length * noccA_ * noccA_, next_C_p_AA, &next_C_p_AA);
-                aio->read(PSIF_SAPT_AA_DF_INTS, "RR RI Integrals", (char *)&(C_p_RR[(i + 1) % 2][0][0]),
+                aio->read(PSIF_SAPT_AA_DF_INTS, "RR RI Integrals", (char *)C_p_RR[(i + 1) % 2]->get_pointer(),
                           sizeof(double) * read_length * nvirA_ * (nvirA_ + 1) / 2, next_C_p_RR, &next_C_p_RR);
             }
 
@@ -612,27 +618,22 @@ void SAPT0::ind20rA_B_aio() {
 
                     for (int a = 0, ab = 0; a < nvirA_; a++) {
                         for (int b = 0; b <= a; b++) {
-                            xRR[rank][a * nvirA_ + b] = C_p_RR[i % 2][j][ab];
-                            xRR[rank][b * nvirA_ + a] = C_p_RR[i % 2][j][ab++];
+                            xRRp[rank][a * nvirA_ + b] = C_p_RRp[i % 2][j][ab];
+                            xRRp[rank][b * nvirA_ + a] = C_p_RRp[i % 2][j][ab++];
                         }
                     }
 
-                    C_DGEMM('N', 'N', noccA_, nvirA_, nvirA_, 1.0, tAR_old, nvirA_, &(xRR[rank][0]), nvirA_, 0.0,
-                            xAR[rank], nvirA_);
-                    C_DGEMM('N', 'N', noccA_, nvirA_, noccA_, 1.0, &(C_p_AA[i % 2][j][0]), noccA_, xAR[rank], nvirA_,
-                            1.0, tAR_dump[rank], nvirA_);
+                    C_DGEMM('N', 'N', noccA_, nvirA_, nvirA_, 1.0, tAR_old, nvirA_, &(xRRp[rank][0]), nvirA_, 0.0,
+                            xARp[rank], nvirA_);
+                    C_DGEMM('N', 'N', noccA_, nvirA_, noccA_, 1.0, &(C_p_AAp[i % 2][j][0]), noccA_, xARp[rank], nvirA_,
+                            1.0, tAR_dumpp[rank], nvirA_);
                 }
             }
 
             if (i < num_blocks - 1) aio->synchronize();
         }
 
-        free_block(C_p_AA[0]);
-        free_block(C_p_AA[1]);
-        free_block(C_p_RR[0]);
-        free_block(C_p_RR[1]);
-
-        for (int n = 0; n < nthreads; n++) C_DAXPY(noccA_ * nvirA_, 1.0, tAR_dump[n], 1, Ax, 1);
+        for (int n = 0; n < nthreads; n++) C_DAXPY(noccA_ * nvirA_, 1.0, tAR_dumpp[n], 1, Ax, 1);
 
         for (int a = 0, ar = 0; a < noccA_; a++) {
             for (int r = 0; r < nvirA_; r++, ar++) {
@@ -759,15 +760,17 @@ void SAPT0::ind20rB_A_aio() {
 
     auto aio = std::make_shared<AIOHandler>(psio_);
 
-    double **C_p_BB[2];
-    double **C_p_SS[2];
+    std::shared_ptr<Matrix> C_p_BB[2];
+    double **C_p_BBp[2];
+    std::shared_ptr<Matrix> C_p_SS[2];
+    double **C_p_SSp[2];
 
     psio_address next_C_p_BB;
     psio_address next_C_p_SS;
 
     do {
         memset(&(Ax[0]), '\0', sizeof(double) * noccB_ * nvirB_);
-        memset(&(tBS_dump[0][0]), '\0', sizeof(double) * nthreads * noccB_ * nvirB_);
+        memset(tBS_dumpp[0], '\0', sizeof(double) * nthreads * noccB_ * nvirB_);
 
         Iterator BS_iter = get_iterator(mem_, &C_p_BS);
 
@@ -798,26 +801,30 @@ void SAPT0::ind20rB_A_aio() {
 
         C_p_BS.clear();
 
-        C_p_BB[0] = block_matrix(block_length, noccB_ * noccB_);
-        C_p_BB[1] = block_matrix(block_length, noccB_ * noccB_);
-        C_p_SS[0] = block_matrix(block_length, nvirB_ * (nvirB_ + 1) / 2);
-        C_p_SS[1] = block_matrix(block_length, nvirB_ * (nvirB_ + 1) / 2);
+        C_p_BB[0] = std::make_shared<Matrix>("C_p_BB[0]", block_length, noccB_ * noccB_);
+        C_p_BBp[0] = C_p_BB[0]->pointer();
+        C_p_BB[1] = std::make_shared<Matrix>("C_p_BB[1]", block_length, noccB_ * noccB_);
+        C_p_BBp[1] = C_p_BB[1]->pointer();
+        C_p_SS[0] = std::make_shared<Matrix>("C_p_SS[0]", block_length, nvirB_ * (nvirB_ + 1) / 2);
+        C_p_SSp[0] = C_p_SS[0]->pointer();
+        C_p_SS[1] = std::make_shared<Matrix>("C_p_SS[1]", block_length, nvirB_ * (nvirB_ + 1) / 2);
+        C_p_SSp[1] = C_p_SS[1]->pointer();
 
         next_C_p_BB = PSIO_ZERO;
         next_C_p_SS = PSIO_ZERO;
 
-        psio_->read(PSIF_SAPT_BB_DF_INTS, "BB RI Integrals", (char *)&(C_p_BB[0][0][0]),
+        psio_->read(PSIF_SAPT_BB_DF_INTS, "BB RI Integrals", (char *)C_p_BB[0]->get_pointer(),
                     sizeof(double) * block_length * noccB_ * noccB_, next_C_p_BB, &next_C_p_BB);
-        psio_->read(PSIF_SAPT_BB_DF_INTS, "SS RI Integrals", (char *)&(C_p_SS[0][0][0]),
+        psio_->read(PSIF_SAPT_BB_DF_INTS, "SS RI Integrals", (char *)C_p_SS[0]->get_pointer(),
                     sizeof(double) * block_length * nvirB_ * (nvirB_ + 1) / 2, next_C_p_SS, &next_C_p_SS);
 
         for (int i = 0; i < num_blocks; i++) {
             if (i < num_blocks - 1) {
                 int read_length = block_length;
                 if (i == num_blocks - 2 && ndf_ % block_length) read_length = ndf_ % block_length;
-                aio->read(PSIF_SAPT_BB_DF_INTS, "BB RI Integrals", (char *)&(C_p_BB[(i + 1) % 2][0][0]),
+                aio->read(PSIF_SAPT_BB_DF_INTS, "BB RI Integrals", (char *)C_p_BB[(i + 1) % 2]->get_pointer(),
                           sizeof(double) * read_length * noccB_ * noccB_, next_C_p_BB, &next_C_p_BB);
-                aio->read(PSIF_SAPT_BB_DF_INTS, "SS RI Integrals", (char *)&(C_p_SS[(i + 1) % 2][0][0]),
+                aio->read(PSIF_SAPT_BB_DF_INTS, "SS RI Integrals", (char *)C_p_SS[(i + 1) % 2]->get_pointer(),
                           sizeof(double) * read_length * nvirB_ * (nvirB_ + 1) / 2, next_C_p_SS, &next_C_p_SS);
             }
 
@@ -834,27 +841,22 @@ void SAPT0::ind20rB_A_aio() {
 
                     for (int a = 0, ab = 0; a < nvirB_; a++) {
                         for (int b = 0; b <= a; b++) {
-                            xSS[rank][a * nvirB_ + b] = C_p_SS[i % 2][j][ab];
-                            xSS[rank][b * nvirB_ + a] = C_p_SS[i % 2][j][ab++];
+                            xSSp[rank][a * nvirB_ + b] = C_p_SSp[i % 2][j][ab];
+                            xSSp[rank][b * nvirB_ + a] = C_p_SSp[i % 2][j][ab++];
                         }
                     }
 
-                    C_DGEMM('N', 'N', noccB_, nvirB_, nvirB_, 1.0, tBS_old, nvirB_, &(xSS[rank][0]), nvirB_, 0.0,
-                            xBS[rank], nvirB_);
-                    C_DGEMM('N', 'N', noccB_, nvirB_, noccB_, 1.0, &(C_p_BB[i % 2][j][0]), noccB_, xBS[rank], nvirB_,
-                            1.0, tBS_dump[rank], nvirB_);
+                    C_DGEMM('N', 'N', noccB_, nvirB_, nvirB_, 1.0, tBS_old, nvirB_, &(xSSp[rank][0]), nvirB_, 0.0,
+                            xBSp[rank], nvirB_);
+                    C_DGEMM('N', 'N', noccB_, nvirB_, noccB_, 1.0, &(C_p_BBp[i % 2][j][0]), noccB_, xBSp[rank], nvirB_,
+                            1.0, tBS_dumpp[rank], nvirB_);
                 }
             }
 
             if (i < num_blocks - 1) aio->synchronize();
         }
 
-        free_block(C_p_BB[0]);
-        free_block(C_p_BB[1]);
-        free_block(C_p_SS[0]);
-        free_block(C_p_SS[1]);
-
-        for (int n = 0; n < nthreads; n++) C_DAXPY(noccB_ * nvirB_, 1.0, tBS_dump[n], 1, Ax, 1);
+        for (int n = 0; n < nthreads; n++) C_DAXPY(noccB_ * nvirB_, 1.0, tBS_dumpp[n], 1, Ax, 1);
 
         for (int b = 0, bs = 0; b < noccB_; b++) {
             for (int s = 0; s < nvirB_; s++, bs++) {
