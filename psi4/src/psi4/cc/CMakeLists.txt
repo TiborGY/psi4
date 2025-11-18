@@ -22,6 +22,7 @@ list(APPEND _Clang_debug_flags
 target_sources(cc
   PRIVATE
   amps.cc
+  ccwave.cc
   )
 target_compile_options(cc
   PRIVATE

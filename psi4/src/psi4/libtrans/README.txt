@@ -751,17 +751,32 @@ Then custom implementation may be justified. But:
 3. Consider contributing optimizations back to libtrans
 
 
-Half-Transformations for Specialized Algorithms:
-------------------------------------------------
-Some algorithms (e.g., AO-based RI-MP2, Laplace transform methods) need
-MO-basis on one side, AO on the other.
+Partial Back-Transformations (MO → AO):
+---------------------------------------
+Some specialized AO-basis algorithms need to:
+1. Start with MO quantities (T2 amplitudes, Lambda)
+2. Partially transform to mixed MO/AO format: (ij|ab) → (ij|pq)
+3. Contract with AO integrals
+4. Back-transform to MO: (ij|pq) → (ij|cd)
 
-libtrans provides first_half and second_half methods, but if you need
-very specific intermediate formats, custom code may be clearer.
+This workflow is fundamentally different from libtrans, which transforms
+AO integrals → MO integrals (forward only).
 
-However, ccenergy/halftrans.cc, cclambda/halftrans.cc, and
-dct/half_transform.cc show that similar needs might still benefit from
-consolidation into libtrans. Evaluate carefully!
+See instead:
+• psi4/src/psi4/cc/ccwave.h - CCEnergyWavefunction::halftrans()
+  Transforms last two indices of dpdbuf4 between MO and AO bases
+
+Used by:
+• ccenergy/BT2_AO.cc - AO-basis algorithm for CCSD(T) (abcd) contribution
+• cclambda/BL2_AO.cc - AO-basis algorithm for Lambda equations
+
+These are NOT redundant with libtrans - they serve different algorithmic needs.
+
+Key differences:
+  libtrans:   (AO|AO) → (MO|AO) → (MO|MO) [full forward transform]
+  halftrans:  (MO|MO) ↔ (MO|AO) [partial bidirectional for algorithms]
+
+Do not attempt to replace halftrans with libtrans - the use cases are distinct.
 
 ================================================================================
 

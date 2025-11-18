@@ -53,7 +53,6 @@ target_sources(cc
     ${CMAKE_CURRENT_SOURCE_DIR}/form_df_ints.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/get_moinfo.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/get_params.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/halftrans.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/init_amps.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/lmp2.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/local.cc

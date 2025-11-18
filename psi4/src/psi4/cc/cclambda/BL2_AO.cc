@@ -50,9 +50,6 @@
 namespace psi {
 namespace cclambda {
 
-void halftrans(dpdbuf4 *Buf1, int dpdnum1, dpdbuf4 *Buf2, int dpdnum2, double ***C, int nirreps, int **mo_row,
-               int **so_row, int *mospi, int *sospi, int type, double alpha, double beta);
-
 void AO_contribute(int p, int q, int r, int s, double value, dpdbuf4 *tau1_AO, dpdbuf4 *tau2_AO, int anti);
 
 void BL2_AO(int L_irr) {
@@ -101,7 +98,7 @@ void BL2_AO(int L_irr) {
     dpd_set_default(0);
     global_dpd_->buf4_init(&tau, PSIF_CC_LAMBDA, L_irr, 0, 5, 2, 7, 0, "LIJAB");
 
-    halftrans(&tau, 0, &tau1_AO, 1, C, nirreps, T2_cd_row_start, T2_pq_row_start, virtpi, orbspi, 0, 1.0, 0.0);
+    halftrans(&tau, 0, &tau1_AO, 1, C, C, nirreps, T2_cd_row_start, T2_pq_row_start, virtpi, virtpi, orbspi, 0, 1.0, 0.0);
 
     global_dpd_->buf4_close(&tau);
     global_dpd_->buf4_close(&tau1_AO);
@@ -168,7 +165,7 @@ void BL2_AO(int L_irr) {
     dpd_set_default(0);
     global_dpd_->buf4_init(&t2, PSIF_CC_LAMBDA, L_irr, 0, 5, 2, 7, 0, "New LIJAB");
 
-    halftrans(&t2, 0, &tau2_AO, 1, C, nirreps, T2_cd_row_start, T2_pq_row_start, virtpi, orbspi, 1, 0.5, 1.0);
+    halftrans(&t2, 0, &tau2_AO, 1, C, C, nirreps, T2_cd_row_start, T2_pq_row_start, virtpi, virtpi, orbspi, 1, 0.5, 1.0);
 
     global_dpd_->buf4_close(&t2);
     global_dpd_->buf4_close(&tau2_AO);
@@ -182,7 +179,7 @@ void BL2_AO(int L_irr) {
     dpd_set_default(0);
     global_dpd_->buf4_init(&tau, PSIF_CC_LAMBDA, L_irr, 0, 5, 2, 7, 0, "Lijab");
 
-    halftrans(&tau, 0, &tau1_AO, 1, C, nirreps, T2_cd_row_start, T2_pq_row_start, virtpi, orbspi, 0, 1.0, 0.0);
+    halftrans(&tau, 0, &tau1_AO, 1, C, C, nirreps, T2_cd_row_start, T2_pq_row_start, virtpi, virtpi, orbspi, 0, 1.0, 0.0);
 
     global_dpd_->buf4_close(&tau);
     global_dpd_->buf4_close(&tau1_AO);
@@ -249,7 +246,7 @@ void BL2_AO(int L_irr) {
     dpd_set_default(0);
     global_dpd_->buf4_init(&t2, PSIF_CC_LAMBDA, L_irr, 0, 5, 2, 7, 0, "New Lijab");
 
-    halftrans(&t2, 0, &tau2_AO, 1, C, nirreps, T2_cd_row_start, T2_pq_row_start, virtpi, orbspi, 1, 0.5, 1.0);
+    halftrans(&t2, 0, &tau2_AO, 1, C, C, nirreps, T2_cd_row_start, T2_pq_row_start, virtpi, virtpi, orbspi, 1, 0.5, 1.0);
 
     global_dpd_->buf4_close(&t2);
     global_dpd_->buf4_close(&tau2_AO);
@@ -263,7 +260,7 @@ void BL2_AO(int L_irr) {
     dpd_set_default(0);
     global_dpd_->buf4_init(&tau, PSIF_CC_LAMBDA, L_irr, 0, 5, 0, 5, 0, "LIjAb");
 
-    halftrans(&tau, 0, &tau1_AO, 1, C, nirreps, T2_cd_row_start, T2_pq_row_start, virtpi, orbspi, 0, 1.0, 0.0);
+    halftrans(&tau, 0, &tau1_AO, 1, C, C, nirreps, T2_cd_row_start, T2_pq_row_start, virtpi, virtpi, orbspi, 0, 1.0, 0.0);
 
     global_dpd_->buf4_close(&tau);
     global_dpd_->buf4_close(&tau1_AO);
@@ -330,7 +327,7 @@ void BL2_AO(int L_irr) {
     dpd_set_default(0);
     global_dpd_->buf4_init(&t2, PSIF_CC_LAMBDA, L_irr, 0, 5, 0, 5, 0, "New LIjAb");
 
-    halftrans(&t2, 0, &tau2_AO, 1, C, nirreps, T2_cd_row_start, T2_pq_row_start, virtpi, orbspi, 1, 1.0, 1.0);
+    halftrans(&t2, 0, &tau2_AO, 1, C, C, nirreps, T2_cd_row_start, T2_pq_row_start, virtpi, virtpi, orbspi, 1, 1.0, 1.0);
 
     global_dpd_->buf4_close(&t2);
     global_dpd_->buf4_close(&tau2_AO);
