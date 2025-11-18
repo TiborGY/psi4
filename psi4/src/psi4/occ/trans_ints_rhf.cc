@@ -28,6 +28,7 @@
 
 #include "psi4/libqt/qt.h"
 #include "psi4/libtrans/integraltransform.h"
+#include "psi4/libtrans/integral_permutations.h"
 #include "psi4/libiwl/iwl.hpp"
 #include "psi4/psifiles.h"
 #include "psi4/libmints/matrix.h"
@@ -96,34 +97,38 @@ void OCCWave::trans_ints_rhf() {
     // Build MO ints
     timer_on("Sort chem -> phys");
     timer_on("Sort (OO|OO) -> <OO|OO>");
-    // (OO|OO) -> <OO|OO>
+    // (OO|OO) -> <OO|OO> using chemist-to-physicist notation
     global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,O]"), ID("[O,O]"), ID("[O>=O]+"), ID("[O>=O]+"), 0,
                            "MO Ints (OO|OO)");
-    global_dpd_->buf4_sort(&K, PSIF_LIBTRANS_DPD, prqs, ID("[O,O]"), ID("[O,O]"), "MO Ints <OO|OO>");
+    libtrans::IntegralPermutations::chemist_to_physicist(&K, PSIF_LIBTRANS_DPD, ID("[O,O]"), ID("[O,O]"),
+                                                          "MO Ints <OO|OO>");
     global_dpd_->buf4_close(&K);
     timer_off("Sort (OO|OO) -> <OO|OO>");
 
     timer_on("Sort (OO|OV) -> <OO|OV>");
-    // (OO|OV) -> <OO|OV>
+    // (OO|OV) -> <OO|OV> using chemist-to-physicist notation
     global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,O]"), ID("[O,V]"), ID("[O>=O]+"), ID("[O,V]"), 0,
                            "MO Ints (OO|OV)");
-    global_dpd_->buf4_sort(&K, PSIF_LIBTRANS_DPD, prqs, ID("[O,O]"), ID("[O,V]"), "MO Ints <OO|OV>");
+    libtrans::IntegralPermutations::chemist_to_physicist(&K, PSIF_LIBTRANS_DPD, ID("[O,O]"), ID("[O,V]"),
+                                                          "MO Ints <OO|OV>");
     global_dpd_->buf4_close(&K);
     timer_off("Sort (OO|OV) -> <OO|OV>");
 
     timer_on("Sort (OV|OV) -> <OO|VV>");
-    // (OV|OV) -> <OO|VV>
+    // (OV|OV) -> <OO|VV> using chemist-to-physicist notation
     global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), 0,
                            "MO Ints (OV|OV)");
-    global_dpd_->buf4_sort(&K, PSIF_LIBTRANS_DPD, prqs, ID("[O,O]"), ID("[V,V]"), "MO Ints <OO|VV>");
+    libtrans::IntegralPermutations::chemist_to_physicist(&K, PSIF_LIBTRANS_DPD, ID("[O,O]"), ID("[V,V]"),
+                                                          "MO Ints <OO|VV>");
     global_dpd_->buf4_close(&K);
     timer_off("Sort (OV|OV) -> <OO|VV>");
 
     timer_on("Sort (OO|VV) -> <OV|OV>");
-    // (OO|VV) -> <OV|OV>
+    // (OO|VV) -> <OV|OV> using chemist-to-physicist notation
     global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,O]"), ID("[V,V]"), ID("[O>=O]+"), ID("[V>=V]+"), 0,
                            "MO Ints (OO|VV)");
-    global_dpd_->buf4_sort(&K, PSIF_LIBTRANS_DPD, prqs, ID("[O,V]"), ID("[O,V]"), "MO Ints <OV|OV>");
+    libtrans::IntegralPermutations::chemist_to_physicist(&K, PSIF_LIBTRANS_DPD, ID("[O,V]"), ID("[O,V]"),
+                                                          "MO Ints <OV|OV>");
     global_dpd_->buf4_close(&K);
     timer_off("Sort (OO|VV) -> <OV|OV>");
 
@@ -136,17 +141,19 @@ void OCCWave::trans_ints_rhf() {
     else {
         global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[V,V]"), ID("[O,V]"), ID("[V>=V]+"), 0,
                                "MO Ints (OV|VV)");
-        global_dpd_->buf4_sort(&K, PSIF_LIBTRANS_DPD, prqs, ID("[O,V]"), ID("[V,V]"), "MO Ints <OV|VV>");
+        libtrans::IntegralPermutations::chemist_to_physicist(&K, PSIF_LIBTRANS_DPD, ID("[O,V]"), ID("[V,V]"),
+                                                              "MO Ints <OV|VV>");
         global_dpd_->buf4_close(&K);
     }
     timer_off("Sort (OV|VV) -> <OV|VV>");
 
     if (wfn_type_ != "OMP2" || ekt_ea_ == "TRUE") {
         timer_on("Sort (VV|VV) -> <VV|VV>");
-        // (VV|VV) -> <VV|VV>
+        // (VV|VV) -> <VV|VV> using chemist-to-physicist notation
         global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[V,V]"), ID("[V,V]"), ID("[V>=V]+"), ID("[V>=V]+"), 0,
                                "MO Ints (VV|VV)");
-        global_dpd_->buf4_sort(&K, PSIF_LIBTRANS_DPD, prqs, ID("[V,V]"), ID("[V,V]"), "MO Ints <VV|VV>");
+        libtrans::IntegralPermutations::chemist_to_physicist(&K, PSIF_LIBTRANS_DPD, ID("[V,V]"), ID("[V,V]"),
+                                                              "MO Ints <VV|VV>");
         global_dpd_->buf4_close(&K);
         timer_off("Sort (VV|VV) -> <VV|VV>");
     }  // end if (wfn_type_ == "OMP3" || wfn_type_ == "OCEPA") {
