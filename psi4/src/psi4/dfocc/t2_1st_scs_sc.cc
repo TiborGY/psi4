@@ -40,9 +40,6 @@ void DFOCC::t2_1st_scs_sc() {
     SharedTensor2d K, L, M;
     timer_on("1st-order T2");
     if (reference_ == "RESTRICTED") {
-        // Example: init from file
-        // Array2d *temp = new Array2d(psio_, PSIF_DFOCC_INTS, "(ia|jb)", naoccA, navirA, naoccA, navirA);
-
         // Build amplitudes in Mulliken order
         t2p_1 = std::make_shared<Tensor2d>("T2_1 (ia|jb)", naoccA, navirA, naoccA, navirA);
         K = std::make_shared<Tensor2d>("DF_BASIS_CC MO Ints (IA|JB)", naoccA, navirA, naoccA, navirA);

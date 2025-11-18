@@ -26,6 +26,19 @@
  * @END LICENSE
  */
 
+/** @file arrays.h
+ *  @brief Lightweight array classes for basic linear algebra operations
+ *
+ *  This library provides simple, efficient array classes (Array1d, Array2d, Array3d,
+ *  Array1i, Array2i, Array3i) for basic array manipulation and linear algebra.
+ *
+ *  Primary users: occ module
+ *
+ *  Note: For advanced tensor algebra with parallelization in dfocc, see dfocc/tensors.h
+ *  which provides Tensor1d/2d/3d classes with SharedPtr semantics and OpenMP support.
+ *  Both implementations coexist by design to serve different architectural needs.
+ */
+
 #ifndef _psi_src_lib_libarray_arrays_h_
 #define _psi_src_lib_libarray_arrays_h_
 

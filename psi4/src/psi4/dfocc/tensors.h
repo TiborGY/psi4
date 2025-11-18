@@ -26,6 +26,21 @@
  * @END LICENSE
  */
 
+/** @file tensors.h
+ *  @brief Advanced tensor classes for quantum chemistry computations
+ *
+ *  This library provides sophisticated tensor classes (Tensor1d, Tensor2d, Tensor3d,
+ *  Tensor1i, Tensor2i, Tensor3i) with SharedPtr semantics, OpenMP parallelization,
+ *  and extensive tensor contraction operations for coupled-cluster theory.
+ *
+ *  Primary users: dfocc module
+ *
+ *  Note: For basic array operations without parallelization (used in occ module),
+ *  see psi4/libarray/arrays.h which provides Array1d/2d/3d classes.
+ *  Both implementations coexist by design - this file provides advanced features
+ *  needed for density-fitted orbital-optimized coupled-cluster methods.
+ */
+
 #ifndef _dfocc_tensors_h_
 #define _dfocc_tensors_h_
 
