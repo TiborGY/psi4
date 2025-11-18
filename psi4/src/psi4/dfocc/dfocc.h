@@ -146,8 +146,6 @@ class DFOCC : public Wavefunction {
     void ekt_ip();
     void oo_diis();
 
-    void diis(int dimvec, SharedTensor2d &vecs, SharedTensor2d &errvecs, SharedTensor1d &vec_new,
-              SharedTensor1d &errvec_new);
     void sigma_rhf(SharedTensor1d &sigma, SharedTensor1d &p_vec);
     void sigma_uhf(SharedTensor1d &sigma_A, SharedTensor1d &sigma_B, SharedTensor1d &p_vecA, SharedTensor1d &p_vecB);
     void sigma_orb_resp_rhf(SharedTensor1d &sigma, SharedTensor1d &p_vec);

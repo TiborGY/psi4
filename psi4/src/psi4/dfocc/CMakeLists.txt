@@ -52,7 +52,6 @@ list(APPEND sources
   dfocc.cc
   diagonal_mohess_oo.cc
   diagonal_mohess_vo.cc
-  diis.cc
   effective_mograd.cc
   ekt.cc
   fock.cc
