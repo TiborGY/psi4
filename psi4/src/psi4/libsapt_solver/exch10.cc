@@ -60,7 +60,7 @@ void SAPT0::exch10_s2() {
     A_p_AB.clear();
     B_p_AB.clear();
 
-    double *Ap_diag = init_array(ndf_ + 3);
+    std::vector<double> Ap_diag(ndf_ + 3);
     auto X_AA = std::make_shared<Matrix>("X_AA", nthreads, noccA_ * noccA_);
     double **X_AAp = X_AA->pointer();
 
@@ -89,14 +89,14 @@ void SAPT0::exch10_s2() {
         off += E2_iter.curr_size;
     }
 
-    ex2 += 2.0 * C_DDOT(ndf_ + 3, Ap_diag, 1, diagAA_, 1);
+    ex2 += 2.0 * C_DDOT(ndf_ + 3, Ap_diag.data(), 1, diagAA_, 1);
 
-    free(Ap_diag);
+    // Automatic cleanup via std::vector
 
     A_p_AA.clear();
     B_p_AB.done();
 
-    double *Bp_diag = init_array(ndf_ + 3);
+    std::vector<double> Bp_diag(ndf_ + 3);
     auto X_BB = std::make_shared<Matrix>("X_BB", nthreads, noccB_ * noccB_);
     double **X_BBp = X_BB->pointer();
 
@@ -125,9 +125,9 @@ void SAPT0::exch10_s2() {
         off += E3_iter.curr_size;
     }
 
-    ex3 += 2.0 * C_DDOT(ndf_ + 3, Bp_diag, 1, diagBB_, 1);
+    ex3 += 2.0 * C_DDOT(ndf_ + 3, Bp_diag.data(), 1, diagBB_, 1);
 
-    free(Bp_diag);
+    // Automatic cleanup via std::vector
 
     A_p_AB.done();
     B_p_BB.clear();
@@ -146,17 +146,17 @@ void SAPT0::exch10_s2() {
     double **A_ABp = A_AB->pointer();
     auto B_AB = std::make_shared<Matrix>("B_AB", nthreads, noccA_ * noccB_);
     double **B_ABp = B_AB->pointer();
-    double *AA_ints = init_array(ndf_ + 3);
-    double *BB_ints = init_array(ndf_ + 3);
+    std::vector<double> AA_ints(ndf_ + 3);
+    std::vector<double> BB_ints(ndf_ + 3);
     Iterator E4_iter = get_iterator(mem_, &A_p_AA, &B_p_BB);
 
     for (int i = 0, off = 0; i < E4_iter.num_blocks; i++) {
         read_block(&E4_iter, &A_p_AA, &B_p_BB);
 
         C_DGEMV('n', E4_iter.curr_size, noccA_ * noccA_, 1.0, &(A_p_AA.B_p_[0][0]), noccA_ * noccA_, S_AA->get_pointer(), 1, 0.0,
-                &(AA_ints[off]), 1);
+                &(AA_ints.data()[off]), 1);
         C_DGEMV('n', E4_iter.curr_size, noccB_ * noccB_, 1.0, &(B_p_BB.B_p_[0][0]), noccB_ * noccB_, S_BB->get_pointer(), 1, 0.0,
-                &(BB_ints[off]), 1);
+                &(BB_ints.data()[off]), 1);
 
 #pragma omp parallel
         {
@@ -176,14 +176,13 @@ void SAPT0::exch10_s2() {
         off += E4_iter.curr_size;
     }
 
-    ex4 = 2.0 * C_DDOT(ndf_ + 3, BB_ints, 1, diagAA_, 1);
-    ex5 = 2.0 * C_DDOT(ndf_ + 3, AA_ints, 1, diagBB_, 1);
+    ex4 = 2.0 * C_DDOT(ndf_ + 3, BB_ints.data(), 1, diagAA_, 1);
+    ex5 = 2.0 * C_DDOT(ndf_ + 3, AA_ints.data(), 1, diagBB_, 1);
 
     A_p_AA.done();
     B_p_BB.done();
 
-    free(AA_ints);
-    free(BB_ints);
+    // Automatic cleanup via std::vector
 
     e_exch10_s2_ = -2.0 * (ex1 + ex2 + ex3 - ex4 - ex5 + ex6);
 
@@ -262,10 +261,10 @@ void SAPT0::exch10() {
         }
     }
 
-    double *W = init_array(ndf_ + 3);
-    double *X = init_array(ndf_ + 3);
-    double *Y = init_array(ndf_ + 3);
-    double *Z = init_array(ndf_ + 3);
+    std::vector<double> W(ndf_ + 3);
+    std::vector<double> X(ndf_ + 3);
+    std::vector<double> Y(ndf_ + 3);
+    std::vector<double> Z(ndf_ + 3);
 
     auto xAB = std::make_shared<Matrix>("xAB", nthreads, noccA_ * noccB_);
     double **xABp = xAB->pointer();
@@ -284,10 +283,10 @@ void SAPT0::exch10() {
         ex1 += C_DDOT((long int)E1_iter.curr_size * noccA_ * noccB_, A_p_AB.B_p_[0], 1, B_p_AB.B_p_[0], 1);
 
         C_DGEMV('n', E1_iter.curr_size, noccA_ * noccB_, 1.0, &(B_p_AB.B_p_[0][0]), noccA_ * noccB_, pAB->get_pointer(), 1, 0.0,
-                &(W[off]), 1);
+                &(W.data()[off]), 1);
 
         C_DGEMV('n', E1_iter.curr_size, noccA_ * noccB_, 1.0, &(A_p_AB.B_p_[0][0]), noccA_ * noccB_, pAB->get_pointer(), 1, 0.0,
-                &(X[off]), 1);
+                &(X.data()[off]), 1);
 
 #pragma omp parallel
         {
@@ -313,9 +312,9 @@ void SAPT0::exch10() {
         off += E1_iter.curr_size;
     }
 
-    ex4 -= 2.0 * C_DDOT(ndf_ + 3, W, 1, diagAA_, 1);
-    ex5 -= 2.0 * C_DDOT(ndf_ + 3, X, 1, diagBB_, 1);
-    ex9 -= 2.0 * C_DDOT(ndf_ + 3, W, 1, X, 1);
+    ex4 -= 2.0 * C_DDOT(ndf_ + 3, W.data(), 1, diagAA_, 1);
+    ex5 -= 2.0 * C_DDOT(ndf_ + 3, X.data(), 1, diagBB_, 1);
+    ex9 -= 2.0 * C_DDOT(ndf_ + 3, W.data(), 1, X.data(), 1);
 
     A_p_AB.clear();
     B_p_AB.clear();
@@ -326,10 +325,10 @@ void SAPT0::exch10() {
         read_block(&E2_iter, &A_p_AA, &B_p_BB);
 
         C_DGEMV('n', E2_iter.curr_size, noccA_ * noccA_, 1.0, &(A_p_AA.B_p_[0][0]), noccA_ * noccA_, pAA->get_pointer(), 1, 0.0,
-                &(Y[off]), 1);
+                &(Y.data()[off]), 1);
 
         C_DGEMV('n', E2_iter.curr_size, noccB_ * noccB_, 1.0, &(B_p_BB.B_p_[0][0]), noccB_ * noccB_, pBB->get_pointer(), 1, 0.0,
-                &(Z[off]), 1);
+                &(Z.data()[off]), 1);
 
 #pragma omp parallel
         {
@@ -349,11 +348,11 @@ void SAPT0::exch10() {
         off += E2_iter.curr_size;
     }
 
-    ex2 += -2.0 * C_DDOT(ndf_ + 3, Y, 1, diagBB_, 1);
-    ex3 += -2.0 * C_DDOT(ndf_ + 3, Z, 1, diagAA_, 1);
-    ex6 += -2.0 * C_DDOT(ndf_ + 3, X, 1, Z, 1);
-    ex7 += -2.0 * C_DDOT(ndf_ + 3, W, 1, Y, 1);
-    ex8 += -2.0 * C_DDOT(ndf_ + 3, Y, 1, Z, 1);
+    ex2 += -2.0 * C_DDOT(ndf_ + 3, Y.data(), 1, diagBB_, 1);
+    ex3 += -2.0 * C_DDOT(ndf_ + 3, Z.data(), 1, diagAA_, 1);
+    ex6 += -2.0 * C_DDOT(ndf_ + 3, X.data(), 1, Z.data(), 1);
+    ex7 += -2.0 * C_DDOT(ndf_ + 3, W.data(), 1, Y.data(), 1);
+    ex8 += -2.0 * C_DDOT(ndf_ + 3, Y.data(), 1, Z.data(), 1);
 
     A_p_AA.clear();
     B_p_BB.clear();
@@ -412,10 +411,7 @@ void SAPT0::exch10() {
     A_p_AB.done();
     B_p_BB.done();
 
-    free(W);
-    free(X);
-    free(Y);
-    free(Z);
+    // Automatic cleanup via std::vector
 
     e_exch10_ = -2.0 * (ex1 + ex2 + ex3 + ex4 + ex5 + ex6 + ex7 + ex8 + ex9);
 
@@ -459,14 +455,14 @@ void SAPT2::exch10_s2() {
                 &(C_p_AAp[a * noccA_][0]), ndf_ + 3);
     }
 
-    double *Ap_diag = init_array(ndf_ + 3);
+    std::vector<double> Ap_diag(ndf_ + 3);
 
     for (int a = 0; a < noccA_; a++) {
         int aa = a * noccA_ + a;
-        C_DAXPY(ndf_ + 3, 1.0, &(C_p_AAp[aa][0]), 1, &(Ap_diag[0]), 1);
+        C_DAXPY(ndf_ + 3, 1.0, &(C_p_AAp[aa][0]), 1, Ap_diag.data(), 1);
     }
 
-    ex2 = 2.0 * C_DDOT(ndf_ + 3, diagAA_, 1, Ap_diag, 1);
+    ex2 = 2.0 * C_DDOT(ndf_ + 3, diagAA_, 1, Ap_diag.data(), 1);
     ex2 -= C_DDOT((long int)noccA_ * noccA_ * (ndf_ + 3), &(B_p_AA[0][0]), 1, C_p_AA->get_pointer(), 1);
 
     auto C_p_BB = std::make_shared<Matrix>("C_p_BB", noccB_ * noccB_, ndf_ + 3);
@@ -475,14 +471,14 @@ void SAPT2::exch10_s2() {
     C_DGEMM('T', 'N', noccB_, noccB_ * (ndf_ + 3), noccA_, 1.0, X_AB->get_pointer(), noccB_, &(B_p_AB[0][0]),
             noccB_ * (ndf_ + 3), 0.0, C_p_BB->get_pointer(), noccB_ * (ndf_ + 3));
 
-    double *Bp_diag = init_array(ndf_ + 3);
+    std::vector<double> Bp_diag(ndf_ + 3);
 
     for (int b = 0; b < noccB_; b++) {
         int bb = b * noccB_ + b;
-        C_DAXPY(ndf_ + 3, 1.0, &(C_p_BBp[bb][0]), 1, &(Bp_diag[0]), 1);
+        C_DAXPY(ndf_ + 3, 1.0, &(C_p_BBp[bb][0]), 1, Bp_diag.data(), 1);
     }
 
-    ex3 = 2.0 * C_DDOT(ndf_ + 3, diagBB_, 1, Bp_diag, 1);
+    ex3 = 2.0 * C_DDOT(ndf_ + 3, diagBB_, 1, Bp_diag.data(), 1);
     ex3 -= C_DDOT((long int)noccB_ * noccB_ * (ndf_ + 3), &(B_p_BB[0][0]), 1, C_p_BB->get_pointer(), 1);
 
     auto X_AA = std::make_shared<Matrix>("X_AA", noccA_, noccA_);
@@ -495,16 +491,15 @@ void SAPT2::exch10_s2() {
     C_DGEMM('T', 'N', noccB_, noccB_, noccA_, 1.0, X_AB->get_pointer(), noccB_, X_AB->get_pointer(), noccB_, 0.0, X_BB->get_pointer(),
             noccB_);
 
-    C_DGEMV('t', noccB_ * noccB_, ndf_ + 3, 1.0, &(B_p_BB[0][0]), ndf_ + 3, X_BB->get_pointer(), 1, 0.0, Bp_diag, 1);
+    C_DGEMV('t', noccB_ * noccB_, ndf_ + 3, 1.0, &(B_p_BB[0][0]), ndf_ + 3, X_BB->get_pointer(), 1, 0.0, Bp_diag.data(), 1);
 
-    ex4 = 2.0 * C_DDOT(ndf_ + 3, diagAA_, 1, Bp_diag, 1);
+    ex4 = 2.0 * C_DDOT(ndf_ + 3, diagAA_, 1, Bp_diag.data(), 1);
 
-    C_DGEMV('t', noccA_ * noccA_, ndf_ + 3, 1.0, &(B_p_AA[0][0]), ndf_ + 3, X_AA->get_pointer(), 1, 0.0, Ap_diag, 1);
+    C_DGEMV('t', noccA_ * noccA_, ndf_ + 3, 1.0, &(B_p_AA[0][0]), ndf_ + 3, X_AA->get_pointer(), 1, 0.0, Ap_diag.data(), 1);
 
-    ex5 = 2.0 * C_DDOT(ndf_ + 3, diagBB_, 1, Ap_diag, 1);
+    ex5 = 2.0 * C_DDOT(ndf_ + 3, diagBB_, 1, Ap_diag.data(), 1);
 
-    free(Ap_diag);
-    free(Bp_diag);
+    // Automatic cleanup via std::vector
 
     for (int a = 0; a < noccA_; a++) {
         C_DGEMM('T', 'N', noccB_, ndf_ + 3, noccA_, 1.0, X_AB->get_pointer(), noccB_, &(B_p_AA[a * noccA_][0]), ndf_ + 3, 0.0,
@@ -603,11 +598,11 @@ void SAPT2::exch10() {
 
     ex1 = -2.0 * C_DDOT((long int)noccA_ * noccB_ * (ndf_ + 3), &(B_p_AB[0][0]), 1, &(A_p_AB[0][0]), 1);
 
-    double *X = init_array(ndf_ + 3);
+    std::vector<double> X(ndf_ + 3);
 
-    C_DGEMV('t', noccA_ * noccA_, ndf_ + 3, 1.0, &(B_p_AA[0][0]), ndf_ + 3, pAA->get_pointer(), 1, 0.0, X, 1);
+    C_DGEMV('t', noccA_ * noccA_, ndf_ + 3, 1.0, &(B_p_AA[0][0]), ndf_ + 3, pAA->get_pointer(), 1, 0.0, X.data(), 1);
 
-    ex2 = 4.0 * C_DDOT(ndf_ + 3, diagBB_, 1, X, 1);
+    ex2 = 4.0 * C_DDOT(ndf_ + 3, diagBB_, 1, X.data(), 1);
 
     auto C_p_AB = std::make_shared<Matrix>("C_p_AB", noccA_ * noccB_, ndf_ + 3);
     double **C_p_ABp = C_p_AB->pointer();
@@ -617,9 +612,9 @@ void SAPT2::exch10() {
 
     ex2 -= 2.0 * C_DDOT((long int)noccA_ * noccB_ * (ndf_ + 3), A_p_AB[0], 1, C_p_AB->get_pointer(), 1);
 
-    C_DGEMV('t', noccB_ * noccB_, ndf_ + 3, 1.0, &(A_p_BB[0][0]), ndf_ + 3, pBB->get_pointer(), 1, 0.0, X, 1);
+    C_DGEMV('t', noccB_ * noccB_, ndf_ + 3, 1.0, &(A_p_BB[0][0]), ndf_ + 3, pBB->get_pointer(), 1, 0.0, X.data(), 1);
 
-    ex3 = 4.0 * C_DDOT(ndf_ + 3, diagAA_, 1, X, 1);
+    ex3 = 4.0 * C_DDOT(ndf_ + 3, diagAA_, 1, X.data(), 1);
 
     for (int a1 = 0; a1 < noccA_; a1++) {
         C_DGEMM('N', 'N', noccB_, ndf_ + 3, noccB_, 1.0, pBB->get_pointer(), noccB_, A_p_AB[a1 * noccB_], ndf_ + 3, 0.0,
@@ -628,9 +623,9 @@ void SAPT2::exch10() {
 
     ex3 -= 2.0 * C_DDOT((long int)noccA_ * noccB_ * (ndf_ + 3), B_p_AB[0], 1, C_p_AB->get_pointer(), 1);
 
-    C_DGEMV('t', noccA_ * noccB_, ndf_ + 3, 1.0, &(A_p_AB[0][0]), ndf_ + 3, pAB->get_pointer(), 1, 0.0, X, 1);
+    C_DGEMV('t', noccA_ * noccB_, ndf_ + 3, 1.0, &(A_p_AB[0][0]), ndf_ + 3, pAB->get_pointer(), 1, 0.0, X.data(), 1);
 
-    ex4 = 4.0 * C_DDOT(ndf_ + 3, diagAA_, 1, X, 1);
+    ex4 = 4.0 * C_DDOT(ndf_ + 3, diagAA_, 1, X.data(), 1);
 
     for (int a1 = 0; a1 < noccA_; a1++) {
         C_DGEMM('T', 'N', noccB_, ndf_ + 3, noccA_, 1.0, pAB->get_pointer(), noccB_, B_p_AA[a1 * noccA_], ndf_ + 3, 0.0,
@@ -639,9 +634,9 @@ void SAPT2::exch10() {
 
     ex4 -= 2.0 * C_DDOT((long int)noccA_ * noccB_ * (ndf_ + 3), A_p_AB[0], 1, C_p_AB->get_pointer(), 1);
 
-    C_DGEMV('t', noccA_ * noccB_, ndf_ + 3, 1.0, &(B_p_AB[0][0]), ndf_ + 3, pAB->get_pointer(), 1, 0.0, X, 1);
+    C_DGEMV('t', noccA_ * noccB_, ndf_ + 3, 1.0, &(B_p_AB[0][0]), ndf_ + 3, pAB->get_pointer(), 1, 0.0, X.data(), 1);
 
-    ex5 = 4.0 * C_DDOT(ndf_ + 3, diagBB_, 1, X, 1);
+    ex5 = 4.0 * C_DDOT(ndf_ + 3, diagBB_, 1, X.data(), 1);
 
     auto C_p_BB = std::make_shared<Matrix>("C_p_BB", noccB_ * noccB_, ndf_ + 3);
 
@@ -650,13 +645,13 @@ void SAPT2::exch10() {
 
     ex5 -= 2.0 * C_DDOT((long int)noccB_ * noccB_ * (ndf_ + 3), A_p_BB[0], 1, C_p_BB->get_pointer(), 1);
 
-    double *Y = init_array(ndf_ + 3);
+    std::vector<double> Y(ndf_ + 3);
 
-    C_DGEMV('t', noccA_ * noccB_, ndf_ + 3, 1.0, &(B_p_AB[0][0]), ndf_ + 3, pAB->get_pointer(), 1, 0.0, X, 1);
+    C_DGEMV('t', noccA_ * noccB_, ndf_ + 3, 1.0, &(B_p_AB[0][0]), ndf_ + 3, pAB->get_pointer(), 1, 0.0, X.data(), 1);
 
-    C_DGEMV('t', noccB_ * noccB_, ndf_ + 3, 1.0, &(A_p_BB[0][0]), ndf_ + 3, pBB->get_pointer(), 1, 0.0, Y, 1);
+    C_DGEMV('t', noccB_ * noccB_, ndf_ + 3, 1.0, &(A_p_BB[0][0]), ndf_ + 3, pBB->get_pointer(), 1, 0.0, Y.data(), 1);
 
-    ex6 = 4.0 * C_DDOT((ndf_ + 3), X, 1, Y, 1);
+    ex6 = 4.0 * C_DDOT((ndf_ + 3), X.data(), 1, Y.data(), 1);
 
     auto D_p_AB = std::make_shared<Matrix>("D_p_AB", noccA_ * noccB_, ndf_ + 3);
     double **D_p_ABp = D_p_AB->pointer();
@@ -673,11 +668,11 @@ void SAPT2::exch10() {
 
     ex6 -= 2.0 * C_DDOT((long int)noccA_ * noccB_ * (ndf_ + 3), B_p_AB[0], 1, E_p_AB->get_pointer(), 1);
 
-    C_DGEMV('t', noccA_ * noccB_, ndf_ + 3, 1.0, &(A_p_AB[0][0]), ndf_ + 3, pAB->get_pointer(), 1, 0.0, X, 1);
+    C_DGEMV('t', noccA_ * noccB_, ndf_ + 3, 1.0, &(A_p_AB[0][0]), ndf_ + 3, pAB->get_pointer(), 1, 0.0, X.data(), 1);
 
-    C_DGEMV('t', noccA_ * noccA_, ndf_ + 3, 1.0, &(B_p_AA[0][0]), ndf_ + 3, pAA->get_pointer(), 1, 0.0, Y, 1);
+    C_DGEMV('t', noccA_ * noccA_, ndf_ + 3, 1.0, &(B_p_AA[0][0]), ndf_ + 3, pAA->get_pointer(), 1, 0.0, Y.data(), 1);
 
-    ex7 = 4.0 * C_DDOT((ndf_ + 3), X, 1, Y, 1);
+    ex7 = 4.0 * C_DDOT((ndf_ + 3), X.data(), 1, Y.data(), 1);
 
     for (int a1 = 0; a1 < noccA_; a1++) {
         C_DGEMM('T', 'N', noccB_, ndf_ + 3, noccA_, 1.0, pAB->get_pointer(), noccB_, B_p_AA[a1 * noccA_], ndf_ + 3, 0.0,
@@ -689,11 +684,11 @@ void SAPT2::exch10() {
 
     ex7 -= 2.0 * C_DDOT((long int)noccA_ * noccB_ * (ndf_ + 3), A_p_AB[0], 1, E_p_AB->get_pointer(), 1);
 
-    C_DGEMV('t', noccA_ * noccA_, ndf_ + 3, 1.0, &(B_p_AA[0][0]), ndf_ + 3, pAA->get_pointer(), 1, 0.0, X, 1);
+    C_DGEMV('t', noccA_ * noccA_, ndf_ + 3, 1.0, &(B_p_AA[0][0]), ndf_ + 3, pAA->get_pointer(), 1, 0.0, X.data(), 1);
 
-    C_DGEMV('t', noccB_ * noccB_, ndf_ + 3, 1.0, &(A_p_BB[0][0]), ndf_ + 3, pBB->get_pointer(), 1, 0.0, Y, 1);
+    C_DGEMV('t', noccB_ * noccB_, ndf_ + 3, 1.0, &(A_p_BB[0][0]), ndf_ + 3, pBB->get_pointer(), 1, 0.0, Y.data(), 1);
 
-    ex8 = 4.0 * C_DDOT((ndf_ + 3), X, 1, Y, 1);
+    ex8 = 4.0 * C_DDOT((ndf_ + 3), X.data(), 1, Y.data(), 1);
 
     C_DGEMM('N', 'N', noccA_, noccB_ * (ndf_ + 3), noccA_, 1.0, pAA->get_pointer(), noccA_, B_p_AB[0], noccB_ * (ndf_ + 3), 0.0,
             D_p_AB->get_pointer(), noccB_ * (ndf_ + 3));
@@ -705,11 +700,11 @@ void SAPT2::exch10() {
 
     ex8 -= 2.0 * C_DDOT((long int)noccA_ * noccB_ * (ndf_ + 3), A_p_AB[0], 1, E_p_AB->get_pointer(), 1);
 
-    C_DGEMV('t', noccA_ * noccB_, ndf_ + 3, 1.0, &(A_p_AB[0][0]), ndf_ + 3, pAB->get_pointer(), 1, 0.0, X, 1);
+    C_DGEMV('t', noccA_ * noccB_, ndf_ + 3, 1.0, &(A_p_AB[0][0]), ndf_ + 3, pAB->get_pointer(), 1, 0.0, X.data(), 1);
 
-    C_DGEMV('t', noccA_ * noccB_, ndf_ + 3, 1.0, &(B_p_AB[0][0]), ndf_ + 3, pAB->get_pointer(), 1, 0.0, Y, 1);
+    C_DGEMV('t', noccA_ * noccB_, ndf_ + 3, 1.0, &(B_p_AB[0][0]), ndf_ + 3, pAB->get_pointer(), 1, 0.0, Y.data(), 1);
 
-    ex9 = 4.0 * C_DDOT(ndf_ + 3, X, 1, Y, 1);
+    ex9 = 4.0 * C_DDOT(ndf_ + 3, X.data(), 1, Y.data(), 1);
 
     C_DGEMM('N', 'N', noccA_, noccB_ * (ndf_ + 3), noccB_, 1.0, pAB->get_pointer(), noccB_, A_p_BB[0], noccB_ * (ndf_ + 3), 0.0,
             D_p_AB->get_pointer(), noccB_ * (ndf_ + 3));
@@ -721,8 +716,7 @@ void SAPT2::exch10() {
 
     ex9 -= 2.0 * C_DDOT((long int)noccA_ * noccB_ * (ndf_ + 3), D_p_AB->get_pointer(), 1, E_p_AB->get_pointer(), 1);
 
-    free(X);
-    free(Y);
+    // Automatic cleanup via std::vector
 
     free_block(B_p_AA);
     free_block(A_p_BB);
