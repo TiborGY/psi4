@@ -31,33 +31,30 @@
 
 /*! \file
     \ingroup ccresponse
-    \brief Enter brief description of file here
+    \brief Parameters for ccresponse module
 */
 #include <string>
+#include "psi4/cc/common/CCParams.h"
+
 namespace psi {
 namespace ccresponse {
 
-struct Params {
-    int print;          /* Output level control */
-    long int memory;    /* Memory available (in bytes) */
-    int cachelev;       /* cacheing level for libdpd */
-    int ref;            /* reference determinant (0=RHF, 1=ROHF, 2=UHF) */
-    double *omega;      /* energy of applied field (a.u) for dynamic polarizabilities */
-    int nomega;         /* number of field energies desired */
-    int maxiter;        /* maximum number of iterations allowed to converge perturbed amp eqns. */
-    double convergence; /* convergence criterion for perturbed wfns */
-    int restart;        /* boolean for allowing a restart from on-disk amps */
-    int diis;           /* boolean for using DIIS extrapolation */
-    std::string prop;   /* user-selected property */
-    int local;          /* boolean for simluation of local correlation */
-    int analyze;
-    int dertype;
-    std::string gauge; /* choice of gauge for optical rotation */
-    std::string wfn;
-    std::string abcd;
-    int num_amps;
-    int sekino; /* Sekino-Bartlett size-extensive model-III */
-    int linear; /* Bartlett size-extensive (?) linear model */
+/*! \brief Parameters for ccresponse module
+ *
+ * Extends common CC parameters with ccresponse-specific parameters.
+ */
+struct Params : public psi::cc::common::CCParams {
+    // Module-specific parameters
+    double *omega;         // Energy of applied field (a.u) for dynamic polarizabilities
+    int nomega;            // Number of field energies desired
+    std::string prop;      // User-selected property
+    int analyze;           // Analysis flag
+    std::string gauge;     // Choice of gauge for optical rotation
+    int sekino;            // Sekino-Bartlett size-extensive model-III
+    int linear;            // Bartlett size-extensive (?) linear model
+
+    Params() : CCParams(), omega(nullptr), nomega(0), prop(""), analyze(0),
+               gauge("LENGTH"), sekino(0), linear(0) {}
 };
 
 }  // namespace ccresponse

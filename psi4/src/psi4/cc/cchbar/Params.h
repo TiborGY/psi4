@@ -28,9 +28,10 @@
 
 /*! \file
     \ingroup CCHBAR
-    \brief Enter brief description of file here
+    \brief Parameters for cchbar module
 */
 #include <string>
+#include "psi4/cc/common/CCParams.h"
 
 #ifndef CCHBAR_PARAMS_H
 #define CCHBAR_PARAMS_H
@@ -38,16 +39,16 @@
 namespace psi {
 namespace cchbar {
 
-/* Input parameters for cchbar */
-struct Params {
-    long int memory;
-    int cachelev;
-    int ref;
-    int print;
-    std::string wfn;
-    int dertype;
-    int Tamplitude;
-    int wabei_lowdisk;
+/*! \brief Parameters for cchbar module
+ *
+ * Extends common CC parameters with cchbar-specific parameters.
+ */
+struct Params : public psi::cc::common::CCParams {
+    // Module-specific parameters
+    int Tamplitude;      // Compute T-amplitude equation matrix elements
+    int wabei_lowdisk;   // Use minimal-disk algorithm for Wabei (very slow)
+
+    Params() : CCParams(), Tamplitude(0), wabei_lowdisk(0) {}
 };
 
 }  // namespace cchbar
