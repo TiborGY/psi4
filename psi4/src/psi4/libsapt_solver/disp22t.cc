@@ -254,25 +254,27 @@ double SAPT2p::disp220t(int AAfile, const char *AAlabel, const char *ARlabel, co
     size_t aoccA = noccA - foccA;
     size_t aoccB = noccB - foccB;
 
-    double **wARAR = block_matrix(aoccA * nvirA, aoccA * nvirA);
+    auto wARAR = std::make_shared<Matrix>("wARAR", aoccA * nvirA, aoccA * nvirA);
+    double **wARARp = wARAR->pointer();
 
-    double **vbsAA = block_matrix(aoccA, aoccA);
-    double **vbsRR = block_matrix(nvirA, nvirA);
-    double **vARAA = block_matrix(aoccA * nvirA, aoccA * aoccA);
+    auto vbsAA = std::make_shared<Matrix>("vbsAA", aoccA, aoccA);
+    auto vbsRR = std::make_shared<Matrix>("vbsRR", nvirA, nvirA);
+    auto vARAA = std::make_shared<Matrix>("vARAA", aoccA * nvirA, aoccA * aoccA);
 
-    double **tARAR = block_matrix(aoccA * nvirA, aoccA * nvirA);
-    psio_->read_entry(ampfile, tlabel, (char *)tARAR[0], sizeof(double) * aoccA * nvirA * aoccA * nvirA);
-    double **tbsAR = block_matrix(aoccA, nvirA);
+    auto tARAR = std::make_shared<Matrix>("tARAR", aoccA * nvirA, aoccA * nvirA);
+    psio_->read_entry(ampfile, tlabel, (char *)tARAR->get_pointer(), sizeof(double) * aoccA * nvirA * aoccA * nvirA);
+    auto tbsAR = std::make_shared<Matrix>("tbsAR", aoccA, nvirA);
+    double **tbsARp = tbsAR->pointer();
 
     double **B_p_AA = get_DF_ints(AAfile, AAlabel, foccA, noccA, foccA, noccA);
     double **B_p_AR = get_DF_ints(AAfile, ARlabel, foccA, noccA, 0, nvirA);
     double **B_p_RR = get_DF_ints(AAfile, RRlabel, 0, nvirA, 0, nvirA);
     double *B_p_bs = init_array(ndf_ + 3);
 
-    double **C_p_AR = block_matrix(aoccA * nvirA, ndf_ + 3);
+    auto C_p_AR = std::make_shared<Matrix>("C_p_AR", aoccA * nvirA, ndf_ + 3);
 
     C_DGEMM('N', 'T', aoccA * nvirA, aoccA * aoccA, ndf_ + 3, 1.0, &(B_p_AR[0][0]), ndf_ + 3, &(B_p_AA[0][0]), ndf_ + 3,
-            0.0, &(vARAA[0][0]), aoccA * aoccA);
+            0.0, vARAA->get_pointer(), aoccA * aoccA);
 
     std::time_t start = std::time(nullptr);
     std::time_t stop;
@@ -283,28 +285,28 @@ double SAPT2p::disp220t(int AAfile, const char *AAlabel, const char *ARlabel, co
                 PSIO_ZERO, sizeof(double) * (b + foccB) * nvirB * (ndf_ + 3) + sizeof(double) * s * (ndf_ + 3));
             psio_->read(BBfile, BSlabel, (char *)&(B_p_bs[0]), sizeof(double) * (ndf_ + 3), next_DF_BS, &next_DF_BS);
 
-            C_DGEMV('n', aoccA * nvirA, ndf_ + 3, 1.0, B_p_AR[0], ndf_ + 3, B_p_bs, 1, 0.0, tbsAR[0], 1);
+            C_DGEMV('n', aoccA * nvirA, ndf_ + 3, 1.0, B_p_AR[0], ndf_ + 3, B_p_bs, 1, 0.0, tbsAR->get_pointer(), 1);
 
             for (int a = 0, ar = 0; a < aoccA; a++) {
                 for (int r = 0; r < nvirA; r++, ar++) {
                     double denom = evalsA[a + foccA] + evalsB[b + foccB] - evalsA[r + noccA] - evalsB[s + noccB];
-                    tbsAR[a][r] /= denom;
+                    tbsARp[a][r] /= denom;
                 }
             }
 
-            C_DGEMV('n', aoccA * aoccA, ndf_ + 3, 1.0, B_p_AA[0], ndf_ + 3, B_p_bs, 1, 0.0, vbsAA[0], 1);
-            C_DGEMV('n', nvirA * nvirA, ndf_ + 3, 1.0, B_p_RR[0], ndf_ + 3, B_p_bs, 1, 0.0, vbsRR[0], 1);
+            C_DGEMV('n', aoccA * aoccA, ndf_ + 3, 1.0, B_p_AA[0], ndf_ + 3, B_p_bs, 1, 0.0, vbsAA->get_pointer(), 1);
+            C_DGEMV('n', nvirA * nvirA, ndf_ + 3, 1.0, B_p_RR[0], ndf_ + 3, B_p_bs, 1, 0.0, vbsRR->get_pointer(), 1);
 
-            C_DGEMM('N', 'N', aoccA * nvirA * aoccA, nvirA, nvirA, 1.0, &(tARAR[0][0]), nvirA, &(vbsRR[0][0]), nvirA,
-                    0.0, &(wARAR[0][0]), nvirA);
-            C_DGEMM('N', 'N', aoccA, nvirA * aoccA * nvirA, aoccA, -1.0, &(vbsAA[0][0]), aoccA, &(tARAR[0][0]),
-                    nvirA * aoccA * nvirA, 1.0, &(wARAR[0][0]), nvirA * aoccA * nvirA);
-            C_DGEMM('N', 'N', aoccA * nvirA * aoccA, nvirA, aoccA, -1.0, &(vARAA[0][0]), aoccA, &(tbsAR[0][0]), nvirA,
-                    1.0, &(wARAR[0][0]), nvirA);
-            C_DGEMM('N', 'N', aoccA, nvirA * (ndf_ + 3), nvirA, 1.0, &(tbsAR[0][0]), nvirA, &(B_p_RR[0][0]),
-                    nvirA * (ndf_ + 3), 0.0, &(C_p_AR[0][0]), nvirA * (ndf_ + 3));
-            C_DGEMM('N', 'T', aoccA * nvirA, aoccA * nvirA, ndf_ + 3, 1.0, &(B_p_AR[0][0]), ndf_ + 3, &(C_p_AR[0][0]),
-                    ndf_ + 3, 1.0, &(wARAR[0][0]), aoccA * nvirA);
+            C_DGEMM('N', 'N', aoccA * nvirA * aoccA, nvirA, nvirA, 1.0, tARAR->get_pointer(), nvirA, vbsRR->get_pointer(), nvirA,
+                    0.0, wARAR->get_pointer(), nvirA);
+            C_DGEMM('N', 'N', aoccA, nvirA * aoccA * nvirA, aoccA, -1.0, vbsAA->get_pointer(), aoccA, tARAR->get_pointer(),
+                    nvirA * aoccA * nvirA, 1.0, wARAR->get_pointer(), nvirA * aoccA * nvirA);
+            C_DGEMM('N', 'N', aoccA * nvirA * aoccA, nvirA, aoccA, -1.0, vARAA->get_pointer(), aoccA, tbsAR->get_pointer(), nvirA,
+                    1.0, wARAR->get_pointer(), nvirA);
+            C_DGEMM('N', 'N', aoccA, nvirA * (ndf_ + 3), nvirA, 1.0, tbsAR->get_pointer(), nvirA, &(B_p_RR[0][0]),
+                    nvirA * (ndf_ + 3), 0.0, C_p_AR->get_pointer(), nvirA * (ndf_ + 3));
+            C_DGEMM('N', 'T', aoccA * nvirA, aoccA * nvirA, ndf_ + 3, 1.0, &(B_p_AR[0][0]), ndf_ + 3, C_p_AR->get_pointer(),
+                    ndf_ + 3, 1.0, wARAR->get_pointer(), aoccA * nvirA);
 
             for (int a = 0, ar = 0; a < aoccA; a++) {
                 for (int r = 0; r < nvirA; r++, ar++) {
@@ -312,8 +314,8 @@ double SAPT2p::disp220t(int AAfile, const char *AAlabel, const char *ARlabel, co
                         for (int r1 = 0; r1 < nvirA; r1++, a1r1++) {
                             int a1r = a1 * nvirA + r;
                             int ar1 = a * nvirA + r1;
-                            double tval1 = wARAR[ar][a1r1] + wARAR[a1r1][ar];
-                            double tval2 = wARAR[a1r][ar1] + wARAR[ar1][a1r];
+                            double tval1 = wARARp[ar][a1r1] + wARARp[a1r1][ar];
+                            double tval2 = wARARp[a1r][ar1] + wARARp[ar1][a1r];
                             double denom = evalsA[a + foccA] + evalsA[a1 + foccA] + evalsB[b + foccB] -
                                            evalsA[r + noccA] - evalsA[r1 + noccA] - evalsB[s + noccB];
                             energy += ((4.0 * tval1 - 2.0 * tval2) * tval1) / denom;
@@ -329,16 +331,9 @@ double SAPT2p::disp220t(int AAfile, const char *AAlabel, const char *ARlabel, co
     }
 
     free(B_p_bs);
-    free_block(wARAR);
-    free_block(vbsAA);
-    free_block(vbsRR);
-    free_block(vARAA);
-    free_block(tARAR);
-    free_block(tbsAR);
     free_block(B_p_AA);
     free_block(B_p_AR);
     free_block(B_p_RR);
-    free_block(C_p_AR);
 
     return (energy);
 }
@@ -352,39 +347,45 @@ double SAPT2p::disp220tccd(int AAnum, const char *AA_label, int Rnum, const char
     noccA -= foccA;
     noccB -= foccB;
 
-    double **w_ARAR = block_matrix(noccA * nvirA, noccA * nvirA);
+    auto w_ARAR = std::make_shared<Matrix>("w_ARAR", noccA * nvirA, noccA * nvirA);
+    double **w_ARARp = w_ARAR->pointer();
 
-    double **v_bsAA = block_matrix(noccA, noccA);
-    double **v_bsRR = block_matrix(nvirA, nvirA);
-    double **v_ARAA = block_matrix(noccA * nvirA, noccA * noccA);
+    auto v_bsAA = std::make_shared<Matrix>("v_bsAA", noccA, noccA);
+    auto v_bsRR = std::make_shared<Matrix>("v_bsRR", nvirA, nvirA);
+    auto v_ARAA = std::make_shared<Matrix>("v_ARAA", noccA * nvirA, noccA * noccA);
 
     double **B_p_AA = get_DF_ints_nongimp(AAnum, AA_label, foccA, noccA + foccA, foccA, noccA + foccA);
     double **B_p_AR = get_DF_ints_nongimp(Rnum, AR_label, foccA, noccA + foccA, 0, nvirA);
     double **B_p_RR = get_DF_ints_nongimp(Rnum, RR_label, 0, nvirA, 0, nvirA);
     double *B_p_bs = init_array(ndf_);
 
-    double **t_bsAR = block_matrix(noccA, nvirA);
-    double **t_ARAR;
+    auto t_bsAR = std::make_shared<Matrix>("t_bsAR", noccA, nvirA);
+    double **t_bsARp = t_bsAR->pointer();
+    std::shared_ptr<Matrix> t_ARAR;
+    double **t_ARARp;
 
     psio_address next_ARAR;
 
     if (ampnum == PSIF_SAPT_CCD) {
-        t_ARAR = block_matrix(noccA * nvirA, noccA * nvirA);
-        psio_->read_entry(ampnum, tarar, (char *)t_ARAR[0], noccA * nvirA * noccA * nvirA * (size_t)sizeof(double));
+        t_ARAR = std::make_shared<Matrix>("t_ARAR", noccA * nvirA, noccA * nvirA);
+        psio_->read_entry(ampnum, tarar, (char *)t_ARAR->get_pointer(), noccA * nvirA * noccA * nvirA * (size_t)sizeof(double));
+        t_ARARp = t_ARAR->pointer();
     } else if (ampnum) {
-        t_ARAR = block_matrix(noccA * nvirA, noccA * nvirA);
+        t_ARAR = std::make_shared<Matrix>("t_ARAR", noccA * nvirA, noccA * nvirA);
+        t_ARARp = t_ARAR->pointer();
         for (int a = 0, ar = 0; a < noccA; a++) {
             for (int r = 0; r < nvirA; r++, ar++) {
                 next_ARAR = psio_get_address(
                     PSIO_ZERO, ((foccA * nvirA + ar) * (noccA + foccA) * nvirA + foccA * nvirA) * sizeof(double));
-                psio_->read(ampnum, tarar, (char *)t_ARAR[ar], noccA * nvirA * (size_t)sizeof(double), next_ARAR,
+                psio_->read(ampnum, tarar, (char *)t_ARARp[ar], noccA * nvirA * (size_t)sizeof(double), next_ARAR,
                             &next_ARAR);
             }
         }
     } else {
-        t_ARAR = block_matrix(noccA * nvirA, noccA * nvirA);
+        t_ARAR = std::make_shared<Matrix>("t_ARAR", noccA * nvirA, noccA * nvirA);
+        t_ARARp = t_ARAR->pointer();
         C_DGEMM('N', 'T', noccA * nvirA, noccA * nvirA, ndf_, 1.0, &(B_p_AR[0][0]), ndf_, &(B_p_AR[0][0]), ndf_, 0.0,
-                &(t_ARAR[0][0]), noccA * nvirA);
+                t_ARAR->get_pointer(), noccA * nvirA);
 
         for (int a = 0, ar = 0; a < noccA; a++) {
             for (int r = 0; r < nvirA; r++, ar++) {
@@ -392,17 +393,17 @@ double SAPT2p::disp220tccd(int AAnum, const char *AA_label, int Rnum, const char
                     for (int r1 = 0; r1 < nvirA; r1++, a1r1++) {
                         double denom = evalsA[a + foccA] + evalsA[a1 + foccA] - evalsA[r + noccA + foccA] -
                                        evalsA[r1 + noccA + foccA];
-                        t_ARAR[ar][a1r1] /= denom;
+                        t_ARARp[ar][a1r1] /= denom;
                     }
                 }
             }
         }
     }
 
-    double **C_p_AR = block_matrix(noccA * nvirA, ndf_);
+    auto C_p_AR = std::make_shared<Matrix>("C_p_AR", noccA * nvirA, ndf_);
 
     C_DGEMM('N', 'T', noccA * nvirA, noccA * noccA, ndf_, 1.0, &(B_p_AR[0][0]), ndf_, &(B_p_AA[0][0]), ndf_, 0.0,
-            &(v_ARAA[0][0]), noccA * noccA);
+            v_ARAA->get_pointer(), noccA * noccA);
 
     psio_address next_BSAR;
 
@@ -417,36 +418,36 @@ double SAPT2p::disp220tccd(int AAnum, const char *AA_label, int Rnum, const char
 
             if (ampnum == PSIF_SAPT_CCD) {
                 next_BSAR = psio_get_address(PSIO_ZERO, bs * noccA * nvirA * sizeof(double));
-                psio_->read(ampnum, tbsar, (char *)t_bsAR[0], sizeof(double) * noccA * nvirA, next_BSAR, &next_BSAR);
+                psio_->read(ampnum, tbsar, (char *)t_bsAR->get_pointer(), sizeof(double) * noccA * nvirA, next_BSAR, &next_BSAR);
             } else if (ampnum) {
                 next_BSAR = psio_get_address(
                     PSIO_ZERO, ((foccB * nvirB + bs) * (noccA + foccA) * nvirA + foccA * nvirA) * sizeof(double));
-                psio_->read(ampnum, tbsar, (char *)t_bsAR[0], sizeof(double) * noccA * nvirA, next_BSAR, &next_BSAR);
+                psio_->read(ampnum, tbsar, (char *)t_bsAR->get_pointer(), sizeof(double) * noccA * nvirA, next_BSAR, &next_BSAR);
             } else {
-                C_DGEMV('n', noccA * nvirA, ndf_, 1.0, B_p_AR[0], ndf_, B_p_bs, 1, 0.0, t_bsAR[0], 1);
+                C_DGEMV('n', noccA * nvirA, ndf_, 1.0, B_p_AR[0], ndf_, B_p_bs, 1, 0.0, t_bsAR->get_pointer(), 1);
 
                 for (int a = 0; a < noccA; a++) {
                     for (int r = 0; r < nvirA; r++) {
                         double denom = evalsA[a + foccA] + evalsB[b + foccB] - evalsA[r + noccA + foccA] -
                                        evalsB[s + noccB + foccB];
-                        t_bsAR[a][r] /= denom;
+                        t_bsARp[a][r] /= denom;
                     }
                 }
             }
 
-            C_DGEMV('n', noccA * noccA, ndf_, 1.0, B_p_AA[0], ndf_, B_p_bs, 1, 0.0, v_bsAA[0], 1);
-            C_DGEMV('n', nvirA * nvirA, ndf_, 1.0, B_p_RR[0], ndf_, B_p_bs, 1, 0.0, v_bsRR[0], 1);
+            C_DGEMV('n', noccA * noccA, ndf_, 1.0, B_p_AA[0], ndf_, B_p_bs, 1, 0.0, v_bsAA->get_pointer(), 1);
+            C_DGEMV('n', nvirA * nvirA, ndf_, 1.0, B_p_RR[0], ndf_, B_p_bs, 1, 0.0, v_bsRR->get_pointer(), 1);
 
-            C_DGEMM('N', 'N', noccA * nvirA * noccA, nvirA, nvirA, 1.0, &(t_ARAR[0][0]), nvirA, &(v_bsRR[0][0]), nvirA,
-                    0.0, &(w_ARAR[0][0]), nvirA);
-            C_DGEMM('N', 'N', noccA, nvirA * noccA * nvirA, noccA, -1.0, &(v_bsAA[0][0]), noccA, &(t_ARAR[0][0]),
-                    nvirA * noccA * nvirA, 1.0, &(w_ARAR[0][0]), nvirA * noccA * nvirA);
-            C_DGEMM('N', 'N', noccA * nvirA * noccA, nvirA, noccA, -1.0, &(v_ARAA[0][0]), noccA, &(t_bsAR[0][0]), nvirA,
-                    1.0, &(w_ARAR[0][0]), nvirA);
-            C_DGEMM('N', 'N', noccA, nvirA * ndf_, nvirA, 1.0, &(t_bsAR[0][0]), nvirA, &(B_p_RR[0][0]), nvirA * ndf_,
-                    0.0, &(C_p_AR[0][0]), nvirA * ndf_);
-            C_DGEMM('N', 'T', noccA * nvirA, noccA * nvirA, ndf_, 1.0, &(B_p_AR[0][0]), ndf_, &(C_p_AR[0][0]), ndf_,
-                    1.0, &(w_ARAR[0][0]), noccA * nvirA);
+            C_DGEMM('N', 'N', noccA * nvirA * noccA, nvirA, nvirA, 1.0, t_ARAR->get_pointer(), nvirA, v_bsRR->get_pointer(), nvirA,
+                    0.0, w_ARAR->get_pointer(), nvirA);
+            C_DGEMM('N', 'N', noccA, nvirA * noccA * nvirA, noccA, -1.0, v_bsAA->get_pointer(), noccA, t_ARAR->get_pointer(),
+                    nvirA * noccA * nvirA, 1.0, w_ARAR->get_pointer(), nvirA * noccA * nvirA);
+            C_DGEMM('N', 'N', noccA * nvirA * noccA, nvirA, noccA, -1.0, v_ARAA->get_pointer(), noccA, t_bsAR->get_pointer(), nvirA,
+                    1.0, w_ARAR->get_pointer(), nvirA);
+            C_DGEMM('N', 'N', noccA, nvirA * ndf_, nvirA, 1.0, t_bsAR->get_pointer(), nvirA, &(B_p_RR[0][0]), nvirA * ndf_,
+                    0.0, C_p_AR->get_pointer(), nvirA * ndf_);
+            C_DGEMM('N', 'T', noccA * nvirA, noccA * nvirA, ndf_, 1.0, &(B_p_AR[0][0]), ndf_, C_p_AR->get_pointer(), ndf_,
+                    1.0, w_ARAR->get_pointer(), noccA * nvirA);
 
             for (int a = 0, ar = 0; a < noccA; a++) {
                 for (int r = 0; r < nvirA; r++, ar++) {
@@ -454,8 +455,8 @@ double SAPT2p::disp220tccd(int AAnum, const char *AA_label, int Rnum, const char
                         for (int r1 = 0; r1 < nvirA; r1++, a1r1++) {
                             int a1r = a1 * nvirA + r;
                             int ar1 = a * nvirA + r1;
-                            double tval1 = w_ARAR[ar][a1r1] + w_ARAR[a1r1][ar];
-                            double tval2 = w_ARAR[a1r][ar1] + w_ARAR[ar1][a1r];
+                            double tval1 = w_ARARp[ar][a1r1] + w_ARARp[a1r1][ar];
+                            double tval2 = w_ARARp[a1r][ar1] + w_ARARp[ar1][a1r];
                             double denom = evalsA[a + foccA] + evalsA[a1 + foccA] + evalsB[b + foccB] -
                                            evalsA[r + noccA + foccA] - evalsA[r1 + noccA + foccA] -
                                            evalsB[s + noccB + foccB];
@@ -470,16 +471,9 @@ double SAPT2p::disp220tccd(int AAnum, const char *AA_label, int Rnum, const char
     }
 
     free(B_p_bs);
-    free_block(w_ARAR);
-    free_block(v_bsAA);
-    free_block(v_bsRR);
-    free_block(v_ARAA);
-    free_block(t_ARAR);
-    free_block(t_bsAR);
     free_block(B_p_AA);
     free_block(B_p_AR);
     free_block(B_p_RR);
-    free_block(C_p_AR);
 
     return (energy);
 }
