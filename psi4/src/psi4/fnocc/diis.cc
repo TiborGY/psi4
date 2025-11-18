@@ -36,6 +36,23 @@ using namespace psi;
 
    diis functions
 
+   NOTE: Migration to libdiis/DIISManager considered but deferred (2025-11-18)
+
+   Unlike ccenergy (which uses DPD buffers), fnocc uses raw double* arrays
+   for performance in expensive frozen natural orbital CC calculations.
+
+   Migration would require:
+   - Wrapping arrays in Matrix objects or copying double* ↔ Matrix
+   - Performance overhead from data structure conversion (o²v² elements)
+   - Risk of 5-10% runtime increase for large systems
+
+   Current implementation is stable, working correctly, and optimized.
+
+   See FNOCC_DIIS_ANALYSIS.md for full technical analysis.
+
+   This note documents the decision for future reference and keeps the
+   door open for migration if libdiis adds zero-copy array support.
+
 ================================================================*/
 
 namespace psi {
