@@ -42,6 +42,7 @@
 #include "psi4/libqt/qt.h"
 #include "psi4/liboptions/liboptions.h"
 #include "psi4/psi4-dec.h"
+#include "psi4/cc/common/CCParamsParser.h"
 #include "cclambda.h"
 
 #include "MOInfo.h"
@@ -60,8 +61,8 @@ void CCLambdaWavefunction::get_params(Options &options) {
     char lbl[32];
     std::string junk;
 
-    /* check WFN keyword in input */
-    params.wfn = options.get_str("WFN");
+    // Parse common CC parameters using shared parser
+    psi::cc::common::parse_wfn(params.wfn, options);
     excited_method = cc_excited(params.wfn);
 
     if (params.wfn == "CC2" || params.wfn == "EOM_CC2") {
@@ -78,59 +79,27 @@ void CCLambdaWavefunction::get_params(Options &options) {
         outfile->Printf("\tTotal CC3 energy    (CC_INFO) = %20.15f\n", moinfo.eref + moinfo.ecc);
     }
 
-    /* read in the easy-to-understand parameters */
+    // Parse common CC parameters using shared parser
+    psi::cc::common::parse_convergence(params.convergence, options);
+    psi::cc::common::parse_restart(params.restart, options);
+    psi::cc::common::parse_memory(params.memory);
+    psi::cc::common::parse_print(params.print, options);
+    psi::cc::common::parse_cachelev(params.cachelev, options);
 
-    params.convergence = 1e-7;
-    params.convergence = options.get_double("R_CONVERGENCE");
-
-    params.restart = options.get_bool("RESTART");
-
-    params.memory = Process::environment.get_memory();
-
-    params.print = 0;
-    params.print = options.get_int("PRINT");
-
-    params.cachelev = 2;
-    params.cachelev = options.get_int("CACHELEVEL");
-
+    // Module-specific parameters
     params.sekino = 0;
     params.sekino = options.get_bool("SEKINO");
 
-    params.diis = 1;
-    params.diis = options.get_bool("DIIS");
+    psi::cc::common::parse_diis(params.diis, options);
 
     params.aobasis = 0;
     params.aobasis = options.get_bool("AO_BASIS");
     params.aobasis = 0; /* AO basis code not yet working for lambda */
 
-    params.abcd = options.get_str("ABCD");
-    if (params.abcd == "NEW" && params.abcd == "OLD") {
-        outfile->Printf("Invalid ABCD algorithm: %s\n", params.abcd.c_str());
-        throw PsiException("cclambda: error", __FILE__, __LINE__);
-    }
-
-    params.num_amps = 10;
-    params.num_amps = options.get_int("NUM_AMPS_PRINT");
-
-    /* Determine DERTYPE */
-    params.dertype = 0;
-    if (options["DERTYPE"].has_changed()) {
-        junk = options.get_str("DERTYPE");
-        if (junk == "NONE")
-            params.dertype = 0;
-        else if (junk == "FIRST")
-            params.dertype = 1;
-        else if (junk == "RESPONSE")
-            params.dertype = 3; /* linear response */
-        else {
-            printf("Invalid value of input keyword DERTYPE: %s\n", junk.c_str());
-            throw PsiException("cclambda: error", __FILE__, __LINE__);
-        }
-    }
-
-    /* begin local parameters */
-    params.local = 0;
-    params.local = options.get_bool("LOCAL");
+    psi::cc::common::parse_abcd(params.abcd, options);
+    psi::cc::common::parse_num_amps(params.num_amps, options);
+    psi::cc::common::parse_dertype(params.dertype, options);
+    psi::cc::common::parse_local(params.local, options);
     local.cutoff = 0.02;
     local.cutoff = options.get_double("LOCAL_CUTOFF");
     if (options["LOCAL_METHOD"].has_changed()) {
@@ -416,8 +385,8 @@ void CCLambdaWavefunction::get_params(Options &options) {
         }
     }
 
-    params.maxiter = 50 * params.nstates;
-    params.maxiter = options.get_int("MAXITER");
+    // Parse maxiter using shared parser (after nstates is determined)
+    psi::cc::common::parse_maxiter(params.maxiter, options);
 
     outfile->Printf("\n\tInput parameters:\n");
     outfile->Printf("\t-----------------\n");

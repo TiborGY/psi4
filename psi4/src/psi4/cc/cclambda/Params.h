@@ -31,36 +31,30 @@
 
 /*! \file
     \ingroup CCLAMBDA
-    \brief Enter brief description of file here
+    \brief Parameters for cclambda module
 */
 
 #include <string>
+#include "psi4/cc/common/CCParams.h"
 
 namespace psi {
 namespace cclambda {
 
-/* Input parameters for cclambda */
-struct Params {
-    int maxiter;
-    double convergence;
-    int restart;
-    long int memory;
-    int cachelev;
-    int aobasis;
-    std::string wfn;
-    int ref;
-    int local;   /* boolean for using simulated local-CC framework */
-    int nstates; /* total number of L vectors to compute */
-    int zeta;    /* boolean for solving zeta equations - implies excited state*/
-    int print;
-    int dertype;
-    int diis;
-    std::string abcd;
-    int sekino; /* Sekino-Bartlett size-extensive models */
-                /* the following should be obseleted now or soon */
-    int all;    /* find Ls for all excited states plus ground state */
-    int ground; /* find L for only ground state */
-    int num_amps;
+/*! \brief Parameters for cclambda module
+ *
+ * Extends common CC parameters with cclambda-specific parameters.
+ * Inherits from CCParams (via ccenergy indirectly).
+ */
+struct Params : public psi::cc::common::CCParams {
+    // Module-specific parameters
+    int aobasis;    // Use AO basis (boolean, int type)
+    int nstates;    // Total number of L vectors to compute
+    int zeta;       // Boolean for solving zeta equations (implies excited state)
+    int sekino;     // Sekino-Bartlett size-extensive models
+    int all;        // Find Ls for all excited states plus ground state (obsolete)
+    int ground;     // Find L for only ground state (obsolete)
+
+    Params() : CCParams(), aobasis(0), nstates(0), zeta(0), sekino(0), all(0), ground(0) {}
 };
 
 struct L_Params {
