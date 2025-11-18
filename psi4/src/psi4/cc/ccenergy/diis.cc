@@ -64,12 +64,23 @@ namespace ccenergy {
 */
 
 void CCEnergyWavefunction::diis(int iter) {
+#ifdef USE_LIBDIIS_POC
+    // POC: Use libdiis implementation for RHF
+    if (params_.ref == 0)
+        diis_RHF_libdiis(iter);
+    else if (params_.ref == 1)
+        diis_ROHF(iter);  // Original implementation (not part of POC)
+    else if (params_.ref == 2)
+        diis_UHF(iter);   // Original implementation (not part of POC)
+#else
+    // Original implementation
     if (params_.ref == 0)
         diis_RHF(iter);
     else if (params_.ref == 1)
         diis_ROHF(iter);
     else if (params_.ref == 2)
         diis_UHF(iter);
+#endif
 }
 
 void CCEnergyWavefunction::diis_invert_B(double** B, double* C, int dimension, double tolerance) {

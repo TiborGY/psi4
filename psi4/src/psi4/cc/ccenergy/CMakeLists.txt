@@ -45,6 +45,7 @@ target_sources(cc
     ${CMAKE_CURRENT_SOURCE_DIR}/diagnostic.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/diis.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/diis_RHF.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/diis_RHF_libdiis.cc  # POC: libdiis implementation
     ${CMAKE_CURRENT_SOURCE_DIR}/diis_ROHF.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/diis_UHF.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/dijabT2.cc

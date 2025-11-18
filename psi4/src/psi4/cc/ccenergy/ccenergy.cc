@@ -48,6 +48,9 @@
 #include "psi4/libpsio/psio.hpp"
 #include "psi4/libpsi4util/PsiOutStream.h"
 #include "psi4/psifiles.h"
+#ifdef USE_LIBDIIS_POC
+#include "psi4/libdiis/diismanager.h"  // POC: For DIISManager
+#endif
 #include "psi4/libpsi4util/process.h"
 #include "psi4/liboptions/liboptions.h"
 
@@ -210,6 +213,20 @@ double CCEnergyWavefunction::compute_energy() {
     moinfo_.d2diag = d2diag();
     update();
     checkpoint();
+
+#ifdef USE_LIBDIIS_POC
+    // POC: Initialize DIISManager for amplitude extrapolation
+    if (params_.diis && params_.ref == 0) {  // RHF only for POC
+        ccsd_diis_manager_ = std::make_shared<DIISManager>(
+            8,                                          // max 8 vectors (same as original)
+            "CCSD DIIS RHF",                           // label
+            DIISManager::RemovalPolicy::LargestError,  // same removal policy
+            DIISManager::StoragePolicy::OnDisk         // same storage policy
+        );
+        outfile->Printf("  POC: Using libdiis for DIIS extrapolation\n");
+    }
+#endif
+
     for (moinfo_.iter = 1; moinfo_.iter <= params_.maxiter; moinfo_.iter++) {
         sort_amps();
 
