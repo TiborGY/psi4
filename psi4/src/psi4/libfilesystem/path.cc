@@ -76,8 +76,90 @@ namespace filesystem {
 
 bool create_directory(const path &p) { return SYSTEM_MKDIR(p.str().c_str(), S_IRUSR | S_IWUSR | S_IXUSR) == 0; }
 
+// Helper function to expand tilde (~) and environment variables
+static std::string expand_path(const std::string &input_path) {
+    if (input_path.empty()) return input_path;
+
+    std::string expanded = input_path;
+
+    // Expand tilde (~) to home directory
+    if (expanded[0] == '~') {
+        const char* home = nullptr;
+#ifdef _MSC_VER
+        home = std::getenv("USERPROFILE");
+        if (home == nullptr) {
+            // Fallback: try HOMEDRIVE + HOMEPATH
+            const char* homedrive = std::getenv("HOMEDRIVE");
+            const char* homepath = std::getenv("HOMEPATH");
+            if (homedrive && homepath) {
+                static std::string home_combined;
+                home_combined = std::string(homedrive) + homepath;
+                home = home_combined.c_str();
+            }
+        }
+#else
+        home = std::getenv("HOME");
+#endif
+        if (home != nullptr) {
+            if (expanded.length() == 1) {
+                // Just "~"
+                expanded = home;
+            } else if (expanded[1] == PATH_SEPARATOR[0]) {
+                // "~/something"
+                expanded = std::string(home) + expanded.substr(1);
+            }
+        }
+    }
+
+    // Expand environment variables ($VAR or ${VAR})
+    size_t pos = 0;
+    while ((pos = expanded.find('$', pos)) != std::string::npos) {
+        size_t start = pos;
+        size_t end;
+        std::string var_name;
+
+        if (pos + 1 < expanded.length() && expanded[pos + 1] == '{') {
+            // ${VAR} format
+            end = expanded.find('}', pos + 2);
+            if (end != std::string::npos) {
+                var_name = expanded.substr(pos + 2, end - pos - 2);
+                end++; // Include the closing brace
+            } else {
+                pos++;
+                continue;
+            }
+        } else {
+            // $VAR format - variable name ends at non-alphanumeric/underscore character
+            size_t var_start = pos + 1;
+            end = var_start;
+            while (end < expanded.length() &&
+                   (std::isalnum(expanded[end]) || expanded[end] == '_')) {
+                end++;
+            }
+            if (end > var_start) {
+                var_name = expanded.substr(var_start, end - var_start);
+            } else {
+                pos++;
+                continue;
+            }
+        }
+
+        const char* var_value = std::getenv(var_name.c_str());
+        if (var_value != nullptr) {
+            expanded.replace(start, end - start, var_value);
+            pos = start + std::strlen(var_value);
+        } else {
+            pos = end;
+        }
+    }
+
+    return expanded;
+}
+
 path path::make_absolute() const {
-    // TODO: Handle ~ and environment variables (e.g. $HOME)
+    // Expand ~ and environment variables (e.g. $HOME)
+    std::string expanded_path = expand_path(str());
+
     int path_max;
 #ifdef PATH_MAX
     path_max = PATH_MAX;
@@ -87,7 +169,7 @@ path path::make_absolute() const {
 #endif
 
     auto *temp = new char[path_max];
-    if (SYSTEM_REALPATH(str().c_str(), temp) == nullptr) {
+    if (SYSTEM_REALPATH(expanded_path.c_str(), temp) == nullptr) {
         // Ignore errors relating to a file or directory component not existing
         if (errno != (int)std::errc::no_such_file_or_directory && errno != (int)std::errc::not_a_directory) {
             throw std::runtime_error("path::make_absolute: " + std::string(strerror(errno)));
