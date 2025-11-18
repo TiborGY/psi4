@@ -12,6 +12,7 @@ list(APPEND sources
   lapack_intfc.cc
   mat_print.cc
   newmm_rking.cc
+  ortho_util.cc
   pople.cc
   probabil.cc
   ras_set.cc
