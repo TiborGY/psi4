@@ -4,8 +4,8 @@
 
 **Goal**: Extract and consolidate duplicated integral permutation code across Psi4 modules into a reusable utility library with smart, concise APIs.
 
-**Timeline**: Phases 1-2 completed
-**Status**: ✅ Core implementation complete, DCT module refactored
+**Timeline**: Phases 1-3 completed
+**Status**: ✅ Core implementation complete, DCT module fully refactored
 **Branch**: `claude/reduce-integral-duplication-01Wu1nadLg58ZdauYAyWUWcD`
 
 ---
@@ -44,6 +44,23 @@
    - Spin case handling made explicit and clear
 
 **Commit**: `f22ef5eb` - "Refactor DCT module to use integral permutation utilities"
+
+### Phase 3: Extended DCT Module Consolidation (Complete ✅)
+
+**Files Refactored:**
+3. `psi4/src/psi4/dct/dct_df_operations.cc`
+   - 9 prqs permutations replaced
+   - Covers OOOO, VVVV, and OVOV blocks for both UHF and RHF
+   - Density-fitted operations now use semantic utilities
+
+4. `psi4/src/psi4/dct/dct_intermediates_UHF.cc`
+   - 20 prqs permutations replaced (largest single refactoring)
+   - Covers G, I, K, M, N, and W intermediate computations
+   - All spin cases (AA, BB, AB) consistently handled
+
+**Commits**:
+- `9a50786b` - "Refactor DCT DF operations to use integral permutation utilities"
+- `e1bb9f2e` - "Refactor DCT UHF intermediates to use integral permutation utilities"
 
 ---
 
@@ -203,9 +220,10 @@ global_dpd_->buf4_close(&I);
 - Improvement: Spin case handling explicit, duplicated logic eliminated
 
 **Total Across DCT:**
-- buf4_sort calls replaced with utilities: ~26
-- Functions using utilities: 8
-- Modules refactored: 2 (RHF, UHF)
+- buf4_sort calls replaced with utilities: **55** (originally ~26)
+- Functions using utilities: 8+
+- Files refactored: **4** (dct_integrals_RHF, dct_integrals_UHF, dct_df_operations, dct_intermediates_UHF)
+- Improvement: All prqs chemist-to-physicist permutations now use semantic utilities
 
 ### Readability Improvements
 
