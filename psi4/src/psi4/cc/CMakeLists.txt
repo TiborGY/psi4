@@ -29,6 +29,7 @@ target_compile_options(cc
   )
 
 list(APPEND _ccmodules
+  ccmoinfo
   ccdensity
   ccenergy
   cceom
