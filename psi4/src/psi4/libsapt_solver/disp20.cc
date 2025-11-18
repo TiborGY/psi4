@@ -31,6 +31,7 @@
 #include "psi4/libciomr/libciomr.h"
 #include "psi4/libpsio/psio.hpp"
 #include "psi4/libqt/qt.h"
+#include "psi4/libmints/matrix.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
 
 namespace psi {
@@ -58,8 +59,8 @@ void SAPT0::disp20() {
     double *xPQ = init_array((long int)B_ARBS_iter.block_size[0] * C_ARBS_iter.block_size[0]);
     double *yPQ = init_array((long int)B_ARBS_iter.block_size[0] * C_ARBS_iter.block_size[0]);
 
-    double **T_p_AR = block_matrix(C_ARBS_iter.block_size[0], aoccA_ * nvirA_);
-    double **T_p_BS = block_matrix(C_ARBS_iter.block_size[0], aoccB_ * nvirB_);
+    auto T_p_AR = std::make_shared<Matrix>("T_p_AR", C_ARBS_iter.block_size[0], aoccA_ * nvirA_);
+    auto T_p_BS = std::make_shared<Matrix>("T_p_BS", C_ARBS_iter.block_size[0], aoccB_ * nvirB_);
 
     e_disp20_ = 0.0;
     for (int j = 0; j < B_ARBS_iter.num_blocks; j++) {
@@ -69,29 +70,29 @@ void SAPT0::disp20() {
             read_block(&C_ARBS_iter, &C_p_AR, &C_p_BS);
 
             for (int i = 0; i < nvec_; i++) {
-                C_DCOPY(C_ARBS_iter.block_size[k] * aoccA_ * nvirA_, C_p_AR.B_p_[0], 1, T_p_AR[0], 1);
-                C_DCOPY(C_ARBS_iter.block_size[k] * aoccB_ * nvirB_, C_p_BS.B_p_[0], 1, T_p_BS[0], 1);
+                C_DCOPY(C_ARBS_iter.block_size[k] * aoccA_ * nvirA_, C_p_AR.B_p_[0], 1, T_p_AR->get_pointer(), 1);
+                C_DCOPY(C_ARBS_iter.block_size[k] * aoccB_ * nvirB_, C_p_BS.B_p_[0], 1, T_p_BS->get_pointer(), 1);
 
 #pragma omp parallel
                 {
 #pragma omp for
                     for (int ar = 0; ar < aoccA_ * nvirA_; ar++) {
                         double scale = dAR_[i][ar];
-                        C_DSCAL(C_ARBS_iter.curr_size, scale, &(T_p_AR[0][ar]), aoccA_ * nvirA_);
+                        C_DSCAL(C_ARBS_iter.curr_size, scale, &(T_p_AR->get_pointer()[ar]), aoccA_ * nvirA_);
                     }
 
 #pragma omp for
                     for (int bs = 0; bs < aoccB_ * nvirB_; bs++) {
                         double scale = dBS_[i][bs];
-                        C_DSCAL(C_ARBS_iter.curr_size, scale, &(T_p_BS[0][bs]), aoccB_ * nvirB_);
+                        C_DSCAL(C_ARBS_iter.curr_size, scale, &(T_p_BS->get_pointer()[bs]), aoccB_ * nvirB_);
                     }
                 }
 
                 C_DGEMM('N', 'T', B_ARBS_iter.curr_size, C_ARBS_iter.curr_size, aoccA_ * nvirA_, 2.0, B_p_AR.B_p_[0],
-                        aoccA_ * nvirA_, T_p_AR[0], aoccA_ * nvirA_, 0.0, xPQ, C_ARBS_iter.curr_size);
+                        aoccA_ * nvirA_, T_p_AR->get_pointer(), aoccA_ * nvirA_, 0.0, xPQ, C_ARBS_iter.curr_size);
 
                 C_DGEMM('N', 'T', B_ARBS_iter.curr_size, C_ARBS_iter.curr_size, aoccB_ * nvirB_, 2.0, B_p_BS.B_p_[0],
-                        aoccB_ * nvirB_, T_p_BS[0], aoccB_ * nvirB_, 0.0, yPQ, C_ARBS_iter.curr_size);
+                        aoccB_ * nvirB_, T_p_BS->get_pointer(), aoccB_ * nvirB_, 0.0, yPQ, C_ARBS_iter.curr_size);
 
                 e_disp20_ -= C_DDOT(B_ARBS_iter.curr_size * C_ARBS_iter.curr_size, xPQ, 1, yPQ, 1);
             }
@@ -109,9 +110,6 @@ void SAPT0::disp20() {
     free(xPQ);
     free(yPQ);
 
-    free_block(T_p_AR);
-    free_block(T_p_BS);
-
     if (print_) {
         outfile->Printf("    Disp20              = %18.12lf [Eh]\n", e_disp20_);
     }
@@ -120,46 +118,44 @@ void SAPT0::disp20() {
 void SAPT2::disp20() {
     double **B_p_AR = get_DF_ints(PSIF_SAPT_AA_DF_INTS, "AR RI Integrals", foccA_, noccA_, 0, nvirA_);
     double **B_p_BS = get_DF_ints(PSIF_SAPT_BB_DF_INTS, "BS RI Integrals", foccB_, noccB_, 0, nvirB_);
-    double **vARBS = block_matrix(aoccA_ * nvirA_, aoccB_ * nvirB_);
+    auto vARBS = std::make_shared<Matrix>("vARBS", aoccA_ * nvirA_, aoccB_ * nvirB_);
 
     C_DGEMM('N', 'T', aoccA_ * nvirA_, aoccB_ * nvirB_, ndf_, 1.0, B_p_AR[0], ndf_ + 3, B_p_BS[0], ndf_ + 3, 0.0,
-            vARBS[0], aoccB_ * nvirB_);
+            vARBS->get_pointer(), aoccB_ * nvirB_);
 
     free_block(B_p_AR);
     free_block(B_p_BS);
 
-    double **tARBS = block_matrix(aoccA_ * nvirA_, aoccB_ * nvirB_);
+    auto tARBS = std::make_shared<Matrix>("tARBS", aoccA_ * nvirA_, aoccB_ * nvirB_);
 
-    psio_->read_entry(PSIF_SAPT_AMPS, "tARBS Amplitudes", (char *)tARBS[0],
+    psio_->read_entry(PSIF_SAPT_AMPS, "tARBS Amplitudes", (char *)tARBS->get_pointer(),
                       sizeof(double) * aoccA_ * nvirA_ * aoccB_ * nvirB_);
 
-    e_disp20_ = 4.0 * C_DDOT((long int)aoccA_ * nvirA_ * aoccB_ * nvirB_, vARBS[0], 1, tARBS[0], 1);
+    e_disp20_ = 4.0 * C_DDOT((long int)aoccA_ * nvirA_ * aoccB_ * nvirB_, vARBS->get_pointer(), 1, tARBS->get_pointer(), 1);
 
     if (print_) {
         outfile->Printf("    Disp20              = %18.12lf [Eh]\n", e_disp20_);
     }
 
-    free_block(tARBS);
-    free_block(vARBS);
-
     if (nat_orbs_t3_) {
         double **C_p_AR = get_DF_ints(PSIF_SAPT_AA_DF_INTS, "AR NO RI Integrals", foccA_, noccA_, 0, no_nvirA_);
         double **C_p_BS = get_DF_ints(PSIF_SAPT_BB_DF_INTS, "BS NO RI Integrals", foccB_, noccB_, 0, no_nvirB_);
-        vARBS = block_matrix(aoccA_ * no_nvirA_, aoccB_ * no_nvirB_);
+        auto vARBS_NO = std::make_shared<Matrix>("vARBS_NO", aoccA_ * no_nvirA_, aoccB_ * no_nvirB_);
 
         C_DGEMM('N', 'T', aoccA_ * no_nvirA_, aoccB_ * no_nvirB_, ndf_, 1.0, C_p_AR[0], ndf_ + 3, C_p_BS[0], ndf_ + 3,
-                0.0, vARBS[0], aoccB_ * no_nvirB_);
+                0.0, vARBS_NO->get_pointer(), aoccB_ * no_nvirB_);
 
         free_block(C_p_AR);
         free_block(C_p_BS);
 
         e_no_disp20_ = 0.0;
 
+        double **vARBS_NOp = vARBS_NO->pointer();
         for (int a = 0, ar = 0; a < aoccA_; a++) {
             for (int r = 0; r < no_nvirA_; r++, ar++) {
                 for (int b = 0, bs = 0; b < aoccB_; b++) {
                     for (int s = 0; s < no_nvirB_; s++, bs++) {
-                        double tval = vARBS[ar][bs];
+                        double tval = vARBS_NOp[ar][bs];
                         e_no_disp20_ += 4.0 * tval * tval /
                                         (no_evalsA_[a + foccA_] + no_evalsB_[b + foccB_] - no_evalsA_[r + noccA_] -
                                          no_evalsB_[s + noccB_]);
@@ -167,8 +163,6 @@ void SAPT2::disp20() {
                 }
             }
         }
-
-        free_block(vARBS);
 
         if (print_) {
             outfile->Printf("    Disp20 (NO)         = %18.12lf [Eh]\n", e_no_disp20_);
