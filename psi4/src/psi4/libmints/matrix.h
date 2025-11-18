@@ -920,8 +920,19 @@ class PSI_API Matrix : public std::enable_shared_from_this<Matrix> {
 
     /*! Extract a conditioned orthonormal basis from this SPD matrix
      *  via canonical orthogonalization.
-     *  @param delta the relative condition to maintain
+     *
+     *  \deprecated For production use, consider BasisSetOrthogonalization which provides
+     *              more robust basis set orthogonalization with multiple algorithm options
+     *              (Symmetric, Canonical, Partial Cholesky). This Matrix member function
+     *              is retained for specialized matrix operations but is less feature-rich
+     *              than the dedicated BasisSetOrthogonalization class.
+     *
+     *  @param delta the relative condition to maintain (eigenvalues < largest*delta are removed)
+     *  @param eigvec optional output parameter to store eigenvectors
      *  @return X, a SharedMatrix with m x m' dimension (m' < m if conditioning occurred)
+     *
+     *  \see psi4::BasisSetOrthogonalization for comprehensive basis orthogonalization
+     *       (psi4/libmints/orthog.h)
      */
     SharedMatrix canonical_orthogonalization(double delta = 0.0, SharedMatrix eigvec = SharedMatrix());
 
@@ -1071,16 +1082,23 @@ class PSI_API Matrix : public std::enable_shared_from_this<Matrix> {
      * Assume this is a orthogonal matrix.  This function Gram-Schmidt
      * orthogonalizes a new vector v and adds it to matrix A. This must contain
      * a free row pointer for a new row.  Don't add orthogonalized v' if
-     * norm(v') < NORM_TOL.
+     * norm(v') < NORM_TOL (1.0e-5).
      *
-     * Adapted from libqt's version by David Sherrill, Feb 1994
+     * This implementation uses the common OrthoUtil library (psi4/libqt/ortho_util.h)
+     * for consistent orthogonalization across Psi4 modules.
      *
+     * Originally adapted from libqt's version by David Sherrill, Feb 1994.
+     * Refactored to use OrthoUtil for consistency (2025).
+     *
+     * \param h symmetry block index
      * \param rows current number of valid rows in this
      *             (this must have space for 'rows+1' row.)
      * \param v vector to add to A after it has been made orthogonal
      *             to rest of A
      *
      * \returns true if a vector is added, false otherwise
+     *
+     * \see psi4::OrthoUtil for the underlying orthogonalization implementation
      */
     bool schmidt_add_row(int h, int rows, Vector& v);
     bool schmidt_add_row(int h, int rows, double* v) noexcept;

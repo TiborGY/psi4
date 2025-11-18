@@ -1614,47 +1614,32 @@ bool Matrix::schmidt_add_row(int h, int rows, Vector &v) {
     if (v.nirrep() > 1)
         throw PSIEXCEPTION("Matrix::schmidt_add: This function needs to be adapted to handle symmetry blocks.");
 
-    double dotval, normval;
-    int i, I;
+    // Use OrthoUtil for orthogonalization (consolidated orthogonalization library)
+    // Orthogonalize v against existing rows
+    OrthoUtil::orthogonalize_vector(v.pointer(), matrix_[h], rows, coldim(h), nullptr);
 
-    for (i = 0; i < rows; ++i) {
-        dotval = C_DDOT(coldim(h), matrix_[h][i], 1, v.pointer(), 1);
-        for (I = 0; I < coldim(h); ++I) v(I) -= dotval * matrix_[h][i][I];
-    }
-
-    normval = C_DDOT(coldim(h), v.pointer(), 1, v.pointer(), 1);
-    normval = sqrt(normval);
+    // Normalize and check threshold
+    double normval = OrthoUtil::normalize_vector(v.pointer(), coldim(h));
 
     if (normval > 1.0e-5) {
-        for (I = 0; I < coldim(h); ++I) matrix_[h][rows][I] = v(I) / normval;
+        // Copy normalized vector to new row
+        for (int I = 0; I < coldim(h); ++I) matrix_[h][rows][I] = v(I);
         return true;
     } else
         return false;
 }
 
 bool Matrix::schmidt_add_row(int h, int rows, double *v) noexcept {
-    double dotval, normval;
-    int i, I;
+    // Use OrthoUtil for orthogonalization (consolidated orthogonalization library)
+    // Orthogonalize v against existing rows
+    OrthoUtil::orthogonalize_vector(v, matrix_[h], rows, coldim(h), nullptr);
 
-    //    outfile->Printf( "in schmidt_add\n");
-    //    for (i=0; i<coldim(h); ++i)
-    //        outfile->Printf( "%lf ", v[i]);
-    //    outfile->Printf( "\n");
-
-    for (i = 0; i < rows; ++i) {
-        dotval = C_DDOT(coldim(h), matrix_[h][i], 1, v, 1);
-        for (I = 0; I < coldim(h); ++I) v[I] -= dotval * matrix_[h][i][I];
-    }
-
-    normval = C_DDOT(coldim(h), v, 1, v, 1);
-    normval = sqrt(normval);
+    // Normalize and check threshold
+    double normval = OrthoUtil::normalize_vector(v, coldim(h));
 
     if (normval > 1.0e-5) {
-        for (I = 0; I < coldim(h); ++I) matrix_[h][rows][I] = v[I] / normval;
-
-        //        for (i=0; i<coldim(h); ++i)
-        //            outfile->Printf( "%lf ", matrix_[h][rows][i]);
-        //        outfile->Printf( "\n");
+        // Copy normalized vector to new row
+        memcpy(matrix_[h][rows], v, coldim(h) * sizeof(double));
         return true;
     } else
         return false;
