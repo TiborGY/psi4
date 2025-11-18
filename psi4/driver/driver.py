@@ -910,9 +910,13 @@ def optimize_geometric(name, **kwargs):
     # Setup an optimizer object
     params = geometric.optimize.OptParams(**optimizer_keywords)
     optimizer = geometric.optimize.Optimizer(coords, M, IC, engine, None, params)
-    
-    # TODO: print constraints
-    # IC.printConstraints(coords, thre=-1)
+
+    # Print constraints if they exist
+    if Cons is not None:
+        core.print_out("\n  ==> Constraints <==\n\n")
+        IC.printConstraints(coords, thre=-1)
+        core.print_out("\n")
+
     optimizer.calcEnergyForce()
     optimizer.prepareFirstStep()
     grms, gmax = optimizer.calcGradNorm()
