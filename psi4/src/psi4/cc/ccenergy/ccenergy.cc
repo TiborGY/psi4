@@ -215,15 +215,18 @@ double CCEnergyWavefunction::compute_energy() {
     checkpoint();
 
 #ifdef USE_LIBDIIS_POC
-    // POC: Initialize DIISManager for amplitude extrapolation
-    if (params_.diis && params_.ref == 0) {  // RHF only for POC
+    // POC: Initialize DIISManager for amplitude extrapolation (all reference types)
+    if (params_.diis) {
+        const char* ref_label = (params_.ref == 0) ? "RHF" : (params_.ref == 1) ? "ROHF" : "UHF";
+        std::string diis_label = std::string("CCSD DIIS ") + ref_label;
+
         ccsd_diis_manager_ = std::make_shared<DIISManager>(
             8,                                          // max 8 vectors (same as original)
-            "CCSD DIIS RHF",                           // label
+            diis_label,                                 // label with reference type
             DIISManager::RemovalPolicy::LargestError,  // same removal policy
             DIISManager::StoragePolicy::OnDisk         // same storage policy
         );
-        outfile->Printf("  POC: Using libdiis for DIIS extrapolation\n");
+        outfile->Printf("  POC: Using libdiis for DIIS extrapolation (%s)\n", ref_label);
     }
 #endif
 

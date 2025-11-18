@@ -199,7 +199,9 @@ class CCEnergyWavefunction : public Wavefunction {
     void diis_UHF(int);
     void diis_invert_B(double **B, double *C, int dimension, double tolerance);
 #ifdef USE_LIBDIIS_POC
-    void diis_RHF_libdiis(int);  // POC: libdiis implementation
+    void diis_RHF_libdiis(int);   // POC: libdiis implementation for RHF
+    void diis_ROHF_libdiis(int);  // POC: libdiis implementation for ROHF
+    void diis_UHF_libdiis(int);   // POC: libdiis implementation for UHF
 #endif
 
     /* member variables */

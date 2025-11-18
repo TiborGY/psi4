@@ -65,13 +65,13 @@ namespace ccenergy {
 
 void CCEnergyWavefunction::diis(int iter) {
 #ifdef USE_LIBDIIS_POC
-    // POC: Use libdiis implementation for RHF
+    // POC: Use libdiis implementation for all reference types
     if (params_.ref == 0)
         diis_RHF_libdiis(iter);
     else if (params_.ref == 1)
-        diis_ROHF(iter);  // Original implementation (not part of POC)
+        diis_ROHF_libdiis(iter);
     else if (params_.ref == 2)
-        diis_UHF(iter);   // Original implementation (not part of POC)
+        diis_UHF_libdiis(iter);
 #else
     // Original implementation
     if (params_.ref == 0)
