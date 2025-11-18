@@ -404,5 +404,15 @@ The DIIS implementation landscape in Psi4 is **much better than initially assume
 
 ---
 
+## Related Analysis
+
+This analysis covers the investigation of DIIS fragmentation in occ, dfocc, dct, and psimrcc modules. For analysis of the **cc modules (ccenergy, cclambda, ccresponse)**, which have significant consolidation opportunities, see:
+
+**[CC_DIIS_CONSOLIDATION_ANALYSIS.md](./CC_DIIS_CONSOLIDATION_ANALYSIS.md)**
+
+The cc modules represent a larger consolidation opportunity (~1,680 lines of potential savings) compared to this initial investigation (~112 lines of dead code removed).
+
+---
+
 *Analysis completed: 2025-11-18*
 *Analyst: Claude (Sonnet 4.5)*
