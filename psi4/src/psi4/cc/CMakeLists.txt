@@ -28,6 +28,9 @@ target_compile_options(cc
   $<$<AND:$<CXX_COMPILER_ID:Clang>,$<CONFIG:Debug>>:${_Clang_debug_flags}>
   )
 
+# Add common directory first (shared code)
+add_subdirectory(common)
+
 list(APPEND _ccmodules
   ccdensity
   ccenergy

@@ -31,19 +31,24 @@
 
 /*! \file
     \ingroup CCTRIPLES
-    \brief Enter brief description of file here
+    \brief Parameters for cctriples module
 */
 #include <string>
+#include "psi4/cc/common/CCParams.h"
 
 namespace psi {
 namespace cctriples {
 
-struct Params {
-    int ref;
-    std::string wfn;
-    int semicanonical;
-    int nthreads;
-    int dertype;
+/*! \brief Parameters for cctriples module
+ *
+ * Extends common CC parameters with cctriples-specific parameters.
+ */
+struct Params : public psi::cc::common::CCParams {
+    // Module-specific parameters
+    int semicanonical;  // Use semicanonical orbitals
+    int nthreads;       // Number of threads for parallel execution
+
+    Params() : CCParams(), semicanonical(0), nthreads(1) {}
 };
 
 }  // namespace cctriples

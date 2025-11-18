@@ -46,6 +46,7 @@
 
 #include "MOInfo.h"
 #include "Params.h"
+#include "psi4/cc/common/CCParamsParser.h"
 #define EXTERN
 #include "globals.h"
 
@@ -81,33 +82,31 @@ void get_moinfo(std::shared_ptr<Wavefunction> wfn, Options &options) {
 
     nirreps = moinfo.nirreps;
 
-    params.wfn = options.get_str("WFN");
+    // Parse common CC parameters using shared parser
+    psi::cc::common::parse_wfn(params.wfn, options);
+    psi::cc::common::parse_ref(params.ref, options);
+
+    // Validate WFN (module-specific)
     if (params.wfn != "CCSD" && params.wfn != "CCSD_T" && params.wfn != "CCSD_AT" && params.wfn != "BCCD" &&
         params.wfn != "BCCD_T") {
         throw PsiException("Invalid value of input keyword WFN", __FILE__, __LINE__);
     }
 
+    // Module-specific: nthreads
     params.nthreads = Process::environment.get_n_threads();
     if (options["CC_NUM_THREADS"].has_changed()) {
         params.nthreads = options.get_int("CC_NUM_THREADS");
     }
 
+    // Module-specific: semicanonical logic
     params.semicanonical = 0;
     junk = options.get_str("REFERENCE");
-    /* if no reference is given, assume rhf */
-    if (junk == "RHF")
-        params.ref = 0;
-    else if (junk == "ROHF" && (params.wfn == "CCSD_T" || params.wfn == "BCCD_T")) {
+    if (junk == "ROHF" && (params.wfn == "CCSD_T" || params.wfn == "BCCD_T")) {
         params.ref = 2;
         params.semicanonical = 1;
-    } else if (junk == "ROHF")
-        params.ref = 1;
-    else if (junk == "UHF")
-        params.ref = 2;
-    else {
-        throw PsiException("Invalid value of input keyword REFERENCE", __FILE__, __LINE__);
     }
 
+    // Parse DERTYPE with module-specific validation
     junk = options.get_str("DERTYPE");
     if (junk == "NONE")
         params.dertype = 0;
