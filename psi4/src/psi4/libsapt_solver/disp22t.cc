@@ -269,7 +269,7 @@ double SAPT2p::disp220t(int AAfile, const char *AAlabel, const char *ARlabel, co
     double **B_p_AA = get_DF_ints(AAfile, AAlabel, foccA, noccA, foccA, noccA);
     double **B_p_AR = get_DF_ints(AAfile, ARlabel, foccA, noccA, 0, nvirA);
     double **B_p_RR = get_DF_ints(AAfile, RRlabel, 0, nvirA, 0, nvirA);
-    double *B_p_bs = init_array(ndf_ + 3);
+    std::vector<double> B_p_bs(ndf_ + 3);
 
     auto C_p_AR = std::make_shared<Matrix>("C_p_AR", aoccA * nvirA, ndf_ + 3);
 
@@ -283,9 +283,9 @@ double SAPT2p::disp220t(int AAfile, const char *AAlabel, const char *ARlabel, co
         for (int s = 0; s < nvirB; s++, bs++) {
             psio_address next_DF_BS = psio_get_address(
                 PSIO_ZERO, sizeof(double) * (b + foccB) * nvirB * (ndf_ + 3) + sizeof(double) * s * (ndf_ + 3));
-            psio_->read(BBfile, BSlabel, (char *)&(B_p_bs[0]), sizeof(double) * (ndf_ + 3), next_DF_BS, &next_DF_BS);
+            psio_->read(BBfile, BSlabel, (char *)B_p_bs.data(), sizeof(double) * (ndf_ + 3), next_DF_BS, &next_DF_BS);
 
-            C_DGEMV('n', aoccA * nvirA, ndf_ + 3, 1.0, B_p_AR[0], ndf_ + 3, B_p_bs, 1, 0.0, tbsAR->get_pointer(), 1);
+            C_DGEMV('n', aoccA * nvirA, ndf_ + 3, 1.0, B_p_AR[0], ndf_ + 3, B_p_bs.data(), 1, 0.0, tbsAR->get_pointer(), 1);
 
             for (int a = 0, ar = 0; a < aoccA; a++) {
                 for (int r = 0; r < nvirA; r++, ar++) {
@@ -294,8 +294,8 @@ double SAPT2p::disp220t(int AAfile, const char *AAlabel, const char *ARlabel, co
                 }
             }
 
-            C_DGEMV('n', aoccA * aoccA, ndf_ + 3, 1.0, B_p_AA[0], ndf_ + 3, B_p_bs, 1, 0.0, vbsAA->get_pointer(), 1);
-            C_DGEMV('n', nvirA * nvirA, ndf_ + 3, 1.0, B_p_RR[0], ndf_ + 3, B_p_bs, 1, 0.0, vbsRR->get_pointer(), 1);
+            C_DGEMV('n', aoccA * aoccA, ndf_ + 3, 1.0, B_p_AA[0], ndf_ + 3, B_p_bs.data(), 1, 0.0, vbsAA->get_pointer(), 1);
+            C_DGEMV('n', nvirA * nvirA, ndf_ + 3, 1.0, B_p_RR[0], ndf_ + 3, B_p_bs.data(), 1, 0.0, vbsRR->get_pointer(), 1);
 
             C_DGEMM('N', 'N', aoccA * nvirA * aoccA, nvirA, nvirA, 1.0, tARAR->get_pointer(), nvirA, vbsRR->get_pointer(), nvirA,
                     0.0, wARAR->get_pointer(), nvirA);
@@ -330,7 +330,7 @@ double SAPT2p::disp220t(int AAfile, const char *AAlabel, const char *ARlabel, co
         }
     }
 
-    free(B_p_bs);
+    // Automatic cleanup via std::vector
     free_block(B_p_AA);
     free_block(B_p_AR);
     free_block(B_p_RR);
@@ -357,7 +357,7 @@ double SAPT2p::disp220tccd(int AAnum, const char *AA_label, int Rnum, const char
     double **B_p_AA = get_DF_ints_nongimp(AAnum, AA_label, foccA, noccA + foccA, foccA, noccA + foccA);
     double **B_p_AR = get_DF_ints_nongimp(Rnum, AR_label, foccA, noccA + foccA, 0, nvirA);
     double **B_p_RR = get_DF_ints_nongimp(Rnum, RR_label, 0, nvirA, 0, nvirA);
-    double *B_p_bs = init_array(ndf_);
+    std::vector<double> B_p_bs(ndf_);
 
     auto t_bsAR = std::make_shared<Matrix>("t_bsAR", noccA, nvirA);
     double **t_bsARp = t_bsAR->pointer();
@@ -414,7 +414,7 @@ double SAPT2p::disp220tccd(int AAnum, const char *AA_label, int Rnum, const char
         for (int s = 0; s < nvirB; s++, bs++) {
             psio_address next_DF_BS =
                 psio_get_address(PSIO_ZERO, ((foccB + b) * nvirB + s) * (ndf_ + 3) * (size_t)sizeof(double));
-            psio_->read(BBnum, BS_label, (char *)&(B_p_bs[0]), sizeof(double) * ndf_, next_DF_BS, &next_DF_BS);
+            psio_->read(BBnum, BS_label, (char *)B_p_bs.data(), sizeof(double) * ndf_, next_DF_BS, &next_DF_BS);
 
             if (ampnum == PSIF_SAPT_CCD) {
                 next_BSAR = psio_get_address(PSIO_ZERO, bs * noccA * nvirA * sizeof(double));
@@ -424,7 +424,7 @@ double SAPT2p::disp220tccd(int AAnum, const char *AA_label, int Rnum, const char
                     PSIO_ZERO, ((foccB * nvirB + bs) * (noccA + foccA) * nvirA + foccA * nvirA) * sizeof(double));
                 psio_->read(ampnum, tbsar, (char *)t_bsAR->get_pointer(), sizeof(double) * noccA * nvirA, next_BSAR, &next_BSAR);
             } else {
-                C_DGEMV('n', noccA * nvirA, ndf_, 1.0, B_p_AR[0], ndf_, B_p_bs, 1, 0.0, t_bsAR->get_pointer(), 1);
+                C_DGEMV('n', noccA * nvirA, ndf_, 1.0, B_p_AR[0], ndf_, B_p_bs.data(), 1, 0.0, t_bsAR->get_pointer(), 1);
 
                 for (int a = 0; a < noccA; a++) {
                     for (int r = 0; r < nvirA; r++) {
@@ -435,8 +435,8 @@ double SAPT2p::disp220tccd(int AAnum, const char *AA_label, int Rnum, const char
                 }
             }
 
-            C_DGEMV('n', noccA * noccA, ndf_, 1.0, B_p_AA[0], ndf_, B_p_bs, 1, 0.0, v_bsAA->get_pointer(), 1);
-            C_DGEMV('n', nvirA * nvirA, ndf_, 1.0, B_p_RR[0], ndf_, B_p_bs, 1, 0.0, v_bsRR->get_pointer(), 1);
+            C_DGEMV('n', noccA * noccA, ndf_, 1.0, B_p_AA[0], ndf_, B_p_bs.data(), 1, 0.0, v_bsAA->get_pointer(), 1);
+            C_DGEMV('n', nvirA * nvirA, ndf_, 1.0, B_p_RR[0], ndf_, B_p_bs.data(), 1, 0.0, v_bsRR->get_pointer(), 1);
 
             C_DGEMM('N', 'N', noccA * nvirA * noccA, nvirA, nvirA, 1.0, t_ARAR->get_pointer(), nvirA, v_bsRR->get_pointer(), nvirA,
                     0.0, w_ARAR->get_pointer(), nvirA);
@@ -470,7 +470,7 @@ double SAPT2p::disp220tccd(int AAnum, const char *AA_label, int Rnum, const char
         outfile->Printf("    (i = %3zu of %3zu) %10ld seconds\n", b + 1, noccB, stop - start);
     }
 
-    free(B_p_bs);
+    // Automatic cleanup via std::vector
     free_block(B_p_AA);
     free_block(B_p_AR);
     free_block(B_p_RR);
