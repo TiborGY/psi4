@@ -18,16 +18,16 @@ Phase,Priority,Module,File,Line,Class,Params,Complexity,Estimated_Hours,Status,A
 0,Completed,libfock,LinK.cc,86,LinK,1,Easy,0.25,Completed,,✅ Example implementation
 0,Completed,libfock,MemDFJK.cc,113,MemDFJK,9,Medium,0.5,Completed,,✅ Example with conditional params
 0,Completed,dfmp2,mp2.cc,796,RDFMP2,Complex,Medium,0.75,Completed,,✅ Example BOX style with authors
-2,Medium,dfmp2,mp2.cc,2609,UDFMP2,Complex,Medium,0.75,Not Started,,95% similar to RDFMP2 (completed)
-2,Medium,dfmp2,mp2.cc,3235,RODFMP2,Complex,Medium,0.75,Not Started,,95% similar to RDFMP2 (completed)
-2,Medium,dfmp2,corr_grad.cc,108,DFCorrGrad,Complex,Medium,0.75,Not Started,,80% similar to RDFMP2
-2,Medium,libsapt_solver,sapt0.cc,171,SAPT0,Complex,Medium,0.75,Not Started,,BOX + authors pattern
-2,Medium,libsapt_solver,usapt0.cc,180,USAPT0,Complex,Medium,0.75,Not Started,,BOX + authors pattern
-2,Medium,libsapt_solver,sapt2.cc,182,SAPT2,Complex,Medium,0.75,Not Started,,BOX + authors pattern
-2,Medium,libsapt_solver,sapt2p.cc,143,SAPT2p,Complex,Medium,0.75,Not Started,,BOX + authors pattern
-2,Medium,libsapt_solver,sapt2p3.cc,166,SAPT2p3,Complex,Medium,0.75,Not Started,,BOX + authors pattern
-2,Medium,f12,mp2.cc,92,MP2F12,Complex,Medium,0.75,Not Started,,F12 correction - BOX style
-2,Medium,dlpno,mp2.cc,304,DLPNOMP2,Complex,Medium,0.75,Not Started,,Local correlation - BOX style
+2,Medium,dfmp2,mp2.cc,2609,UDFMP2,Complex,Medium,0.75,Completed,,✅ Phase 2 - BOX style with authors
+2,Medium,dfmp2,mp2.cc,3235,RODFMP2,Complex,Medium,0.75,Completed,,✅ Phase 2 - BOX style with authors
+2,Medium,dfmp2,corr_grad.cc,108,DFCorrGrad,Complex,Medium,0.75,Completed,,✅ Phase 2 - Arrow style with parameters
+2,Medium,libsapt_solver,sapt0.cc,171,SAPT0,Complex,Medium,0.75,Deferred,,⏸️ Custom centered format - not suitable for HeaderPrinter
+2,Medium,libsapt_solver,usapt0.cc,180,USAPT0,Complex,Medium,0.75,Deferred,,⏸️ Too complex (67 lines) - extensive custom tables
+2,Medium,libsapt_solver,sapt2.cc,182,SAPT2,Complex,Medium,0.75,Deferred,,⏸️ Custom centered format - not suitable for HeaderPrinter
+2,Medium,libsapt_solver,sapt2p.cc,143,SAPT2p,Complex,Medium,0.75,Deferred,,⏸️ Custom centered format - not suitable for HeaderPrinter
+2,Medium,libsapt_solver,sapt2p3.cc,166,SAPT2p3,Complex,Medium,0.75,Deferred,,⏸️ Custom centered format - not suitable for HeaderPrinter
+2,Medium,f12,mp2.cc,92,MP2F12,Complex,Medium,0.75,Completed,,✅ Phase 2 - BOX style with conditional title (17→16 lines)
+2,Medium,dlpno,mp2.cc,304,DLPNOMP2,Complex,Medium,0.75,Completed,,✅ Phase 2 - BOX style with parameters (18→20 lines)
 3,Low,libscf_solver,hf.cc,490,HF,47-lines,Very Hard,2.0,Not Started,,⚠️ Most complex - consider partial migration
 3,Low,libfock,DiskDFJK.cc,270,DiskDFJK,Complex,Hard,1.0,Not Started,,Complex conditional parameters
 3,Low,libfock,CompositeJK.cc,201,CompositeJK,Recursive,Hard,1.0,Not Started,,Recursive sub-algorithm printing

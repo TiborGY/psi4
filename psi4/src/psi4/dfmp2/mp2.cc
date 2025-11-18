@@ -2618,15 +2618,20 @@ void UDFMP2::print_header() {
     nthread = Process::environment.get_n_threads();
 #endif
 
-    outfile->Printf("\t --------------------------------------------------------\n");
-    outfile->Printf("\t                          DF-MP2                         \n");
-    outfile->Printf("\t      2nd-Order Density-Fitted Moller-Plesset Theory     \n");
-    outfile->Printf("\t              UMP2 Wavefunction, %3d Threads             \n", nthread);
-    outfile->Printf("\t                                                         \n");
-    outfile->Printf("\t        Rob Parrish, Justin Turney, Andy Simmonett,      \n");
-    outfile->Printf("\t           Ed Hohenstein, and C. David Sherrill          \n");
-    outfile->Printf("\t --------------------------------------------------------\n");
-    outfile->Printf("\n");
+    // Print main header with BOX style
+    char thread_info[64];
+    snprintf(thread_info, sizeof(thread_info), "UMP2 Wavefunction, %3d Threads", nthread);
+
+    HeaderPrinter header("DF-MP2", HeaderPrinter::BannerStyle::BOX, 57);
+    header.subtitle("2nd-Order Density-Fitted Moller-Plesset Theory")
+          .add_line("", true)  // blank line
+          .add_line(thread_info, true)
+          .add_line("", true)  // blank line
+          .add_authors({
+              "Rob Parrish, Justin Turney, Andy Simmonett,",
+              "Ed Hohenstein, and C. David Sherrill"
+          })
+          .print();
 
     int focc_a = frzcpi_.sum();
     int fvir_a = frzvpi_.sum();
@@ -3244,15 +3249,20 @@ void RODFMP2::print_header() {
     nthread = Process::environment.get_n_threads();
 #endif
 
-    outfile->Printf("\t --------------------------------------------------------\n");
-    outfile->Printf("\t                          DF-MP2                         \n");
-    outfile->Printf("\t      2nd-Order Density-Fitted Moller-Plesset Theory     \n");
-    outfile->Printf("\t          ROHF-MBPT(2) Wavefunction, %3d Threads         \n", nthread);
-    outfile->Printf("\t                                                         \n");
-    outfile->Printf("\t        Rob Parrish, Justin Turney, Andy Simmonett,      \n");
-    outfile->Printf("\t           Ed Hohenstein, and C. David Sherrill          \n");
-    outfile->Printf("\t --------------------------------------------------------\n");
-    outfile->Printf("\n");
+    // Print main header with BOX style
+    char thread_info[64];
+    snprintf(thread_info, sizeof(thread_info), "ROHF-MBPT(2) Wavefunction, %3d Threads", nthread);
+
+    HeaderPrinter header("DF-MP2", HeaderPrinter::BannerStyle::BOX, 57);
+    header.subtitle("2nd-Order Density-Fitted Moller-Plesset Theory")
+          .add_line("", true)  // blank line
+          .add_line(thread_info, true)
+          .add_line("", true)  // blank line
+          .add_authors({
+              "Rob Parrish, Justin Turney, Andy Simmonett,",
+              "Ed Hohenstein, and C. David Sherrill"
+          })
+          .print();
 
     int focc_a = frzcpi_.sum();
     int fvir_a = frzvpi_.sum();

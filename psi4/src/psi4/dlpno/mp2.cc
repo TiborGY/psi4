@@ -43,6 +43,7 @@
 #include "psi4/libmints/twobody.h"
 #include "psi4/libmints/vector.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/libpsi4util/header_printer.h"
 #include "psi4/libpsi4util/process.h"
 #include "psi4/libqt/qt.h"
 
@@ -302,23 +303,25 @@ double DLPNOMP2::compute_energy() {
 }
 
 void DLPNOMP2::print_header() {
-    outfile->Printf("   --------------------------------------------\n");
-    outfile->Printf("                     DLPNO-MP2                 \n");
-    outfile->Printf("                   by Zach Glick               \n");
-    outfile->Printf("   --------------------------------------------\n\n");
-    outfile->Printf("  DLPNO convergence set to %s.\n\n", options_.get_str("PNO_CONVERGENCE").c_str());
-    outfile->Printf("  Detailed DLPNO thresholds and cutoffs:\n");
-    outfile->Printf("    T_CUT_DO     = %6.3e \n", T_CUT_DO_);
-    outfile->Printf("    T_CUT_PNO    = %6.3e \n", T_CUT_PNO_);
-    outfile->Printf("    T_CUT_DO_ij  = %6.3e \n", options_.get_double("T_CUT_DO_ij"));
-    outfile->Printf("    T_CUT_PRE    = %6.3e \n", options_.get_double("T_CUT_PRE"));
-    outfile->Printf("    T_CUT_DO_PRE = %6.3e \n", options_.get_double("T_CUT_DO_PRE"));
-    outfile->Printf("    T_CUT_MKN    = %6.3e \n", options_.get_double("T_CUT_MKN"));
-    outfile->Printf("    T_CUT_CLMO   = %6.3e \n", options_.get_double("T_CUT_CLMO"));
-    outfile->Printf("    T_CUT_CPAO   = %6.3e \n", options_.get_double("T_CUT_CPAO"));
-    outfile->Printf("    S_CUT        = %6.3e \n", options_.get_double("S_CUT"));
-    outfile->Printf("    F_CUT        = %6.3e \n", options_.get_double("F_CUT"));
-    outfile->Printf("\n");
+    std::string convergence_msg = "DLPNO convergence set to " + options_.get_str("PNO_CONVERGENCE") + ".";
+
+    HeaderPrinter header("DLPNO-MP2", HeaderPrinter::BannerStyle::BOX, 48);
+    header.add_authors({"Zach Glick"})
+          .add_blank_line()
+          .add_line(convergence_msg, false)
+          .add_blank_line()
+          .add_line("Detailed DLPNO thresholds and cutoffs:", false)
+          .add_parameter("T_CUT_DO", T_CUT_DO_, "%6.3e", 13)
+          .add_parameter("T_CUT_PNO", T_CUT_PNO_, "%6.3e", 13)
+          .add_parameter("T_CUT_DO_ij", options_.get_double("T_CUT_DO_ij"), "%6.3e", 13)
+          .add_parameter("T_CUT_PRE", options_.get_double("T_CUT_PRE"), "%6.3e", 13)
+          .add_parameter("T_CUT_DO_PRE", options_.get_double("T_CUT_DO_PRE"), "%6.3e", 13)
+          .add_parameter("T_CUT_MKN", options_.get_double("T_CUT_MKN"), "%6.3e", 13)
+          .add_parameter("T_CUT_CLMO", options_.get_double("T_CUT_CLMO"), "%6.3e", 13)
+          .add_parameter("T_CUT_CPAO", options_.get_double("T_CUT_CPAO"), "%6.3e", 13)
+          .add_parameter("S_CUT", options_.get_double("S_CUT"), "%6.3e", 13)
+          .add_parameter("F_CUT", options_.get_double("F_CUT"), "%6.3e", 13)
+          .print();
 }
 
 void DLPNOMP2::print_results() {

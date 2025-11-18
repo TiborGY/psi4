@@ -34,6 +34,7 @@
 #include "psi4/libpsio/psio.h"
 #include "psi4/psifiles.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/libpsi4util/header_printer.h"
 #include "psi4/libpsi4util/process.h"
 #include "psi4/liboptions/liboptions.h"
 
@@ -107,13 +108,13 @@ void DFCorrGrad::common_init() {
 }
 void DFCorrGrad::print_header() const {
     if (print_) {
-        outfile->Printf("  ==> DFCorrGrad: Density-Fitted Correlated Gradients <==\n\n");
-
-        outfile->Printf("    OpenMP threads:    %11d\n", nthreads_);
-        outfile->Printf("    Integrals threads: %11d\n", df_ints_num_threads_);
-        outfile->Printf("    Memory [GiB]:      %11.3f\n", ((double) memory_ * 8.0) / (1024.0 * 1024.0 * 1024.0));
-        outfile->Printf("    Schwarz Cutoff:    %11.0E\n", cutoff_);
-        outfile->Printf("    Fitting Condition: %11.0E\n\n", condition_);
+        HeaderPrinter header("DFCorrGrad: Density-Fitted Correlated Gradients");
+        header.add_parameter("OpenMP threads", nthreads_)
+              .add_parameter("Integrals threads", df_ints_num_threads_)
+              .add_parameter("Memory [GiB]", ((double) memory_ * 8.0) / (1024.0 * 1024.0 * 1024.0), "%11.3f")
+              .add_parameter("Schwarz Cutoff", cutoff_, "%11.0E")
+              .add_parameter("Fitting Condition", condition_, "%11.0E")
+              .print();
 
         outfile->Printf("   => Auxiliary Basis Set <=\n\n");
         auxiliary_->print_by_level("outfile", print_);

@@ -36,6 +36,7 @@
 #include "psi4/libmints/dimension.h"
 #include "psi4/libmints/matrix.h"
 #include "psi4/libmints/mintshelper.h"
+#include "psi4/libpsi4util/header_printer.h"
 
 #include <Einsums/TensorAlgebra.hpp>
 #include <Einsums/Tensor/DiskTensor.hpp>
@@ -90,22 +91,21 @@ void MP2F12::common_init() {
 }
 
 void MP2F12::print_header() {
-    outfile->Printf("\n -----------------------------------------------------------\n");
-    if (use_df_) {
-        outfile->Printf("                      DF-MP2-F12/3C(FIX)                    \n");
-        outfile->Printf("             Density-Fitted Explicitly Correlated           \n");
-        outfile->Printf("               2nd Order Moeller-Plesset Theory             \n");
-        outfile->Printf("                RMP2 Wavefunction, %2d Threads              \n\n", nthreads_);
-        outfile->Printf("                        Erica Mitchell                      \n");
-    } else {
-        outfile->Printf("                        MP2-F12/3C(FIX)                     \n");
-        outfile->Printf("                     Explicitly Correlated                  \n");
-        outfile->Printf("               2nd Order Moeller-Plesset Theory             \n");
-        outfile->Printf("                RMP2 Wavefunction, %2d Threads              \n\n", nthreads_);
-        outfile->Printf("                        Erica Mitchell                      \n");
-    }
-    outfile->Printf(" -----------------------------------------------------------\n\n");
-    outfile->Printf(" Using %s %s algorithm \n\n", f12_type_.c_str(), f12_subtype_.c_str());
+    std::string title = use_df_ ? "DF-MP2-F12/3C(FIX)" : "MP2-F12/3C(FIX)";
+    std::string subtitle1 = use_df_ ? "Density-Fitted Explicitly Correlated" : "Explicitly Correlated";
+    char thread_info[64];
+    snprintf(thread_info, sizeof(thread_info), "RMP2 Wavefunction, %2d Threads", nthreads_);
+    std::string algorithm_msg = "Using " + f12_type_ + " " + f12_subtype_ + " algorithm";
+
+    HeaderPrinter header(title, HeaderPrinter::BannerStyle::BOX, 59);
+    header.subtitle(subtitle1)
+          .add_line("2nd Order Moeller-Plesset Theory", true)
+          .add_line(thread_info, true)
+          .add_line("", true)
+          .add_authors({"Erica Mitchell"})
+          .print();
+
+    outfile->Printf("\n %s \n\n", algorithm_msg.c_str());
 }
 
 void MP2F12::form_basissets() {
