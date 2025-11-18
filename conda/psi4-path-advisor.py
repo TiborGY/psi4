@@ -626,7 +626,7 @@ if args.subparser_name in ["conda", "env"]:
         "docs": [],
     }
     notes = {}
-    lapack_packages = []  # TODO: incl openmp, too?
+    lapack_packages = []
 
     for ddep in ydict["data"]:
 
@@ -669,6 +669,10 @@ if args.subparser_name in ["conda", "env"]:
                 lapack_constraint = conda["constraint"][conda_platform]
             primary += lapack_constraint
 
+            lapack_packages.extend([primary, *aux_bld, *aux_run])
+
+        # Track OpenMP packages as they are dependencies of LAPACK libraries
+        if primary in ["llvm-openmp", "intel-openmp"]:
             lapack_packages.extend([primary, *aux_bld, *aux_run])
 
         if conda["channel"] != "conda-forge":
