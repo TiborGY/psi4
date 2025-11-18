@@ -156,10 +156,13 @@ double SAPT2p3::disp30_2(int ampfile, const char *amplabel, int AAintfile, const
     size_t aoccA = noccA - foccA;
     size_t aoccB = noccB - foccB;
 
-    double **tARBS = block_matrix(aoccA_ * nvirA_, aoccB_ * nvirB_);
-    psio_->read_entry(PSIF_SAPT_AMPS, "tARBS Amplitudes", (char *)tARBS[0],
+    auto tARBS = std::make_shared<Matrix>("tARBS", aoccA_ * nvirA_, aoccB_ * nvirB_);
+    psio_->read_entry(PSIF_SAPT_AMPS, "tARBS Amplitudes", (char *)tARBS->get_pointer(),
                       sizeof(double) * aoccA_ * nvirA_ * aoccB_ * nvirB_);
-    double **tABRS = block_matrix(aoccA * aoccB, nvirA * nvirB);
+    double **tARBSp = tARBS->pointer();
+
+    auto tABRS = std::make_shared<Matrix>("tABRS", aoccA * aoccB, nvirA * nvirB);
+    double **tABRSp = tABRS->pointer();
 
     for (int a = 0, ar = 0; a < aoccA; a++) {
         for (int r = 0; r < nvirA; r++, ar++) {
@@ -167,53 +170,35 @@ double SAPT2p3::disp30_2(int ampfile, const char *amplabel, int AAintfile, const
                 for (int s = 0; s < nvirB; s++, bs++) {
                     int ab = a * aoccB + b;
                     int rs = r * nvirB + s;
-                    tABRS[ab][rs] = tARBS[ar][bs];
+                    tABRSp[ab][rs] = tARBSp[ar][bs];
                 }
             }
         }
     }
 
-    free_block(tARBS);
-
-    double **t2ABRS = block_matrix(aoccA * aoccB, nvirA * nvirB);
+    auto t2ABRS = std::make_shared<Matrix>("t2ABRS", aoccA * aoccB, nvirA * nvirB);
 
     double **B_p_AA = get_DF_ints(AAintfile, AAlabel, foccA, noccA, foccA, noccA);
     double **B_p_BB = get_DF_ints(BBintfile, BBlabel, foccB, noccB, foccB, noccB);
 
-    double **ABAB = block_matrix(aoccA * aoccB, aoccA * aoccB);
+    auto ABAB = std::make_shared<Matrix>("ABAB", aoccA * aoccB, aoccA * aoccB);
+    double **ABABp = ABAB->pointer();
 
     for (int a = 0, ab = 0; a < aoccA; a++) {
         for (int b = 0; b < aoccB; b++, ab++) {
             C_DGEMM('N', 'T', aoccA, aoccB, ndf_ + 3, 1.0, &(B_p_AA[a * aoccA][0]), ndf_ + 3, &(B_p_BB[b * aoccB][0]),
-                    ndf_ + 3, 0.0, &(ABAB[ab][0]), aoccB);
+                    ndf_ + 3, 0.0, &(ABABp[ab][0]), aoccB);
         }
     }
 
     free_block(B_p_AA);
     free_block(B_p_BB);
 
-    C_DGEMM('N', 'N', aoccA * aoccB, nvirA * nvirB, aoccA * aoccB, 1.0, &(ABAB[0][0]), aoccA * aoccB, &(tABRS[0][0]),
-            nvirA * nvirB, 1.0, &(t2ABRS[0][0]), nvirA * nvirB);
+    C_DGEMM('N', 'N', aoccA * aoccB, nvirA * nvirB, aoccA * aoccB, 1.0, ABAB->get_pointer(), aoccA * aoccB, tABRS->get_pointer(),
+            nvirA * nvirB, 1.0, t2ABRS->get_pointer(), nvirA * nvirB);
 
-    free_block(ABAB);
-
-    double **tBRAS = block_matrix(aoccB * nvirA, aoccA * nvirB);
-
-    for (int a = 0, ab = 0; a < aoccA; a++) {
-        for (int b = 0; b < aoccB; b++, ab++) {
-            for (int r = 0, rs = 0; r < nvirA; r++) {
-                for (int s = 0; s < nvirB; s++, rs++) {
-                    int br = b * nvirA + r;
-                    int as = a * nvirB + s;
-                    tBRAS[br][as] = tABRS[ab][rs];
-                }
-            }
-        }
-    }
-
-    free_block(tABRS);
-
-    double **t2BRAS = block_matrix(aoccB * nvirA, aoccA * nvirB);
+    auto tBRAS = std::make_shared<Matrix>("tBRAS", aoccB * nvirA, aoccA * nvirB);
+    double **tBRASp = tBRAS->pointer();
 
     for (int a = 0, ab = 0; a < aoccA; a++) {
         for (int b = 0; b < aoccB; b++, ab++) {
@@ -221,13 +206,27 @@ double SAPT2p3::disp30_2(int ampfile, const char *amplabel, int AAintfile, const
                 for (int s = 0; s < nvirB; s++, rs++) {
                     int br = b * nvirA + r;
                     int as = a * nvirB + s;
-                    t2BRAS[br][as] = t2ABRS[ab][rs];
+                    tBRASp[br][as] = tABRSp[ab][rs];
                 }
             }
         }
     }
 
-    free_block(t2ABRS);
+    auto t2BRAS = std::make_shared<Matrix>("t2BRAS", aoccB * nvirA, aoccA * nvirB);
+    double **t2BRASp = t2BRAS->pointer();
+    double **t2ABRSp = t2ABRS->pointer();
+
+    for (int a = 0, ab = 0; a < aoccA; a++) {
+        for (int b = 0; b < aoccB; b++, ab++) {
+            for (int r = 0, rs = 0; r < nvirA; r++) {
+                for (int s = 0; s < nvirB; s++, rs++) {
+                    int br = b * nvirA + r;
+                    int as = a * nvirB + s;
+                    t2BRASp[br][as] = t2ABRSp[ab][rs];
+                }
+            }
+        }
+    }
 
     B_p_BB = get_DF_ints(BBintfile, BBlabel, foccB, noccB, foccB, noccB);
     double **B_p_RR = get_DF_ints(AAintfile, RRlabel, 0, nvirA, 0, nvirA);
