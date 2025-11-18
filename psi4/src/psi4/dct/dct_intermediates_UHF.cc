@@ -32,6 +32,7 @@
 #include "psi4/libdpd/dpd.h"
 #include "psi4/libpsio/psio.hpp"
 #include "psi4/libtrans/integraltransform.h"
+#include "psi4/libtrans/integral_permutations.h"
 #include "psi4/liboptions/liboptions.h"
 
 namespace psi {
@@ -174,7 +175,9 @@ void DCTSolver::compute_G_intermediate() {
                            "Temp (ov|ov)");
     global_dpd_->buf4_init(&Laa, PSIF_DCT_DPD, 0, ID("[O,O]"), ID("[V,V]"), ID("[O>O]-"), ID("[V>V]-"), 0,
                            "Amplitude <OO|VV>");
-    global_dpd_->buf4_sort(&Laa, PSIF_DCT_DPD, prqs, ID("[O,V]"), ID("[O,V]"), "Amplitude (OV|OV)");
+    // Transform Amplitude <OO|VV> → Amplitude (OV|OV) using chemist-to-physicist notation
+    libtrans::IntegralPermutations::chemist_to_physicist(&Laa, PSIF_DCT_DPD, ID("[O,V]"), ID("[O,V]"),
+                                                          "Amplitude (OV|OV)");
     global_dpd_->buf4_close(&Laa);
     global_dpd_->buf4_init(&Laa, PSIF_DCT_DPD, 0, ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), 0,
                            "Amplitude (OV|OV)");
@@ -187,7 +190,9 @@ void DCTSolver::compute_G_intermediate() {
 
     global_dpd_->buf4_init(&Lbb, PSIF_DCT_DPD, 0, ID("[o,o]"), ID("[v,v]"), ID("[o>o]-"), ID("[v>v]-"), 0,
                            "Amplitude <oo|vv>");
-    global_dpd_->buf4_sort(&Lbb, PSIF_DCT_DPD, prqs, ID("[o,v]"), ID("[o,v]"), "Amplitude (ov|ov)");
+    // Transform Amplitude <oo|vv> → Amplitude (ov|ov) using chemist-to-physicist notation
+    libtrans::IntegralPermutations::chemist_to_physicist(&Lbb, PSIF_DCT_DPD, ID("[o,v]"), ID("[o,v]"),
+                                                          "Amplitude (ov|ov)");
     global_dpd_->buf4_close(&Lbb);
     global_dpd_->buf4_init(&Lbb, PSIF_DCT_DPD, 0, ID("[o,v]"), ID("[o,v]"), ID("[o,v]"), ID("[o,v]"), 0,
                            "Amplitude (ov|ov)");
@@ -277,8 +282,9 @@ void DCTSolver::compute_G_intermediate() {
     global_dpd_->buf4_close(&Lab);
     global_dpd_->buf4_close(&Lbb);
 
-    // T_IAJB -> T_IJAB
-    global_dpd_->buf4_sort(&Taa, PSIF_DCT_DPD, prqs, ID("[O,O]"), ID("[V,V]"), "Temp <OO|VV>");
+    // T_IAJB -> T_IJAB using chemist-to-physicist notation
+    libtrans::IntegralPermutations::chemist_to_physicist(&Taa, PSIF_DCT_DPD, ID("[O,O]"), ID("[V,V]"),
+                                                          "Temp <OO|VV>");
     global_dpd_->buf4_close(&Taa);
     // G_IJAB += T_IJAB
     global_dpd_->buf4_init(&T, PSIF_DCT_DPD, 0, ID("[O>O]-"), ID("[V>V]-"), ID("[O,O]"), ID("[V,V]"), 0,
@@ -324,8 +330,9 @@ void DCTSolver::compute_G_intermediate() {
 
     global_dpd_->buf4_close(&Taa);
 
-    // T_IAjb -> T_IjAb
-    global_dpd_->buf4_sort(&Tab, PSIF_DCT_DPD, prqs, ID("[O,o]"), ID("[V,v]"), "Temp <Oo|Vv>");
+    // T_IAjb -> T_IjAb using chemist-to-physicist notation
+    libtrans::IntegralPermutations::chemist_to_physicist(&Tab, PSIF_DCT_DPD, ID("[O,o]"), ID("[V,v]"),
+                                                          "Temp <Oo|Vv>");
     global_dpd_->buf4_close(&Tab);
     // G_IjAb += T_IjAb
     global_dpd_->buf4_init(&T, PSIF_DCT_DPD, 0, ID("[O,o]"), ID("[V,v]"), ID("[O,o]"), ID("[V,v]"), 0, "Temp <Oo|Vv>");
@@ -334,8 +341,9 @@ void DCTSolver::compute_G_intermediate() {
     global_dpd_->buf4_close(&G);
     global_dpd_->buf4_close(&T);
 
-    // T_iajb -> T_ijab
-    global_dpd_->buf4_sort(&Tbb, PSIF_DCT_DPD, prqs, ID("[o,o]"), ID("[v,v]"), "Temp <oo|vv>");
+    // T_iajb -> T_ijab using chemist-to-physicist notation
+    libtrans::IntegralPermutations::chemist_to_physicist(&Tbb, PSIF_DCT_DPD, ID("[o,o]"), ID("[v,v]"),
+                                                          "Temp <oo|vv>");
     global_dpd_->buf4_close(&Tbb);
     // G_ijab += T_ijab
     global_dpd_->buf4_init(&T, PSIF_DCT_DPD, 0, ID("[o>o]-"), ID("[v>v]-"), ID("[o,o]"), ID("[v,v]"), 0,
@@ -1736,11 +1744,15 @@ void DCTSolver::compute_I_intermediate() {
 
     // Sort the I intermediate to chemist's notation
     global_dpd_->buf4_init(&Iaa, PSIF_DCT_DPD, 0, ID("[O,O]"), ID("[O,O]"), ID("[O>O]-"), ID("[O>O]-"), 0, "I <OO|OO>");
-    global_dpd_->buf4_sort(&Iaa, PSIF_DCT_DPD, prqs, ID("[O,O]"), ID("[O,O]"), "I (OO|OO)");
+    // Transform I <OO|OO> → I (OO|OO) using chemist-to-physicist notation
+    libtrans::IntegralPermutations::chemist_to_physicist(&Iaa, PSIF_DCT_DPD, ID("[O,O]"), ID("[O,O]"),
+                                                          "I (OO|OO)");
     global_dpd_->buf4_close(&Iaa);
 
     global_dpd_->buf4_init(&Iab, PSIF_DCT_DPD, 0, ID("[O,o]"), ID("[O,o]"), ID("[O,o]"), ID("[O,o]"), 0, "I <Oo|Oo>");
-    global_dpd_->buf4_sort(&Iab, PSIF_DCT_DPD, prqs, ID("[O,O]"), ID("[o,o]"), "I (OO|oo)");
+    // Transform I <Oo|Oo> → I (OO|oo) using chemist-to-physicist notation
+    libtrans::IntegralPermutations::chemist_to_physicist(&Iab, PSIF_DCT_DPD, ID("[O,O]"), ID("[o,o]"),
+                                                          "I (OO|oo)");
     global_dpd_->buf4_close(&Iab);
 
     global_dpd_->buf4_init(&Iab, PSIF_DCT_DPD, 0, ID("[O,O]"), ID("[o,o]"), ID("[O,O]"), ID("[o,o]"), 0, "I (OO|oo)");
@@ -1748,7 +1760,9 @@ void DCTSolver::compute_I_intermediate() {
     global_dpd_->buf4_close(&Iab);
 
     global_dpd_->buf4_init(&Ibb, PSIF_DCT_DPD, 0, ID("[o,o]"), ID("[o,o]"), ID("[o>o]-"), ID("[o>o]-"), 0, "I <oo|oo>");
-    global_dpd_->buf4_sort(&Ibb, PSIF_DCT_DPD, prqs, ID("[o,o]"), ID("[o,o]"), "I (oo|oo)");
+    // Transform I <oo|oo> → I (oo|oo) using chemist-to-physicist notation
+    libtrans::IntegralPermutations::chemist_to_physicist(&Ibb, PSIF_DCT_DPD, ID("[o,o]"), ID("[o,o]"),
+                                                          "I (oo|oo)");
     global_dpd_->buf4_close(&Ibb);
 }
 
@@ -1817,7 +1831,9 @@ void DCTSolver::compute_K_intermediate() {
 
     global_dpd_->buf4_init(&Laa, PSIF_DCT_DPD, 0, ID("[O,O]"), ID("[V,V]"), ID("[O>O]-"), ID("[V>V]-"), 0,
                            "Amplitude <OO|VV>");
-    global_dpd_->buf4_sort(&Laa, PSIF_DCT_DPD, prqs, ID("[O,V]"), ID("[O,V]"), "Amplitude (OV|OV)");
+    // Transform Amplitude <OO|VV> → Amplitude (OV|OV) using chemist-to-physicist notation
+    libtrans::IntegralPermutations::chemist_to_physicist(&Laa, PSIF_DCT_DPD, ID("[O,V]"), ID("[O,V]"),
+                                                          "Amplitude (OV|OV)");
     global_dpd_->buf4_close(&Laa);
 
     global_dpd_->buf4_init(&Lab, PSIF_DCT_DPD, 0, ID("[O,o]"), ID("[V,v]"), ID("[O,o]"), ID("[V,v]"), 0,
@@ -1832,7 +1848,9 @@ void DCTSolver::compute_K_intermediate() {
 
     global_dpd_->buf4_init(&Lbb, PSIF_DCT_DPD, 0, ID("[o,o]"), ID("[v,v]"), ID("[o>o]-"), ID("[v>v]-"), 0,
                            "Amplitude <oo|vv>");
-    global_dpd_->buf4_sort(&Lbb, PSIF_DCT_DPD, prqs, ID("[o,v]"), ID("[o,v]"), "Amplitude (ov|ov)");
+    // Transform Amplitude <oo|vv> → Amplitude (ov|ov) using chemist-to-physicist notation
+    libtrans::IntegralPermutations::chemist_to_physicist(&Lbb, PSIF_DCT_DPD, ID("[o,v]"), ID("[o,v]"),
+                                                          "Amplitude (ov|ov)");
     global_dpd_->buf4_close(&Lbb);
 
     // K<IAJB> spin case
@@ -1859,9 +1877,10 @@ void DCTSolver::compute_K_intermediate() {
     global_dpd_->buf4_sort(&Kaa, PSIF_DCT_DPD, psrq, ID("[O,V]"), ID("[O,V]"), "K <OV|OV>");
     global_dpd_->buf4_close(&Kaa);
 
-    // Resort K<OV|OV> to the K(OO|VV)
+    // Resort K<OV|OV> to the K(OO|VV) using chemist-to-physicist notation
     global_dpd_->buf4_init(&Kaa, PSIF_DCT_DPD, 0, ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), 0, "K <OV|OV>");
-    global_dpd_->buf4_sort(&Kaa, PSIF_DCT_DPD, prqs, ID("[O,O]"), ID("[V,V]"), "K (OO|VV)");
+    libtrans::IntegralPermutations::chemist_to_physicist(&Kaa, PSIF_DCT_DPD, ID("[O,O]"), ID("[V,V]"),
+                                                          "K (OO|VV)");
     global_dpd_->buf4_close(&Kaa);
 
     // K<IaJb> and K<iAjB> spin cases:
@@ -1883,14 +1902,16 @@ void DCTSolver::compute_K_intermediate() {
     global_dpd_->buf4_close(&Lab);
     global_dpd_->buf4_close(&LLab);
 
-    // Resort K<Ov|Ov> to the K(OO|vv)
+    // Resort K<Ov|Ov> to the K(OO|vv) using chemist-to-physicist notation
     global_dpd_->buf4_init(&Kab, PSIF_DCT_DPD, 0, ID("[O,v]"), ID("[O,v]"), ID("[O,v]"), ID("[O,v]"), 0, "K <Ov|Ov>");
-    global_dpd_->buf4_sort(&Kab, PSIF_DCT_DPD, prqs, ID("[O,O]"), ID("[v,v]"), "K (OO|vv)");
+    libtrans::IntegralPermutations::chemist_to_physicist(&Kab, PSIF_DCT_DPD, ID("[O,O]"), ID("[v,v]"),
+                                                          "K (OO|vv)");
     global_dpd_->buf4_close(&Kab);
 
-    // Resort K<oV|oV> to the K(oo|VV)
+    // Resort K<oV|oV> to the K(oo|VV) using chemist-to-physicist notation
     global_dpd_->buf4_init(&Kab, PSIF_DCT_DPD, 0, ID("[o,V]"), ID("[o,V]"), ID("[o,V]"), ID("[o,V]"), 0, "K <oV|oV>");
-    global_dpd_->buf4_sort(&Kab, PSIF_DCT_DPD, prqs, ID("[o,o]"), ID("[V,V]"), "K (oo|VV)");
+    libtrans::IntegralPermutations::chemist_to_physicist(&Kab, PSIF_DCT_DPD, ID("[o,o]"), ID("[V,V]"),
+                                                          "K (oo|VV)");
     global_dpd_->buf4_close(&Kab);
 
     // K_kCjA -> K_CkAj
@@ -1943,9 +1964,10 @@ void DCTSolver::compute_K_intermediate() {
     global_dpd_->buf4_sort(&Kbb, PSIF_DCT_DPD, psrq, ID("[o,v]"), ID("[o,v]"), "K <ov|ov>");
     global_dpd_->buf4_close(&Kbb);
 
-    // Resort K<ov|ov> to the K(oo|vv)
+    // Resort K<ov|ov> to the K(oo|vv) using chemist-to-physicist notation
     global_dpd_->buf4_init(&Kbb, PSIF_DCT_DPD, 0, ID("[o,v]"), ID("[o,v]"), ID("[o,v]"), ID("[o,v]"), 0, "K <ov|ov>");
-    global_dpd_->buf4_sort(&Kbb, PSIF_DCT_DPD, prqs, ID("[o,o]"), ID("[v,v]"), "K (oo|vv)");
+    libtrans::IntegralPermutations::chemist_to_physicist(&Kbb, PSIF_DCT_DPD, ID("[o,o]"), ID("[v,v]"),
+                                                          "K (oo|vv)");
     global_dpd_->buf4_close(&Kbb);
 
     // Resort all chemist's notation K intermediates to VVOO format (needed for fourth-order Tau terms)
@@ -2997,9 +3019,10 @@ void DCTSolver::compute_W_intermediate() {
 
     global_dpd_->buf4_close(&T);
 
-    // Temp_IKAC -> Temp_(IA|KC)
+    // Temp_IKAC -> Temp_(IA|KC) using chemist-to-physicist notation
     global_dpd_->buf4_init(&T, PSIF_DCT_DPD, 0, ID("[O,O]"), ID("[V,V]"), ID("[O,O]"), ID("[V,V]"), 0, "Temp <OO|VV>");
-    global_dpd_->buf4_sort(&T, PSIF_DCT_DPD, prqs, ID("[O,V]"), ID("[O,V]"), "Temp (OV|OV)");
+    libtrans::IntegralPermutations::chemist_to_physicist(&T, PSIF_DCT_DPD, ID("[O,V]"), ID("[O,V]"),
+                                                          "Temp (OV|OV)");
     global_dpd_->buf4_close(&T);
 
     // OoVv presort
@@ -3027,9 +3050,10 @@ void DCTSolver::compute_W_intermediate() {
 
     global_dpd_->buf4_close(&T);
 
-    // Temp_IkAc -> Temp_(IA|kc)
+    // Temp_IkAc -> Temp_(IA|kc) using chemist-to-physicist notation
     global_dpd_->buf4_init(&T, PSIF_DCT_DPD, 0, ID("[O,o]"), ID("[V,v]"), ID("[O,o]"), ID("[V,v]"), 0, "Temp <Oo|Vv>");
-    global_dpd_->buf4_sort(&T, PSIF_DCT_DPD, prqs, ID("[O,V]"), ID("[o,v]"), "Temp (OV|ov)");
+    libtrans::IntegralPermutations::chemist_to_physicist(&T, PSIF_DCT_DPD, ID("[O,V]"), ID("[o,v]"),
+                                                          "Temp (OV|ov)");
     global_dpd_->buf4_close(&T);
 
     // oovv presort
@@ -3062,9 +3086,10 @@ void DCTSolver::compute_W_intermediate() {
 
     global_dpd_->buf4_close(&T);
 
-    // Temp_ikac -> Temp_(ia|kc)
+    // Temp_ikac -> Temp_(ia|kc) using chemist-to-physicist notation
     global_dpd_->buf4_init(&T, PSIF_DCT_DPD, 0, ID("[o,o]"), ID("[v,v]"), ID("[o,o]"), ID("[v,v]"), 0, "Temp <oo|vv>");
-    global_dpd_->buf4_sort(&T, PSIF_DCT_DPD, prqs, ID("[o,v]"), ID("[o,v]"), "Temp (ov|ov)");
+    libtrans::IntegralPermutations::chemist_to_physicist(&T, PSIF_DCT_DPD, ID("[o,v]"), ID("[o,v]"),
+                                                          "Temp (ov|ov)");
     global_dpd_->buf4_close(&T);
 
     // Compute W contributions
@@ -3087,8 +3112,9 @@ void DCTSolver::compute_W_intermediate() {
     global_dpd_->buf4_close(&Kab);
     global_dpd_->buf4_close(&Kaa);
 
-    // Temp2_(IA|JB) -> Temp2_<IJ|AB>
-    global_dpd_->buf4_sort(&TT, PSIF_DCT_DPD, prqs, ID("[O,O]"), ID("[V,V]"), "Temp2 <OO|VV>");
+    // Temp2_(IA|JB) -> Temp2_<IJ|AB> using chemist-to-physicist notation
+    libtrans::IntegralPermutations::chemist_to_physicist(&TT, PSIF_DCT_DPD, ID("[O,O]"), ID("[V,V]"),
+                                                          "Temp2 <OO|VV>");
     global_dpd_->buf4_close(&TT);
 
     // W_IJAB += Temp2_IJAB
@@ -3166,8 +3192,9 @@ void DCTSolver::compute_W_intermediate() {
     global_dpd_->buf4_close(&Kab);
     global_dpd_->buf4_close(&Kaa);
 
-    // Temp2_(IA|jb) -> Temp2_<Ij|Ab>
-    global_dpd_->buf4_sort(&TT, PSIF_DCT_DPD, prqs, ID("[O,o]"), ID("[V,v]"), "Temp2 <Oo|Vv>");
+    // Temp2_(IA|jb) -> Temp2_<Ij|Ab> using chemist-to-physicist notation
+    libtrans::IntegralPermutations::chemist_to_physicist(&TT, PSIF_DCT_DPD, ID("[O,o]"), ID("[V,v]"),
+                                                          "Temp2 <Oo|Vv>");
     global_dpd_->buf4_close(&TT);
 
     // W_IjAb += Temp2_IjAb
@@ -3230,8 +3257,9 @@ void DCTSolver::compute_W_intermediate() {
     global_dpd_->buf4_close(&Kab);
     global_dpd_->buf4_close(&Kbb);
 
-    // Temp2_(ia|jb) -> Temp2_<ij|ab>
-    global_dpd_->buf4_sort(&TT, PSIF_DCT_DPD, prqs, ID("[o,o]"), ID("[v,v]"), "Temp2 <oo|vv>");
+    // Temp2_(ia|jb) -> Temp2_<ij|ab> using chemist-to-physicist notation
+    libtrans::IntegralPermutations::chemist_to_physicist(&TT, PSIF_DCT_DPD, ID("[o,o]"), ID("[v,v]"),
+                                                          "Temp2 <oo|vv>");
     global_dpd_->buf4_close(&TT);
 
     // W_ijab += Temp2_ijab
