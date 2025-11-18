@@ -44,6 +44,7 @@
 #include "MOInfo.h"
 #include "Params.h"
 #include "Frozen.h"
+#include "psi4/cc/common/CCParamsParser.h"
 #define EXTERN
 #include "globals.h"
 
@@ -51,10 +52,16 @@ namespace psi {
 namespace ccdensity {
 
 void get_params(Options& options) {
-    params.wfn = options.get_str("WFN");
+    // Parse common CC parameters using shared parser
+    psi::cc::common::parse_wfn(params.wfn, options);
+    psi::cc::common::parse_memory(params.memory);
+    psi::cc::common::parse_cachelev(params.cachelev, options);
+    psi::cc::common::parse_dertype(params.dertype, options);
 
+    // Module-specific: Read reference from PSIF_CC_INFO (not from options)
     psio_read_entry(PSIF_CC_INFO, "Reference Wavefunction", (char*)&(params.ref), sizeof(int));
 
+    // Module-specific parameters
     params.onepdm = options.get_bool("OPDM_ONLY");
     if (options["ONEPDM"].has_changed()) {
         outfile->Printf("\tWarning! ONEPDM is deprecated and will be removed in 1.7. Use OPDM_ONLY instead.");
@@ -81,32 +88,11 @@ void get_params(Options& options) {
     params.tolerance = 1e-14;
     params.tolerance = options.get_double("INTS_TOLERANCE");
 
-    params.memory = Process::environment.get_memory();
-    // fndcor(&(params.memory),infile,outfile);
-
-    //  params.cachelev = 2;
-    params.cachelev = options.get_int("CACHELEVEL");
-
-    // params.aobasis = 0;
     params.aobasis = options.get_bool("AO_BASIS");
 
     params.gauge = options.get_str("GAUGE");
     if (params.gauge != "LENGTH" && params.gauge != "VELOCITY") {
         printf("Invalid choice of gauge: %s\n", params.gauge.c_str());
-        throw PsiException("ccdensity: error", __FILE__, __LINE__);
-    }
-
-    /*** determine DERTYPE from input */
-    params.dertype = 0;
-    std::string junk = options.get_str("DERTYPE");
-    if (junk == "NONE")
-        params.dertype = 0;
-    else if (junk == "FIRST")
-        params.dertype = 1;
-    else if (junk == "RESPONSE")
-        params.dertype = 3;
-    else {
-        printf("Invalid value of input keyword DERTYPE: %s\n", junk.c_str());
         throw PsiException("ccdensity: error", __FILE__, __LINE__);
     }
 

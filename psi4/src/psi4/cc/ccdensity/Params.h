@@ -31,55 +31,61 @@
 
 /*! \file
     \ingroup CCDENSITY
-    \brief Enter brief description of file here
+    \brief Parameters for ccdensity module
 */
 
 #include <string>
+#include "psi4/cc/common/CCParams.h"
 
 namespace psi {
 namespace ccdensity {
 
-/* Input parameters for cclambda */
-struct Params {
-    double tolerance;
-    long int memory;
-    int cachelev;
-    int aobasis;
-    int ref;
-    bool onepdm;            /* produce ONLY the onepdm for properties */
-    int relax_opdm;
-    int use_zeta;
-    int calc_xi;
-    int connect_xi;
-    int restart;
-    int ground;
-    int transition;
-    int dertype;
-    std::string wfn;
+/*! \brief Parameters for ccdensity module
+ *
+ * Extends common CC parameters with ccdensity-specific parameters.
+ */
+struct Params : public psi::cc::common::CCParams {
+    // Module-specific parameters
+    double tolerance;       // Convergence tolerance
+    int aobasis;            // Use AO basis (boolean)
+    bool onepdm;            // Produce ONLY the onepdm for properties
+    int relax_opdm;         // Compute relaxed one-particle density matrix
+    int use_zeta;           // Use zeta equations
+    int calc_xi;            // Calculate xi intermediates
+    int connect_xi;         // Connect xi intermediates
+    int ground;             // Ground state density
+    int transition;         // Transition density
     // TODO: Make meaning of variable invariant.
     //       Initially, this variable means number of states, but later
     //       it changes to number of excited states. This inconsistency
     //       should be fixed. Resolving the problem is not safe until the
     //       ccdensity module is documented.
-    int nstates;
-    int prop_sym;
-    int prop_root;
-    int prop_all;
-    std::string gauge;
-    bool write_nos;
-    int debug_;
+    int nstates;            // Number of states (meaning varies in code!)
+    int prop_sym;           // Property symmetry
+    int prop_root;          // Property root
+    int prop_all;           // Compute properties for all states
+    std::string gauge;      // Gauge choice for properties
+    bool write_nos;         // Write natural orbitals
+    int debug_;             // Debug level
 
-    /* these are used by Xi and twopdm code */
-    int G_irr;
-    int R_irr;
-    int L_irr;
-    double R0;
-    double L0;
-    double cceom_energy;
-    double overlap1;   /* <L1|R1> */
-    double overlap2;   /* <L2|R2> */
-    double RD_overlap; /* Rmnef <mn||ef> */
-    double RZ_overlap; /* <R|zeta> */
+    // These are used by Xi and twopdm code
+    int G_irr;              // G irrep
+    int R_irr;              // R irrep
+    int L_irr;              // L irrep
+    double R0;              // R0 value
+    double L0;              // L0 value
+    double cceom_energy;    // EOM-CC energy
+    double overlap1;        // <L1|R1>
+    double overlap2;        // <L2|R2>
+    double RD_overlap;      // Rmnef <mn||ef>
+    double RZ_overlap;      // <R|zeta>
+
+    Params() : CCParams(), tolerance(1e-7), aobasis(0), onepdm(false), relax_opdm(0),
+               use_zeta(0), calc_xi(0), connect_xi(0), ground(0), transition(0),
+               nstates(0), prop_sym(0), prop_root(0), prop_all(0), gauge("LENGTH"),
+               write_nos(false), debug_(0), G_irr(0), R_irr(0), L_irr(0), R0(0.0),
+               L0(0.0), cceom_energy(0.0), overlap1(0.0), overlap2(0.0),
+               RD_overlap(0.0), RZ_overlap(0.0) {}
 };
 
 struct RHO_Params {
