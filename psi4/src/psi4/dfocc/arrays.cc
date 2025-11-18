@@ -772,40 +772,38 @@ void Array2d::to_shared_matrix(SharedMatrix A) {
     }
 }  //
 
+/*!
+** \brief Modified Gram-Schmidt orthogonalization of matrix columns
+**
+** Orthogonalizes the columns of the Array2d matrix using the Modified Gram-Schmidt
+** algorithm. This implementation now uses the common OrthoUtil library
+** (psi4/libqt/ortho_util.h) for consistency across Psi4 modules.
+**
+** Modified Gram-Schmidt is numerically more stable than Classical Gram-Schmidt
+** for nearly-dependent vectors.
+**
+** The matrix is assumed to have dim1_ rows and dim1_ columns for orthogonalization.
+**
+** See also: psi4/libqt/ortho_util.h for the underlying implementation
+*/
 void Array2d::mgs() {
-    double rmgs1, rmgs2;
-
-    for (int k = 0; k < dim1_; k++) {  // loop-1
-        rmgs1 = 0.0;
-
-        for (int i = 0; i < dim1_; i++) {
-            rmgs1 += A2d_[i][k] * A2d_[i][k];
-        }
-
-        rmgs1 = sqrt(rmgs1);
-
-        for (int i = 0; i < dim1_; i++) {
-            A2d_[i][k] /= rmgs1;
-        }
-
-        for (int j = (k + 1); j < dim1_; j++) {  // loop-2
-            rmgs2 = 0.0;
-
-            for (int i = 0; i < dim1_; i++) {
-                rmgs2 += A2d_[i][k] * A2d_[i][j];
-            }
-
-            for (int i = 0; i < dim1_; i++) {
-                A2d_[i][j] -= rmgs2 * A2d_[i][k];
-            }
-        }  // end 2
-    }      // end 1
-
+    // Use common OrthoUtil library for column orthogonalization
+    // This replaces the previous inline implementation with a unified approach
+    OrthoUtil::modified_gram_schmidt_columns(A2d_, dim1_, dim1_);
 }  //
 
+/*!
+** \brief Classical Gram-Schmidt orthogonalization of matrix rows
+**
+** Orthogonalizes the rows of the Array2d matrix using the Classical Gram-Schmidt
+** algorithm. This implementation now uses the common OrthoUtil library
+** (psi4/libqt/ortho_util.h) for consistency across Psi4 modules.
+**
+** See also: psi4/libqt/ortho_util.h for the underlying implementation
+*/
 void Array2d::gs() {
     if (dim1_ != 0 && dim2_ != 0) {
-        schmidt(A2d_, dim1_, dim2_, "outfile");
+        OrthoUtil::classical_gram_schmidt(A2d_, dim1_, dim2_, "outfile");
     }
 }  //
 
