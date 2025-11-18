@@ -36,7 +36,7 @@
 namespace psi {
 
 /*!
-** buf4_rms_diff(): Computes the sum of squared differences (RMS^2) between
+** buf4_sq_diff(): Computes the sum of squared differences between
 ** two dpdbuf4 objects. This is useful for convergence checking in iterative
 ** CC methods.
 **
@@ -46,12 +46,12 @@ namespace psi {
 ** Returns: sum of (Buf1[i] - Buf2[i])^2 over all elements
 **
 ** Note: The square root is NOT taken, allowing the caller to accumulate
-** contributions from multiple buffers before taking sqrt once.
+** contributions from multiple buffers before taking sqrt once at the end.
 */
-double DPD::buf4_rms_diff(dpdbuf4 *Buf1, dpdbuf4 *Buf2) {
+double DPD::buf4_sq_diff(dpdbuf4 *Buf1, dpdbuf4 *Buf2) {
     int h, nirreps, my_irrep;
     int row, col;
-    double rms = 0.0, diff;
+    double sum_sq_diff = 0.0, diff;
 
     nirreps = Buf1->params->nirreps;
     my_irrep = Buf1->file.my_irrep;
@@ -67,14 +67,14 @@ double DPD::buf4_rms_diff(dpdbuf4 *Buf1, dpdbuf4 *Buf2) {
         for (row = 0; row < Buf1->params->rowtot[h]; row++)
             for (col = 0; col < Buf1->params->coltot[h ^ my_irrep]; col++) {
                 diff = Buf1->matrix[h][row][col] - Buf2->matrix[h][row][col];
-                rms += diff * diff;
+                sum_sq_diff += diff * diff;
             }
 
         buf4_mat_irrep_close(Buf1, h);
         buf4_mat_irrep_close(Buf2, h);
     }
 
-    return rms;
+    return sum_sq_diff;
 }
 
 }  // namespace psi

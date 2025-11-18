@@ -36,7 +36,7 @@
 namespace psi {
 
 /*!
-** file2_rms_diff(): Computes the sum of squared differences (RMS^2) between
+** file2_sq_diff(): Computes the sum of squared differences between
 ** two dpdfile2 objects. This is useful for convergence checking in iterative
 ** CC methods.
 **
@@ -46,12 +46,12 @@ namespace psi {
 ** Returns: sum of (File1[i] - File2[i])^2 over all elements
 **
 ** Note: The square root is NOT taken, allowing the caller to accumulate
-** contributions from multiple files before taking sqrt once.
+** contributions from multiple files before taking sqrt once at the end.
 */
-double DPD::file2_rms_diff(dpdfile2 *File1, dpdfile2 *File2) {
+double DPD::file2_sq_diff(dpdfile2 *File1, dpdfile2 *File2) {
     int h, nirreps, my_irrep;
     int row, col;
-    double rms = 0.0, diff;
+    double sum_sq_diff = 0.0, diff;
 
     nirreps = File1->params->nirreps;
     my_irrep = File1->my_irrep;
@@ -67,14 +67,14 @@ double DPD::file2_rms_diff(dpdfile2 *File1, dpdfile2 *File2) {
         for (row = 0; row < File1->params->rowtot[h]; row++)
             for (col = 0; col < File1->params->coltot[h ^ my_irrep]; col++) {
                 diff = File1->matrix[h][row][col] - File2->matrix[h][row][col];
-                rms += diff * diff;
+                sum_sq_diff += diff * diff;
             }
 
     // Clean up
     file2_mat_close(File1);
     file2_mat_close(File2);
 
-    return rms;
+    return sum_sq_diff;
 }
 
 }  // namespace psi

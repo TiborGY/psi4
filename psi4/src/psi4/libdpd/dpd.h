@@ -371,7 +371,7 @@ class PSI_API DPD {
     double file2_dot(dpdfile2 *FileA, dpdfile2 *FileB);
     int file2_scm(dpdfile2 *InFile, double alpha);
     double file2_dot_self(dpdfile2 *BufX);
-    double file2_rms_diff(dpdfile2 *File1, dpdfile2 *File2);
+    double file2_sq_diff(dpdfile2 *File1, dpdfile2 *File2);
     double file2_trace(dpdfile2 *InFile);
     int file2_axpy(dpdfile2 *FileA, dpdfile2 *FileB, double alpha, int transA);
     int file2_axpbycz(dpdfile2 *FileA, dpdfile2 *FileB, dpdfile2 *FileC, double a, double b, double c);
@@ -417,7 +417,7 @@ class PSI_API DPD {
     int buf4_dirprd(dpdbuf4 *BufA, dpdbuf4 *BufB);
     double buf4_dot(dpdbuf4 *BufA, dpdbuf4 *BufB);
     double buf4_dot_self(dpdbuf4 *BufX);
-    double buf4_rms_diff(dpdbuf4 *Buf1, dpdbuf4 *Buf2);
+    double buf4_sq_diff(dpdbuf4 *Buf1, dpdbuf4 *Buf2);
     int buf4_scm(dpdbuf4 *InBuf, double alpha);
     int buf4_scmcopy(dpdbuf4 *InBuf, int outfilenum, const char *label, double alpha);
     int buf4_symm(dpdbuf4 *Buf);
