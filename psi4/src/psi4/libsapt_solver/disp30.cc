@@ -31,6 +31,7 @@
 #include "psi4/libpsio/psio.hpp"
 #include "psi4/libpsio/psio.h"
 #include "psi4/libqt/qt.h"
+#include "psi4/libmints/matrix.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
 
 namespace psi {
@@ -41,20 +42,18 @@ void SAPT2p3::disp30() {
         double **B_p_AR = get_DF_ints(PSIF_SAPT_AA_DF_INTS, "AR RI Integrals", foccA_, noccA_, 0, nvirA_);
         double **B_p_BS = get_DF_ints(PSIF_SAPT_BB_DF_INTS, "BS RI Integrals", foccB_, noccB_, 0, nvirB_);
 
-        double **tARBS = block_matrix(aoccA_ * nvirA_, aoccB_ * nvirB_);
-        double **vARBS = block_matrix(aoccA_ * nvirA_, aoccB_ * nvirB_);
-        psio_->read_entry(PSIF_SAPT_AMPS, "Disp30 uARBS Amplitudes", (char *)tARBS[0],
+        auto tARBS = std::make_shared<Matrix>("tARBS", aoccA_ * nvirA_, aoccB_ * nvirB_);
+        auto vARBS = std::make_shared<Matrix>("vARBS", aoccA_ * nvirA_, aoccB_ * nvirB_);
+        psio_->read_entry(PSIF_SAPT_AMPS, "Disp30 uARBS Amplitudes", (char *)tARBS->get_pointer(),
                           sizeof(double) * aoccA_ * nvirA_ * aoccB_ * nvirB_);
 
         C_DGEMM('N', 'T', aoccA_ * nvirA_, aoccB_ * nvirB_, ndf_ + 3, 1.0, B_p_AR[0], ndf_ + 3, B_p_BS[0], ndf_ + 3,
-                0.0, vARBS[0], aoccB_ * nvirB_);
+                0.0, vARBS->get_pointer(), aoccB_ * nvirB_);
 
-        e_disp30_ = 4.0 * C_DDOT((long int)aoccA_ * nvirA_ * aoccB_ * nvirB_, vARBS[0], 1, tARBS[0], 1);
+        e_disp30_ = 4.0 * C_DDOT((long int)aoccA_ * nvirA_ * aoccB_ * nvirB_, vARBS->get_pointer(), 1, tARBS->get_pointer(), 1);
 
         free_block(B_p_AR);
         free_block(B_p_BS);
-        free_block(vARBS);
-        free_block(tARBS);
     } else {
         double e1 = disp30_1(PSIF_SAPT_AMPS, "tARBS Amplitudes", PSIF_SAPT_AA_DF_INTS, "RR RI Integrals",
                              PSIF_SAPT_BB_DF_INTS, "SS RI Integrals", foccA_, noccA_, nvirA_, foccB_, noccB_, nvirB_);
@@ -75,10 +74,13 @@ double SAPT2p3::disp30_1(int ampfile, const char *amplabel, int AAintfile, const
     size_t aoccA = noccA - foccA;
     size_t aoccB = noccB - foccB;
 
-    double **tARBS = block_matrix(aoccA_ * nvirA_, aoccB_ * nvirB_);
-    psio_->read_entry(PSIF_SAPT_AMPS, "tARBS Amplitudes", (char *)tARBS[0],
+    auto tARBS = std::make_shared<Matrix>("tARBS", aoccA_ * nvirA_, aoccB_ * nvirB_);
+    psio_->read_entry(PSIF_SAPT_AMPS, "tARBS Amplitudes", (char *)tARBS->get_pointer(),
                       sizeof(double) * aoccA_ * nvirA_ * aoccB_ * nvirB_);
-    double **tRSAB = block_matrix(nvirA * nvirB, aoccA * aoccB);
+    double **tARBSp = tARBS->pointer();
+
+    auto tRSAB = std::make_shared<Matrix>("tRSAB", nvirA * nvirB, aoccA * aoccB);
+    double **tRSABp = tRSAB->pointer();
 
     for (int a = 0, ar = 0; a < aoccA; a++) {
         for (int r = 0; r < nvirA; r++, ar++) {
@@ -87,66 +89,63 @@ double SAPT2p3::disp30_1(int ampfile, const char *amplabel, int AAintfile, const
                     int ab = a * aoccB + b;
                     int rs = r * nvirB + s;
                     int sr = s * nvirA + r;
-                    tRSAB[rs][ab] = tARBS[ar][bs];
+                    tRSABp[rs][ab] = tARBSp[ar][bs];
                 }
             }
         }
     }
-
-    free_block(tARBS);
 
     double energy = 0.0;
 
     psio_address next_DF_RR = PSIO_ZERO;
     psio_address next_DF_SS = PSIO_ZERO;
 
-    double **B_p_RR = block_matrix(nvirA * (nvirA + 1) / 2, ndf_ + 3);
-    double **B_p_SS = block_matrix(nvirB * (nvirB + 1) / 2, ndf_ + 3);
+    auto B_p_RR = std::make_shared<Matrix>("B_p_RR", nvirA * (nvirA + 1) / 2, ndf_ + 3);
+    double **B_p_RRp = B_p_RR->pointer();
+    auto B_p_SS = std::make_shared<Matrix>("B_p_SS", nvirB * (nvirB + 1) / 2, ndf_ + 3);
+    double **B_p_SSp = B_p_SS->pointer();
 
     for (int r1 = 0, r1r2 = 0; r1 < nvirA; r1++) {
         for (int r2 = 0; r2 <= r1; r2++, r1r2++) {
             next_DF_RR = psio_get_address(PSIO_ZERO, sizeof(double) * (r1 * nvirA + r2) * (ndf_ + 3));
-            psio_->read(AAintfile, RRlabel, (char *)&(B_p_RR[r1r2][0]), sizeof(double) * (ndf_ + 3), next_DF_RR,
+            psio_->read(AAintfile, RRlabel, (char *)&(B_p_RRp[r1r2][0]), sizeof(double) * (ndf_ + 3), next_DF_RR,
                         &next_DF_RR);
-            if (r1 != r2) C_DSCAL(ndf_ + 3, 2.0, B_p_RR[r1r2], 1);
+            if (r1 != r2) C_DSCAL(ndf_ + 3, 2.0, B_p_RRp[r1r2], 1);
         }
     }
 
     for (int s1 = 0, s1s2 = 0; s1 < nvirB; s1++) {
         for (int s2 = 0; s2 <= s1; s2++, s1s2++) {
             next_DF_SS = psio_get_address(PSIO_ZERO, sizeof(double) * (s1 * nvirB + s2) * (ndf_ + 3));
-            psio_->read(BBintfile, SSlabel, (char *)&(B_p_SS[s1s2][0]), sizeof(double) * (ndf_ + 3), next_DF_SS,
+            psio_->read(BBintfile, SSlabel, (char *)&(B_p_SSp[s1s2][0]), sizeof(double) * (ndf_ + 3), next_DF_SS,
                         &next_DF_SS);
-            if (s1 != s2) C_DSCAL(ndf_ + 3, 2.0, B_p_SS[s1s2], 1);
+            if (s1 != s2) C_DSCAL(ndf_ + 3, 2.0, B_p_SSp[s1s2], 1);
         }
     }
 
-    double **xRS = block_matrix(nvirA, nvirB * nvirB);
-    double **yRS = block_matrix(nvirA, nvirB * (nvirB + 1) / 2);
+    auto xRS = std::make_shared<Matrix>("xRS", nvirA, nvirB * nvirB);
+    double **xRSp = xRS->pointer();
+    auto yRS = std::make_shared<Matrix>("yRS", nvirA, nvirB * (nvirB + 1) / 2);
+    double **yRSp = yRS->pointer();
     double *zSS = init_array(nvirB * (nvirB + 1) / 2);
 
     for (int r1 = 0; r1 < nvirA; r1++) {
-        C_DGEMM('N', 'T', (r1 + 1) * nvirB, nvirB, aoccA * aoccB, 1.0, tRSAB[0], aoccA * aoccB, tRSAB[r1 * nvirB],
-                aoccA * aoccB, 0.0, xRS[0], nvirB);
-        C_DGEMM('N', 'T', (r1 + 1), nvirB * (nvirB + 1) / 2, ndf_ + 3, 1.0, B_p_RR[ioff_[r1]], ndf_ + 3, B_p_SS[0],
-                ndf_ + 3, 0.0, yRS[0], nvirB * (nvirB + 1) / 2);
+        C_DGEMM('N', 'T', (r1 + 1) * nvirB, nvirB, aoccA * aoccB, 1.0, tRSAB->get_pointer(), aoccA * aoccB, tRSABp[r1 * nvirB],
+                aoccA * aoccB, 0.0, xRS->get_pointer(), nvirB);
+        C_DGEMM('N', 'T', (r1 + 1), nvirB * (nvirB + 1) / 2, ndf_ + 3, 1.0, B_p_RRp[ioff_[r1]], ndf_ + 3, B_p_SS->get_pointer(),
+                ndf_ + 3, 0.0, yRS->get_pointer(), nvirB * (nvirB + 1) / 2);
         for (int r2 = 0; r2 <= r1; r2++) {
             for (int s1 = 0, s1s2 = 0; s1 < nvirB; s1++) {
                 for (int s2 = 0; s2 <= s1; s2++, s1s2++) {
-                    zSS[s1s2] = xRS[r2][s1 * nvirB + s2];
-                    zSS[s1s2] += xRS[r2][s2 * nvirB + s1];
+                    zSS[s1s2] = xRSp[r2][s1 * nvirB + s2];
+                    zSS[s1s2] += xRSp[r2][s2 * nvirB + s1];
                 }
             }
-            energy += 2.0 * C_DDOT(nvirB * (nvirB + 1) / 2, zSS, 1, yRS[r2], 1);
+            energy += 2.0 * C_DDOT(nvirB * (nvirB + 1) / 2, zSS, 1, yRSp[r2], 1);
         }
     }
 
-    free_block(B_p_RR);
-    free_block(B_p_SS);
-    free_block(xRS);
-    free_block(yRS);
     free(zSS);
-    free_block(tRSAB);
 
     return (energy);
 }
