@@ -14,6 +14,7 @@ list(APPEND sources
   buf4_dirprd.cc
   buf4_dot.cc
   buf4_dot_self.cc
+  buf4_rms_diff.cc
   buf4_dump.cc
   buf4_init.cc
   buf4_mat_irrep_close.cc
@@ -67,6 +68,7 @@ list(APPEND sources
   file2_dirprd.cc
   file2_dot.cc
   file2_dot_self.cc
+  file2_rms_diff.cc
   file2_init.cc
   file2_mat_close.cc
   file2_mat_init.cc
