@@ -271,9 +271,9 @@ SharedVector DiskDFJK::iaia(SharedMatrix Ci, SharedMatrix Ca) {
 void DiskDFJK::print_header() const {
     if (print_) {
         HeaderPrinter header("DiskDFJK: Density-Fitted J/K Matrices");
-        header.add_parameter("J tasked", do_J_ ? "Yes" : "No")
-              .add_parameter("K tasked", do_K_ ? "Yes" : "No")
-              .add_parameter("wK tasked", do_wK_ ? "Yes" : "No");
+        header.add_parameter("J tasked", do_J_)
+              .add_parameter("K tasked", do_K_)
+              .add_parameter("wK tasked", do_wK_);
         if (do_wK_) header.add_parameter("Omega", omega_);
         header.add_parameter("OpenMP threads", omp_nthread_)
               .add_parameter("Integrals threads", df_ints_num_threads_)

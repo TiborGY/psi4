@@ -203,15 +203,15 @@ void CompositeJK::print_header() const {
     std::string screen_type = options_.get_str("SCREENING");
     if (print_) {
         HeaderPrinter header("CompositeJK: Mix-and-Match J+K Algorithm Combos");
-        header.add_parameter("J tasked", do_J_ ? "Yes" : "No");
+        header.add_parameter("J tasked", do_J_);
         if (do_J_) header.add_parameter("J algorithm", j_algo_->name());
-        header.add_parameter("K tasked", do_K_ ? "Yes" : "No");
+        header.add_parameter("K tasked", do_K_);
         if (do_K_) header.add_parameter("K algorithm", k_algo_->name());
-        header.add_parameter("wK tasked", do_wK_ ? "Yes" : "No");
+        header.add_parameter("wK tasked", do_wK_);
         if (do_wK_) header.add_parameter("Omega", omega_);
         header.add_parameter("Integrals threads", nthreads_)
               .add_parameter("Memory [MiB]", (memory_ * 8L) / (1024L * 1024L))
-              .add_parameter("Incremental Fock", incfock_ ? "Yes" : "No")
+              .add_parameter("Incremental Fock", incfock_)
               .add_parameter("Screening Type", screen_type)
               .print();
 

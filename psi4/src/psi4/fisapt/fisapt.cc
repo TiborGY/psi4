@@ -98,8 +98,8 @@ void FISAPT::print_header() {
     HeaderPrinter header("FISAPT0", HeaderPrinter::BannerStyle::BOX, 46);
     header.add_authors({"Rob Parrish"})
           .add_blank_line()
-          .add_parameter("Do F-SAPT", options_.get_bool("FISAPT_DO_FSAPT") ? "Yes" : "No")
-          .add_parameter("Do Plot", options_.get_bool("FISAPT_DO_PLOT") ? "Yes" : "No")
+          .add_parameter("Do F-SAPT", options_.get_bool("FISAPT_DO_FSAPT"))
+          .add_parameter("Do Plot", options_.get_bool("FISAPT_DO_PLOT"))
           .add_parameter("Memory", (doubles_ * 8) / (1024.0 * 1024.0 * 1024.0), "%11.3f [GiB]")
           .print();
 }

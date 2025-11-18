@@ -68,7 +68,7 @@ void LS_THC_Computer::print_header() {
           .add_parameter("LS_THC_BASIS_TOLERANCE", options_.get_double("LS_THC_BASIS_TOLERANCE"), "%6.3e", 25)
           .add_parameter("LS_THC_WEIGHTS_TOLERANCE", options_.get_double("LS_THC_WEIGHTS_TOLERANCE"), "%6.3e", 25)
           .add_parameter("LS_THC_S_EPSILON", options_.get_double("LS_THC_S_EPSILON"), "%6.3e", 25)
-          .add_parameter("Using DF?", use_df_ ? "Yes" : "No", "%3s", 25)
+          .add_parameter("Using DF?", use_df_, 25)
           .print();
     outfile->Printf("\n");
 }
