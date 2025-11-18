@@ -213,7 +213,7 @@ def database(name, db_name, **kwargs):
     >>> database('ccsd','HTBH',subset='small', tabulate=['ccsd total energy', 'mp2 total energy'])
 
     """
-    lowername = name  #TODO
+    lowername = name.lower() if isinstance(name, str) else name
     kwargs = p4util.kwargs_lower(kwargs)
 
     # Wrap any positional arguments into kwargs (for intercalls among wrappers)
