@@ -209,7 +209,8 @@ void SAPT0::disp20()
   Iterator B_AR_iter = get_iterator(avail_mem/2,&B_p_AR);
   Iterator C_AR_iter = get_iterator(avail_mem/2,&C_p_AR);
 
-  double **xPQ = block_matrix(ndf_,ndf_);
+  auto xPQ = std::make_shared<Matrix>("xPQ", ndf_, ndf_);
+  double **xPQp = xPQ->pointer();
 
   for (int i=0; i<nvec_; i++) {
     for (int j=0, Boff=0; j<B_AR_iter.num_blocks; j++) {
@@ -227,7 +228,7 @@ void SAPT0::disp20()
 
         C_DGEMM('N','T',B_AR_iter.curr_size,C_AR_iter.curr_size,aoccA_*nvirA_,
           2.0,B_p_AR.B_p_[0],aoccA_*nvirA_,C_p_AR.B_p_[0],aoccA_*nvirA_,
-          0.0,&(xPQ[Boff][Coff]),ndf_);
+          0.0,&(xPQp[Boff][Coff]),ndf_);
 
         Coff += C_AR_iter.curr_size;
       }
@@ -238,7 +239,7 @@ void SAPT0::disp20()
     B_p_AR.rewind();
     B_AR_iter.rewind();
 
-    psio_->write(PSIF_SAPT_TEMP,"X PQ Matrices",(char *) &(xPQ[0][0]),
+    psio_->write(PSIF_SAPT_TEMP,"X PQ Matrices",(char *)xPQ->get_pointer(),
       sizeof(double)*ndf_*ndf_,next_xPQ,&next_xPQ);
   }
 
@@ -266,7 +267,7 @@ void SAPT0::disp20()
 
         C_DGEMM('N','T',B_BS_iter.curr_size,C_BS_iter.curr_size,aoccB_*nvirB_,
           2.0,B_p_BS.B_p_[0],aoccB_*nvirB_,C_p_BS.B_p_[0],aoccB_*nvirB_,
-          0.0,&(xPQ[Boff][Coff]),ndf_);
+          0.0,&(xPQp[Boff][Coff]),ndf_);
 
         Coff += C_BS_iter.curr_size;
       }
@@ -277,7 +278,7 @@ void SAPT0::disp20()
     B_p_BS.rewind();
     B_BS_iter.rewind();
 
-    psio_->write(PSIF_SAPT_TEMP,"Y PQ Matrices",(char *) &(xPQ[0][0]),
+    psio_->write(PSIF_SAPT_TEMP,"Y PQ Matrices",(char *)xPQ->get_pointer(),
       sizeof(double)*ndf_*ndf_,next_yPQ,&next_yPQ);
   }
 
@@ -287,18 +288,18 @@ void SAPT0::disp20()
   next_xPQ = PSIO_ZERO;
   next_yPQ = PSIO_ZERO;
 
-  double **yPQ = block_matrix(ndf_,ndf_);
+  auto yPQ = std::make_shared<Matrix>("yPQ", ndf_, ndf_);
 
   if (debug_)
     outfile->Printf("\n");
 
   e_disp20_ = 0.0;
   for (int i=0; i<nvec_; i++) {
-    psio_->read(PSIF_SAPT_TEMP,"X PQ Matrices",(char *) &(xPQ[0][0]),
+    psio_->read(PSIF_SAPT_TEMP,"X PQ Matrices",(char *)xPQ->get_pointer(),
       sizeof(double)*ndf_*ndf_,next_xPQ,&next_xPQ);
-    psio_->read(PSIF_SAPT_TEMP,"Y PQ Matrices",(char *) &(yPQ[0][0]),
+    psio_->read(PSIF_SAPT_TEMP,"Y PQ Matrices",(char *)yPQ->get_pointer(),
       sizeof(double)*ndf_*ndf_,next_yPQ,&next_yPQ);
-    double tval = C_DDOT(ndf_*ndf_,xPQ[0],1,yPQ[0],1);
+    double tval = C_DDOT(ndf_*ndf_,xPQ->get_pointer(),1,yPQ->get_pointer(),1);
     e_disp20_ -= tval;
     if (debug_)
       outfile->Printf("    Disp %2d             = %18.12lf [Eh]\n",i+1,-tval);
@@ -307,8 +308,7 @@ void SAPT0::disp20()
   if (debug_)
     outfile->Printf("\n");
 
-  free_block(xPQ);
-  free_block(yPQ);
+  // Automatic cleanup via shared_ptr
 
   if (print_) {
     outfile->Printf("    Disp20              = %18.12lf [Eh]\n",e_disp20_);
