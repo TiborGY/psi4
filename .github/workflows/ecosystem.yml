@@ -259,12 +259,6 @@ jobs:
         conda remove qcelemental --force
         python -m pip install git+https://github.com/MolSSI/QCElemental.git@v0.29.0.dev2 --no-deps
 
-    - name: Special Config - QCEngine Dep
-      if: false  # needed for Windows + DFTD4
-      run: |
-        conda remove qcengine --force  # TODO UNDO after https://github.com/MolSSI/QCEngine/pull/472
-        python -m pip install git+https://github.com/loriab/QCEngine.git@d4why --no-deps
-
     - name: Special Config - QCManyBody Dep
       if: false
       run: |
