@@ -127,7 +127,7 @@ double SAPT2p3::disp30_1(int ampfile, const char *amplabel, int AAintfile, const
     double **xRSp = xRS->pointer();
     auto yRS = std::make_shared<Matrix>("yRS", nvirA, nvirB * (nvirB + 1) / 2);
     double **yRSp = yRS->pointer();
-    double *zSS = init_array(nvirB * (nvirB + 1) / 2);
+    std::vector<double> zSS(nvirB * (nvirB + 1) / 2);
 
     for (int r1 = 0; r1 < nvirA; r1++) {
         C_DGEMM('N', 'T', (r1 + 1) * nvirB, nvirB, aoccA * aoccB, 1.0, tRSAB->get_pointer(), aoccA * aoccB, tRSABp[r1 * nvirB],
@@ -141,11 +141,11 @@ double SAPT2p3::disp30_1(int ampfile, const char *amplabel, int AAintfile, const
                     zSS[s1s2] += xRSp[r2][s2 * nvirB + s1];
                 }
             }
-            energy += 2.0 * C_DDOT(nvirB * (nvirB + 1) / 2, zSS, 1, yRSp[r2], 1);
+            energy += 2.0 * C_DDOT(nvirB * (nvirB + 1) / 2, zSS.data(), 1, yRSp[r2], 1);
         }
     }
 
-    free(zSS);
+    // Automatic cleanup via std::vector
 
     return (energy);
 }
