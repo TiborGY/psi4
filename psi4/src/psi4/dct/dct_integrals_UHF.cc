@@ -34,6 +34,7 @@
 #include "psi4/libpsi4util/PsiOutStream.h"
 #include "psi4/libpsio/psio.hpp"
 #include "psi4/libtrans/integraltransform.h"
+#include "psi4/libtrans/integral_permutations.h"
 
 namespace psi {
 namespace dct {
@@ -157,30 +158,33 @@ void DCTSolver::transform_integrals() {
 void DCTSolver::sort_OVOV_integrals() {
     dpdbuf4 I;
 
+    // Alpha-Alpha spin case: (OV|OV) → <OO|VV> → <VV|OO>
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), 0,
                            "MO Ints (OV|OV)");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, prqs, ID("[O,O]"), ID("[V,V]"), "MO Ints <OO|VV>");
+    libtrans::IntegralPermutations::ovov_to_oovv(&I, PSIF_LIBTRANS_DPD, "MO Ints <OO|VV>");
     global_dpd_->buf4_close(&I);
 
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[O,O]"), ID("[V,V]"), ID("[O,O]"), ID("[V,V]"), 0,
                            "MO Ints <OO|VV>");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, rspq, ID("[V,V]"), ID("[O,O]"), "MO Ints <VV|OO>");
+    libtrans::IntegralPermutations::transpose_oovv(&I, PSIF_LIBTRANS_DPD, "MO Ints <VV|OO>");
     global_dpd_->buf4_close(&I);
 
+    // Alpha-Beta spin case: (OV|ov) → <Oo|Vv>
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[o,v]"), ID("[O,V]"), ID("[o,v]"), 0,
                            "MO Ints (OV|ov)");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, prqs, ID("[O,o]"), ID("[V,v]"), "MO Ints <Oo|Vv>");
+    libtrans::IntegralPermutations::ovov_to_oovv(&I, PSIF_LIBTRANS_DPD, "MO Ints <Oo|Vv>");
     global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, psrq, ID("[O,v]"), ID("[o,V]"), "MO Ints <Ov|oV>");
     global_dpd_->buf4_close(&I);
 
+    // Beta-Beta spin case: (ov|ov) → <oo|vv> → <vv|oo>
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[o,v]"), ID("[o,v]"), ID("[o,v]"), ID("[o,v]"), 0,
                            "MO Ints (ov|ov)");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, prqs, ID("[o,o]"), ID("[v,v]"), "MO Ints <oo|vv>");
+    libtrans::IntegralPermutations::ovov_to_oovv(&I, PSIF_LIBTRANS_DPD, "MO Ints <oo|vv>");
     global_dpd_->buf4_close(&I);
 
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[o,o]"), ID("[v,v]"), ID("[o,o]"), ID("[v,v]"), 0,
                            "MO Ints <oo|vv>");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, rspq, ID("[v,v]"), ID("[o,o]"), "MO Ints <vv|oo>");
+    libtrans::IntegralPermutations::transpose_oovv(&I, PSIF_LIBTRANS_DPD, "MO Ints <vv|oo>");
     global_dpd_->buf4_close(&I);
 
     if ((options_.get_str("ALGORITHM") == "QC" && options_.get_bool("QC_COUPLING") &&
@@ -233,24 +237,31 @@ void DCTSolver::sort_OVOV_integrals() {
 void DCTSolver::sort_OOOO_integrals() {
     dpdbuf4 I;
 
+    // Alpha-Alpha spin case: (OO|OO) → <OO|OO>
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[O,O]"), ID("[O,O]"), ID("[O>=O]+"), ID("[O>=O]+"), 0,
                            "MO Ints (OO|OO)");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, prqs, ID("[O,O]"), ID("[O,O]"), "MO Ints <OO|OO>");
+    libtrans::IntegralPermutations::chemist_to_physicist(&I, PSIF_LIBTRANS_DPD, ID("[O,O]"), ID("[O,O]"),
+                                                          "MO Ints <OO|OO>");
     global_dpd_->buf4_close(&I);
 
+    // Alpha-Beta spin case: (OO|oo) → <Oo|Oo>
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[O,O]"), ID("[o,o]"), ID("[O>=O]+"), ID("[o>=o]+"), 0,
                            "MO Ints (OO|oo)");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, prqs, ID("[O,o]"), ID("[O,o]"), "MO Ints <Oo|Oo>");
+    libtrans::IntegralPermutations::chemist_to_physicist(&I, PSIF_LIBTRANS_DPD, ID("[O,o]"), ID("[O,o]"),
+                                                          "MO Ints <Oo|Oo>");
     global_dpd_->buf4_close(&I);
 
+    // (OO|oo) → (oo|OO) transpose
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[O,O]"), ID("[o,o]"), ID("[O>=O]+"), ID("[o>=o]+"), 0,
                            "MO Ints (OO|oo)");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, rspq, ID("[o,o]"), ID("[O,O]"), "MO Ints (oo|OO)");
+    libtrans::IntegralPermutations::transpose_bra_ket(&I, PSIF_LIBTRANS_DPD, "MO Ints (oo|OO)");
     global_dpd_->buf4_close(&I);
 
+    // Beta-Beta spin case: (oo|oo) → <oo|oo>
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[o,o]"), ID("[o,o]"), ID("[o>=o]+"), ID("[o>=o]+"), 0,
                            "MO Ints (oo|oo)");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, prqs, ID("[o,o]"), ID("[o,o]"), "MO Ints <oo|oo>");
+    libtrans::IntegralPermutations::chemist_to_physicist(&I, PSIF_LIBTRANS_DPD, ID("[o,o]"), ID("[o,o]"),
+                                                          "MO Ints <oo|oo>");
     global_dpd_->buf4_close(&I);
 }
 
@@ -350,24 +361,31 @@ void DCTSolver::sort_OOVV_integrals() {
 void DCTSolver::sort_VVVV_integrals() {
     dpdbuf4 I;
 
+    // Alpha-Alpha spin case: (VV|VV) → <VV|VV>
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[V,V]"), ID("[V,V]"), ID("[V>=V]+"), ID("[V>=V]+"), 0,
                            "MO Ints (VV|VV)");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, prqs, ID("[V,V]"), ID("[V,V]"), "MO Ints <VV|VV>");
+    libtrans::IntegralPermutations::chemist_to_physicist(&I, PSIF_LIBTRANS_DPD, ID("[V,V]"), ID("[V,V]"),
+                                                          "MO Ints <VV|VV>");
     global_dpd_->buf4_close(&I);
 
+    // Alpha-Beta spin case: (VV|vv) → <Vv|Vv>
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[V,V]"), ID("[v,v]"), ID("[V>=V]+"), ID("[v>=v]+"), 0,
                            "MO Ints (VV|vv)");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, prqs, ID("[V,v]"), ID("[V,v]"), "MO Ints <Vv|Vv>");
+    libtrans::IntegralPermutations::chemist_to_physicist(&I, PSIF_LIBTRANS_DPD, ID("[V,v]"), ID("[V,v]"),
+                                                          "MO Ints <Vv|Vv>");
     global_dpd_->buf4_close(&I);
 
+    // (VV|vv) → (vv|VV) transpose
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[V,V]"), ID("[v,v]"), ID("[V>=V]+"), ID("[v>=v]+"), 0,
                            "MO Ints (VV|vv)");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, rspq, ID("[v,v]"), ID("[V,V]"), "MO Ints (vv|VV)");
+    libtrans::IntegralPermutations::transpose_bra_ket(&I, PSIF_LIBTRANS_DPD, "MO Ints (vv|VV)");
     global_dpd_->buf4_close(&I);
 
+    // Beta-Beta spin case: (vv|vv) → <vv|vv>
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[v,v]"), ID("[v,v]"), ID("[v>=v]+"), ID("[v>=v]+"), 0,
                            "MO Ints (vv|vv)");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, prqs, ID("[v,v]"), ID("[v,v]"), "MO Ints <vv|vv>");
+    libtrans::IntegralPermutations::chemist_to_physicist(&I, PSIF_LIBTRANS_DPD, ID("[v,v]"), ID("[v,v]"),
+                                                          "MO Ints <vv|vv>");
     global_dpd_->buf4_close(&I);
 }
 
@@ -462,19 +480,21 @@ void DCTSolver::sort_OVVV_integrals() {
 
     dpdbuf4 I;
 
+    // Alpha-Alpha spin case: (OV|VV) → <OV|VV> → <VV|OV>
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[V,V]"), ID("[O,V]"), ID("[V>=V]+"), 0,
                            "MO Ints (OV|VV)");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, prqs, ID("[O,V]"), ID("[V,V]"), "MO Ints <OV|VV>");
+    libtrans::IntegralPermutations::ovvv_to_ovvv(&I, PSIF_LIBTRANS_DPD, "MO Ints <OV|VV>");
     global_dpd_->buf4_close(&I);
 
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[V,V]"), ID("[O,V]"), ID("[V,V]"), 0,
                            "MO Ints <OV|VV>");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, rspq, ID("[V,V]"), ID("[O,V]"), "MO Ints <VV|OV>");
+    libtrans::IntegralPermutations::transpose_bra_ket(&I, PSIF_LIBTRANS_DPD, "MO Ints <VV|OV>");
     global_dpd_->buf4_close(&I);
 
+    // Alpha-Beta mixed spin case: (OV|vv) → <Ov|Vv>
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[v,v]"), ID("[O,V]"), ID("[v>=v]+"), 0,
                            "MO Ints (OV|vv)");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, prqs, ID("[O,v]"), ID("[V,v]"), "MO Ints <Ov|Vv>");
+    libtrans::IntegralPermutations::ovvv_to_ovvv(&I, PSIF_LIBTRANS_DPD, "MO Ints <Ov|Vv>");
     global_dpd_->buf4_close(&I);
 
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[v,v]"), ID("[O,V]"), ID("[v>=v]+"), 0,
@@ -507,14 +527,15 @@ void DCTSolver::sort_OVVV_integrals() {
     global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, rspq, ID("[o,v]"), ID("[V>=V]+"), "MO Ints (ov|VV)");
     global_dpd_->buf4_close(&I);
 
+    // Beta-Beta spin case: (ov|vv) → <ov|vv> → <vv|ov>
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[o,v]"), ID("[v,v]"), ID("[o,v]"), ID("[v>=v]+"), 0,
                            "MO Ints (ov|vv)");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, prqs, ID("[o,v]"), ID("[v,v]"), "MO Ints <ov|vv>");
+    libtrans::IntegralPermutations::ovvv_to_ovvv(&I, PSIF_LIBTRANS_DPD, "MO Ints <ov|vv>");
     global_dpd_->buf4_close(&I);
 
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[o,v]"), ID("[v,v]"), ID("[o,v]"), ID("[v,v]"), 0,
                            "MO Ints <ov|vv>");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, rspq, ID("[v,v]"), ID("[o,v]"), "MO Ints <vv|ov>");
+    libtrans::IntegralPermutations::transpose_bra_ket(&I, PSIF_LIBTRANS_DPD, "MO Ints <vv|ov>");
     global_dpd_->buf4_close(&I);
 }
 

@@ -34,6 +34,7 @@
 #include "psi4/libpsi4util/PsiOutStream.h"
 #include "psi4/libpsio/psio.hpp"
 #include "psi4/libtrans/integraltransform.h"
+#include "psi4/libtrans/integral_permutations.h"
 
 namespace psi {
 namespace dct {
@@ -150,8 +151,8 @@ void DCTSolver::sort_OVOV_integrals_RHF() {
     dpdbuf4 I;
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), 0,
                            "MO Ints (OV|OV)");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, prqs, ID("[O,O]"), ID("[V,V]"),
-                           "MO Ints <OO|VV>");  // MO Ints <Oo|Vv>
+    // Transform (OV|OV) → <OO|VV> using integral permutation utility
+    libtrans::IntegralPermutations::ovov_to_oovv(&I, PSIF_LIBTRANS_DPD, "MO Ints <OO|VV>");
     global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, psrq, ID("[O,V]"), ID("[O,V]"), "MO Ints SF <OV|OV>:<Ov|oV>");
     global_dpd_->buf4_close(&I);
 }
@@ -160,8 +161,9 @@ void DCTSolver::sort_OOOO_integrals_RHF() {
     dpdbuf4 I;
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[O,O]"), ID("[O,O]"), ID("[O>=O]+"), ID("[O>=O]+"), 0,
                            "MO Ints (OO|OO)");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, prqs, ID("[O,O]"), ID("[O,O]"),
-                           "MO Ints <OO|OO>");  // MO Ints <Oo|Oo>
+    // Transform (OO|OO) → <OO|OO> using integral permutation utility
+    libtrans::IntegralPermutations::chemist_to_physicist(&I, PSIF_LIBTRANS_DPD, ID("[O,O]"), ID("[O,O]"),
+                                                          "MO Ints <OO|OO>");
     global_dpd_->buf4_close(&I);
 }
 
@@ -213,7 +215,9 @@ void DCTSolver::sort_VVVV_integrals_RHF() {
     dpdbuf4 I;
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[V,V]"), ID("[V,V]"), ID("[V>=V]+"), ID("[V>=V]+"), 0,
                            "MO Ints (VV|VV)");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, prqs, ID("[V,V]"), ID("[V,V]"), "MO Ints <VV|VV>");
+    // Transform (VV|VV) → <VV|VV> using integral permutation utility
+    libtrans::IntegralPermutations::chemist_to_physicist(&I, PSIF_LIBTRANS_DPD, ID("[V,V]"), ID("[V,V]"),
+                                                          "MO Ints <VV|VV>");
     global_dpd_->buf4_close(&I);
 }
 
@@ -232,8 +236,8 @@ void DCTSolver::sort_OVVV_integrals_RHF() {
     dpdbuf4 I;
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[V,V]"), ID("[O,V]"), ID("[V>=V]+"), 0,
                            "MO Ints (OV|VV)");
-    global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, prqs, ID("[O,V]"), ID("[V,V]"),
-                           "MO Ints <OV|VV>");  // MO Ints <Ov|Vv>
+    // Transform (OV|VV) → <OV|VV> using integral permutation utility
+    libtrans::IntegralPermutations::ovvv_to_ovvv(&I, PSIF_LIBTRANS_DPD, "MO Ints <OV|VV>");
     // Intermediate MO_SF <OV|VV> = MO <oV|Vv>
     global_dpd_->buf4_sort(&I, PSIF_LIBTRANS_DPD, prsq, ID("[O,V]"), ID("[V,V]"), "MO Ints SF <OV|VV>");
     global_dpd_->buf4_close(&I);
