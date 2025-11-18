@@ -74,12 +74,6 @@ bool has_ending(std::string const &fullString, std::string const &ending) {
         return false;
     }
 }
-
-std::string to_upper_copy(const std::string &original) {
-    std::string upper = original;
-    to_upper(upper);
-    return upper;
-}
 }  // namespace
 
 // Constructs a zero AO basis set
@@ -481,7 +475,7 @@ void BasisSet::print_detail(std::string out) const {
 std::string BasisSet::print_detail_cfour() const {
     std::stringstream ss;
     ss << std::fixed << std::showpoint;
-    const std::string nameUpperCase = to_upper_copy(name_);
+    const std::string nameUpperCase = psi::to_upper_copy(name_);
 
     for (int uA = 0; uA < molecule_->nunique(); uA++) {
         const auto A = molecule_->unique(uA);
@@ -888,7 +882,7 @@ std::string BasisSet::make_filename(const std::string &name) {
     std::string basisname = name;
 
     // First make it lower case
-    std::transform(basisname.begin(), basisname.end(), basisname.begin(), ::tolower);
+    psi::to_lower(basisname);
 
 #if 0
     std::string format_underscore("_"); // empty string

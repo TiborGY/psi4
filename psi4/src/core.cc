@@ -262,12 +262,6 @@ PsiReturnType cceom(std::shared_ptr<ccenergy::CCEnergyWavefunction>, Options&);
 extern int read_options(const std::string& name, Options& options, bool suppress_printing = false);
 }  // namespace psi
 
-std::string to_upper(const std::string& key) {
-    std::string nonconst_key = key;
-    to_upper(nonconst_key);
-    return nonconst_key;
-}
-
 void py_flush_outfile() {}
 
 void py_close_outfile() {
@@ -613,7 +607,7 @@ void throw_deprecation_errors(std::string const& key, std::string const& module 
 Options& py_psi_get_options() { return Process::environment.options; }
 
 bool py_psi_set_local_option_string(std::string const& module, std::string const& key, std::string const& value) {
-    std::string nonconst_key = to_upper(key);
+    std::string nonconst_key = psi::to_upper_copy(key);
 
     throw_deprecation_errors(key, module);
 
@@ -627,9 +621,9 @@ bool py_psi_set_local_option_string(std::string const& module, std::string const
     } else if (data.type() == "istring") {
         Process::environment.options.set_str_i(module, nonconst_key, value);
     } else if (data.type() == "boolean") {
-        if (to_upper(value) == "TRUE" || to_upper(value) == "YES" || to_upper(value) == "ON")
+        if (psi::to_upper_copy(value) == "TRUE" || psi::to_upper_copy(value) == "YES" || psi::to_upper_copy(value) == "ON")
             Process::environment.options.set_bool(module, nonconst_key, true);
-        else if (to_upper(value) == "FALSE" || to_upper(value) == "NO" || to_upper(value) == "OFF")
+        else if (psi::to_upper_copy(value) == "FALSE" || psi::to_upper_copy(value) == "NO" || psi::to_upper_copy(value) == "OFF")
             Process::environment.options.set_bool(module, nonconst_key, false);
         else
             throw std::domain_error("Required option type is boolean, no boolean specified");
@@ -638,7 +632,7 @@ bool py_psi_set_local_option_string(std::string const& module, std::string const
 }
 
 bool py_psi_set_local_option_int(std::string const& module, std::string const& key, int value) {
-    std::string nonconst_key = to_upper(key);
+    std::string nonconst_key = psi::to_upper_copy(key);
 
     throw_deprecation_errors(key, module);
 
@@ -663,7 +657,7 @@ bool py_psi_set_local_option_int(std::string const& module, std::string const& k
 }
 
 bool py_psi_set_local_option_double(std::string const& module, std::string const& key, double value) {
-    std::string nonconst_key = to_upper(key);
+    std::string nonconst_key = psi::to_upper_copy(key);
 
     throw_deprecation_errors(key, module);
 
@@ -672,7 +666,7 @@ bool py_psi_set_local_option_double(std::string const& module, std::string const
 }
 
 bool py_psi_set_global_option_string(std::string const& key, std::string const& value) {
-    std::string nonconst_key = to_upper(key);
+    std::string nonconst_key = psi::to_upper_copy(key);
 
     throw_deprecation_errors(key);
 
@@ -681,9 +675,9 @@ bool py_psi_set_global_option_string(std::string const& key, std::string const& 
     if (data.type() == "string" || data.type() == "istring") {
         Process::environment.options.set_global_str(nonconst_key, value);
     } else if (data.type() == "boolean") {
-        if (to_upper(value) == "TRUE" || to_upper(value) == "YES" || to_upper(value) == "ON")
+        if (psi::to_upper_copy(value) == "TRUE" || psi::to_upper_copy(value) == "YES" || psi::to_upper_copy(value) == "ON")
             Process::environment.options.set_global_bool(nonconst_key, true);
-        else if (to_upper(value) == "FALSE" || to_upper(value) == "NO" || to_upper(value) == "OFF")
+        else if (psi::to_upper_copy(value) == "FALSE" || psi::to_upper_copy(value) == "NO" || psi::to_upper_copy(value) == "OFF")
             Process::environment.options.set_global_bool(nonconst_key, false);
         else
             throw std::domain_error("Required option type is boolean, no boolean specified");
@@ -691,9 +685,9 @@ bool py_psi_set_global_option_string(std::string const& key, std::string const& 
 
 #ifdef USING_BrianQC
     if (nonconst_key == "BRIANQC_ENABLE") {
-        if (to_upper(value) == "TRUE" || to_upper(value) == "YES" || to_upper(value) == "ON")
+        if (psi::to_upper_copy(value) == "TRUE" || psi::to_upper_copy(value) == "YES" || psi::to_upper_copy(value) == "ON")
             handleBrianOption(true);
-        else if (to_upper(value) == "FALSE" || to_upper(value) == "NO" || to_upper(value) == "OFF")
+        else if (psi::to_upper_copy(value) == "FALSE" || psi::to_upper_copy(value) == "NO" || psi::to_upper_copy(value) == "OFF")
             handleBrianOption(false);
         else
             throw std::domain_error("Required option type is boolean, no boolean specified");
@@ -704,7 +698,7 @@ bool py_psi_set_global_option_string(std::string const& key, std::string const& 
 }
 
 bool py_psi_set_global_option_int(std::string const& key, int value) {
-    std::string nonconst_key = to_upper(key);
+    std::string nonconst_key = psi::to_upper_copy(key);
 
     throw_deprecation_errors(key);
 
@@ -733,7 +727,7 @@ bool py_psi_set_global_option_int(std::string const& key, int value) {
 }
 
 bool py_psi_set_global_option_double(std::string const& key, double value) {
-    std::string nonconst_key = to_upper(key);
+    std::string nonconst_key = psi::to_upper_copy(key);
 
     throw_deprecation_errors(key);
 
@@ -743,7 +737,7 @@ bool py_psi_set_global_option_double(std::string const& key, double value) {
 
 bool py_psi_set_local_option_array(std::string const& module, std::string const& key, const py::list& values,
                                    DataType* entry = nullptr) {
-    std::string nonconst_key = to_upper(key);
+    std::string nonconst_key = psi::to_upper_copy(key);
 
     throw_deprecation_errors(key, module);
 
@@ -792,7 +786,7 @@ bool py_psi_set_local_option_array_wrapper(std::string const& module, std::strin
 }
 
 bool py_psi_set_global_option_array(std::string const& key, py::list values, DataType* entry = nullptr) {
-    std::string nonconst_key = to_upper(key);
+    std::string nonconst_key = psi::to_upper_copy(key);
 
     throw_deprecation_errors(key);
 
@@ -838,7 +832,7 @@ bool py_psi_set_global_option_array_wrapper(std::string const& key, py::list val
 }
 
 void py_psi_set_local_option_python(const std::string& key, py::object& obj) {
-    std::string nonconst_key = to_upper(key);
+    std::string nonconst_key = psi::to_upper_copy(key);
     Data& data = Process::environment.options[nonconst_key];
 
     if (data.type() == "python")
@@ -848,7 +842,7 @@ void py_psi_set_local_option_python(const std::string& key, py::object& obj) {
 }
 
 bool py_psi_has_local_option_changed(std::string const& module, std::string const& key) {
-    std::string nonconst_key = to_upper(key);
+    std::string nonconst_key = psi::to_upper_copy(key);
     Process::environment.options.set_current_module(module);
     py_psi_prepare_options_for_module(module);
     Data& data = Process::environment.options.get_local(nonconst_key);
@@ -857,14 +851,14 @@ bool py_psi_has_local_option_changed(std::string const& module, std::string cons
 }
 
 bool py_psi_has_global_option_changed(std::string const& key) {
-    std::string nonconst_key = to_upper(key);
+    std::string nonconst_key = psi::to_upper_copy(key);
     Data& data = Process::environment.options.get_global(nonconst_key);
 
     return data.has_changed();
 }
 
 bool py_psi_has_option_changed(std::string const& module, std::string const& key) {
-    std::string nonconst_key = to_upper(key);
+    std::string nonconst_key = psi::to_upper_copy(key);
     Process::environment.options.set_current_module(module);
     py_psi_prepare_options_for_module(module);
     Data& data = Process::environment.options.use_local(nonconst_key);
@@ -873,7 +867,7 @@ bool py_psi_has_option_changed(std::string const& module, std::string const& key
 }
 
 bool py_psi_option_exists_in_module(std::string const& module, std::string const& key) {
-    std::string nonconst_key = to_upper(key);
+    std::string nonconst_key = psi::to_upper_copy(key);
     Process::environment.options.set_current_module(module);
     py_psi_prepare_options_for_module(module);
     bool in_module = Process::environment.options.exists_in_active(nonconst_key);
@@ -902,13 +896,13 @@ py::dict py_psi_options_to_python(std::string const& module) {
 }
 
 void py_psi_revoke_global_option_changed(std::string const& key) {
-    std::string nonconst_key = to_upper(key);
+    std::string nonconst_key = psi::to_upper_copy(key);
     Data& data = Process::environment.options.get_global(nonconst_key);
     data.dechanged();
 }
 
 void py_psi_revoke_local_option_changed(std::string const& module, std::string const& key) {
-    std::string nonconst_key = to_upper(key);
+    std::string nonconst_key = psi::to_upper_copy(key);
     Process::environment.options.set_current_module(module);
     py_psi_prepare_options_for_module(module);
     Data& data = Process::environment.options.get_local(nonconst_key);
@@ -939,7 +933,7 @@ py::list data_to_list(py::list l, Data d) {
 }
 
 py::object py_psi_get_local_option(std::string const& module, std::string const& key) {
-    std::string nonconst_key = to_upper(key);
+    std::string nonconst_key = psi::to_upper_copy(key);
     Process::environment.options.set_current_module(module);
     py_psi_prepare_options_for_module(module);
     Data& data = Process::environment.options.get_local(nonconst_key);
@@ -962,7 +956,7 @@ py::object py_psi_get_local_option(std::string const& module, std::string const&
 }
 
 py::object py_psi_get_global_option(std::string const& key) {
-    std::string nonconst_key = to_upper(key);
+    std::string nonconst_key = psi::to_upper_copy(key);
     Data& data = Process::environment.options.get_global(nonconst_key);
 
     if (data.type() == "string" || data.type() == "istring")
@@ -983,7 +977,7 @@ py::object py_psi_get_global_option(std::string const& key) {
 }
 
 py::object py_psi_get_option(std::string const& module, std::string const& key) {
-    std::string nonconst_key = to_upper(key);
+    std::string nonconst_key = psi::to_upper_copy(key);
     Process::environment.options.set_current_module(module);
     py_psi_prepare_options_for_module(module);
     Data& data = Process::environment.options.use_local(nonconst_key);
@@ -1330,26 +1324,26 @@ PYBIND11_MODULE(core, core) {
 
     // These return/set/print PSI variables found in Process::environment.globals
     core.def("has_scalar_variable",
-             [](const std::string& key) { return bool(Process::environment.globals.count(to_upper(key))); },
+             [](const std::string& key) { return bool(Process::environment.globals.count(psi::to_upper_copy(key))); },
              "key"_a, "Is the double QCVariable *key* (case-insensitive) set? Prefer :func:`~psi4.core.has_variable`");
     core.def("has_array_variable",
-             [](const std::string& key) { return bool(Process::environment.arrays.count(to_upper(key))); },
+             [](const std::string& key) { return bool(Process::environment.arrays.count(psi::to_upper_copy(key))); },
              "key"_a, "Is the Matrix QCVariable *key* (case-insensitive) set? Prefer :func:`~psi4.core.has_variable`");
-    core.def("scalar_variable", [](const std::string& key) { return Process::environment.globals[to_upper(key)]; },
+    core.def("scalar_variable", [](const std::string& key) { return Process::environment.globals[psi::to_upper_copy(key)]; },
              "key"_a, "Returns the double QCVariable *key* (case-insensitive); prefer :func:`~psi4.core.variable`");
     core.def("array_variable",
-             [](const std::string& key) { return Process::environment.arrays[to_upper(key)]->clone(); },
+             [](const std::string& key) { return Process::environment.arrays[psi::to_upper_copy(key)]->clone(); },
              "key"_a, "Returns copy of the Matrix QCVariable *key* (case-insensitive); prefer :func:`~psi4.core.variable`");
     core.def("set_scalar_variable",
-             [](const std::string& key, double value) { Process::environment.globals[to_upper(key)] = value; },
+             [](const std::string& key, double value) { Process::environment.globals[psi::to_upper_copy(key)] = value; },
              "key"_a, "value"_a, "Sets the double QCVariable *key* (case-insensitive); prefer :func:`~psi4.core.set_variable`");
     core.def(
         "set_array_variable",
-        [](const std::string& key, SharedMatrix value) { Process::environment.arrays[to_upper(key)] = value->clone(); },
+        [](const std::string& key, SharedMatrix value) { Process::environment.arrays[psi::to_upper_copy(key)] = value->clone(); },
         "key"_a, "value"_a, "Sets the requested (case-insensitive) Matrix QCVariable; prefer :func:`~psi4.core.set_variable`");
-    core.def("del_scalar_variable", [](const std::string key) { Process::environment.globals.erase(to_upper(key)); },
+    core.def("del_scalar_variable", [](const std::string key) { Process::environment.globals.erase(psi::to_upper_copy(key)); },
              "key"_a, "Removes the double QCVariable *key* (case-insensitive); prefer :func:`~psi4.core.del_variable`");
-    core.def("del_array_variable", [](const std::string key) { Process::environment.arrays.erase(to_upper(key)); },
+    core.def("del_array_variable", [](const std::string key) { Process::environment.arrays.erase(psi::to_upper_copy(key)); },
              "key"_a, "Removes the Matrix QCVariable *key* (case-insensitive); prefer :func:`~psi4.core.del_variable`");
     core.def("print_variables", py_psi_print_variable_map, "Prints to output file all QCVariables that have been set in global memory.");
     core.def("clean_variables",
