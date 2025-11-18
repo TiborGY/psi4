@@ -36,6 +36,7 @@
 #include "psi4/libmints/vector.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
 #include "psi4/liboptions/liboptions.h"
+#include "psi4/libpsi4util/header_printer.h"
 #include "psi4/libpsi4util/process.h"
 
 #include "cubeprop.h"
@@ -97,7 +98,8 @@ void CubeProperties::common_init() {
     grid_->set_auxiliary_basis(auxiliary_);
 }
 void CubeProperties::print_header() {
-    outfile->Printf("  ==> One Electron Grid Properties (v2.0) <==\n\n");
+    HeaderPrinter("One Electron Grid Properties (v2.0)").print();
+    outfile->Printf("\n");
     grid_->print_header();
 }
 void CubeProperties::raw_compute_properties() {

@@ -58,6 +58,7 @@
 #include "psi4/libmints/dipole.h"
 #include "psi4/libpsi4util/libpsi4util.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/libpsi4util/header_printer.h"
 #include "psi4/libpsi4util/process.h"
 #include "psi4/libfock/cubature.h"
 #include "psi4/libfock/points.h"
@@ -781,9 +782,11 @@ Vector3 OEProp::get_origin_from_environment() const {
 }
 
 void OEProp::print_header() {
-    outfile->Printf("\n OEPROP: One-electron properties/analyses.\n");
-    outfile->Printf("  by Rob Parrish and Justin Turney.\n");
-    outfile->Printf("  built on LIBMINTS.\n\n");
+    outfile->Printf("\n");
+    HeaderPrinter("OEPROP: One-electron properties/analyses")
+        .add_authors({"Rob Parrish and Justin Turney"})
+        .add_line("built on LIBMINTS", true)
+        .print();
 }
 
 template <class T>

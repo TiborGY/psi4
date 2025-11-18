@@ -36,8 +36,8 @@ Phase,Priority,Module,File,Line,Class,Params,Complexity,Estimated_Hours,Status,A
 3,Low,fisapt,fisapt.cc,97,FISAPT,Medium,Medium,0.75,Completed,,✅ Phase 3 - BOX style with authors (12→8 lines, 33% reduction)
 3,Low,fisapt,local2.cc,98,IBOLocalizer2,Low,Easy,0.5,Completed,,✅ Phase 3 - Arrow style (12→9 lines, 25% reduction)
 3,Low,libmints,thc_eri.cc,60,LS_THC_Computer,Medium,Medium,0.75,Completed,,✅ Phase 3 - BOX style with authors and DOI (15→14 lines)
-4,Lowest,libmints,local.cc,142,BoysLocalizer,3,Easy,0.33,Not Started,,3 parameters - good starter task
-4,Lowest,libmints,local.cc,341,PMLocalizer,3,Easy,0.33,Not Started,,3 parameters - good starter task
-4,Lowest,libmints,oeprop.cc,783,OEProp,Multiple,Medium,0.5,Not Started,,Multiple properties
-4,Lowest,libcubeprop,cubeprop.cc,99,CubeProperties,Medium,Easy,0.5,Not Started,,Grid parameters
-4,Lowest,libcubeprop,csg.cc,202,CubicScalarGrid,Medium,Easy,0.5,Not Started,,Grid parameters
+4,Lowest,libmints,local.cc,143,BoysLocalizer,3,Easy,0.33,Completed,,✅ Phase 4 - Arrow style (6→4 lines, 33% reduction)
+4,Lowest,libmints,local.cc,342,PMLocalizer,3,Easy,0.33,Completed,,✅ Phase 4 - Arrow style (6→4 lines, 33% reduction)
+4,Lowest,libmints,oeprop.cc,784,OEProp,Multiple,Medium,0.5,Completed,,✅ Phase 4 - Simple with authors (5→5 lines)
+4,Lowest,libcubeprop,cubeprop.cc,100,CubeProperties,Medium,Easy,0.5,Completed,,✅ Phase 4 - Delegates to grid (4→4 lines)
+4,Lowest,libcubeprop,csg.cc,203,CubicScalarGrid,Medium,Easy,0.5,Completed,,✅ Phase 4 - Arrow style with 15 parameters (19→17 lines)

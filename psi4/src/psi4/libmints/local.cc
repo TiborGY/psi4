@@ -38,6 +38,7 @@
 #include "psi4/libmints/integral.h"
 #include "psi4/liboptions/liboptions.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/libpsi4util/header_printer.h"
 #include "psi4/libpsi4util/process.h"
 
 using namespace psi;
@@ -140,10 +141,10 @@ BoysLocalizer::BoysLocalizer(std::shared_ptr<BasisSet> primary, std::shared_ptr<
 BoysLocalizer::~BoysLocalizer() {}
 void BoysLocalizer::common_init() {}
 void BoysLocalizer::print_header() const {
-    outfile->Printf("  ==> Boys Localizer <==\n\n");
-    outfile->Printf("    Convergence = %11.3E\n", convergence_);
-    outfile->Printf("    Maxiter     = %11d\n", maxiter_);
-    outfile->Printf("\n");
+    HeaderPrinter header("Boys Localizer");
+    header.add_parameter("Convergence", convergence_)
+          .add_parameter("Maxiter", maxiter_)
+          .print();
 }
 void BoysLocalizer::localize() {
     print_header();
@@ -339,10 +340,10 @@ PMLocalizer::PMLocalizer(std::shared_ptr<BasisSet> primary, std::shared_ptr<Matr
 PMLocalizer::~PMLocalizer() {}
 void PMLocalizer::common_init() {}
 void PMLocalizer::print_header() const {
-    outfile->Printf("  ==> Pipek-Mezey Localizer <==\n\n");
-    outfile->Printf("    Convergence = %11.3E\n", convergence_);
-    outfile->Printf("    Maxiter     = %11d\n", maxiter_);
-    outfile->Printf("\n");
+    HeaderPrinter header("Pipek-Mezey Localizer");
+    header.add_parameter("Convergence", convergence_)
+          .add_parameter("Maxiter", maxiter_)
+          .print();
 }
 void PMLocalizer::localize() {
     print_header();

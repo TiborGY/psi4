@@ -47,6 +47,7 @@
 #include "psi4/libmints/vector.h"
 #include "psi4/liboptions/liboptions.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/libpsi4util/header_printer.h"
 #include "psi4/libpsi4util/process.h"
 #include "psi4/libqt/qt.h"
 
@@ -200,24 +201,23 @@ void CubicScalarGrid::populate_grid() {
     points_->set_ansatz(0);
 }
 void CubicScalarGrid::print_header() {
-    outfile->Printf("  ==> CubicScalarGrid <==\n\n");
-
-    outfile->Printf("    Filepath     = %s\n", filepath_.c_str());
-    outfile->Printf("    Total Points = %16zu\n", npoints_);
-    outfile->Printf("    XYZ Blocking = %16zu\n", nxyz_);
-    outfile->Printf("    X Points     = %16zu\n", N_[0] + 1L);
-    outfile->Printf("    Y Points     = %16zu\n", N_[1] + 1L);
-    outfile->Printf("    Z Points     = %16zu\n", N_[2] + 1L);
-    outfile->Printf("    X Spacing    = %16.3E\n", D_[0]);
-    outfile->Printf("    Y Spacing    = %16.3E\n", D_[1]);
-    outfile->Printf("    Z Spacing    = %16.3E\n", D_[2]);
-    outfile->Printf("    X Minimum    = %16.3E\n", O_[0]);
-    outfile->Printf("    Y Minimum    = %16.3E\n", O_[1]);
-    outfile->Printf("    Z Minimum    = %16.3E\n", O_[2]);
-    outfile->Printf("    X Maximum    = %16.3E\n", O_[0] + D_[0] * N_[0]);
-    outfile->Printf("    Y Maximum    = %16.3E\n", O_[1] + D_[1] * N_[1]);
-    outfile->Printf("    Z Maximum    = %16.3E\n", O_[2] + D_[2] * N_[2]);
-    outfile->Printf("\n");
+    HeaderPrinter header("CubicScalarGrid");
+    header.add_parameter("Filepath", filepath_)
+          .add_parameter("Total Points", npoints_)
+          .add_parameter("XYZ Blocking", nxyz_)
+          .add_parameter("X Points", N_[0] + 1L)
+          .add_parameter("Y Points", N_[1] + 1L)
+          .add_parameter("Z Points", N_[2] + 1L)
+          .add_parameter("X Spacing", D_[0])
+          .add_parameter("Y Spacing", D_[1])
+          .add_parameter("Z Spacing", D_[2])
+          .add_parameter("X Minimum", O_[0])
+          .add_parameter("Y Minimum", O_[1])
+          .add_parameter("Z Minimum", O_[2])
+          .add_parameter("X Maximum", O_[0] + D_[0] * N_[0])
+          .add_parameter("Y Maximum", O_[1] + D_[1] * N_[1])
+          .add_parameter("Z Maximum", O_[2] + D_[2] * N_[2])
+          .print();
 
     primary_->print();
 }
