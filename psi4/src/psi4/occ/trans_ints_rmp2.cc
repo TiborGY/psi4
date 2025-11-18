@@ -28,6 +28,7 @@
 
 #include "psi4/libqt/qt.h"
 #include "psi4/libtrans/integraltransform.h"
+#include "psi4/libtrans/integral_permutations.h"
 #include "psi4/libmints/matrix.h"
 #include "psi4/libmints/vector.h"
 #include "psi4/libpsio/psio.hpp"
@@ -64,7 +65,8 @@ void OCCWave::trans_ints_rmp2() {
     // (OV|OV) -> <OO|VV>
     global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), 0,
                            "MO Ints (OV|OV)");
-    global_dpd_->buf4_sort(&K, PSIF_LIBTRANS_DPD, prqs, ID("[O,O]"), ID("[V,V]"), "MO Ints <OO|VV>");
+    libtrans::IntegralPermutations::chemist_to_physicist(&K, PSIF_LIBTRANS_DPD, ID("[O,O]"), ID("[V,V]"),
+                                                          "MO Ints <OO|VV>");
     global_dpd_->buf4_close(&K);
     timer_off("Sort (OV|OV) -> <OO|VV>");
     timer_off("Sort chem -> phys");
