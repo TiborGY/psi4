@@ -1363,6 +1363,8 @@ def _core_set_variable(key: str, val: Union[core.Matrix, np.ndarray, float]) -> 
         if `val` is an array but `key` already exists as a scalar variable.
 
     """
+    key = _qcvar_warnings(key)
+
     if isinstance(val, core.Matrix):
         if core.has_scalar_variable(key):
             raise ValidationError(f"psi4.core.set_variable: Target variable '{key}' already a scalar variable!")
@@ -1378,8 +1380,6 @@ def _core_set_variable(key: str, val: Union[core.Matrix, np.ndarray, float]) -> 
             raise ValidationError(f"psi4.core.set_variable: Target variable '{key}' already an array variable!")
         else:
             core.set_scalar_variable(key, val)
-
-    # TODO _qcvar_warnings(key)
 
 
 def _core_wavefunction_set_variable(self: core.Wavefunction, key: str, val: Union[core.Matrix, np.ndarray, float]) -> None:
@@ -1409,6 +1409,8 @@ def _core_wavefunction_set_variable(self: core.Wavefunction, key: str, val: Unio
         if `val` is an array but `key` already exists as a scalar variable.
 
     """
+    key = _qcvar_warnings(key)
+
     if isinstance(val, core.Matrix):
         if self.has_scalar_variable(key):
             raise ValidationError("psi4.core.Wavefunction.set_variable: Target variable '{key}' already a scalar variable!")
@@ -1424,8 +1426,6 @@ def _core_wavefunction_set_variable(self: core.Wavefunction, key: str, val: Unio
             raise ValidationError("psi4.core.Wavefunction.set_variable: Target variable '{key}' already an array variable!")
         else:
             self.set_scalar_variable(key, val)
-
-    # TODO _qcvar_warnings(key)
 
 
 def _core_del_variable(key: str) -> None:
