@@ -56,4 +56,4 @@ list(APPEND sources
   )
 psi4_add_module(bin occ sources)
 
-target_link_libraries(occ PUBLIC diis)
+target_link_libraries(occ PUBLIC array diis)

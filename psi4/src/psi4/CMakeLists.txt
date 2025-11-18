@@ -1,5 +1,6 @@
 foreach(dir_name
   lib3index
+  libarray
   libciomr
   libcubeprop
   libdiis

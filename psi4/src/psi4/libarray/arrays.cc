@@ -26,37 +26,41 @@
  * @END LICENSE
  */
 
-// Latest revision on April 28, 2013.
+#include "arrays.h"
+
 #include <stdio.h>
+#include <cmath>
+#include <cstdio>
+
 #include "psi4/libqt/qt.h"
 #include "psi4/libciomr/libciomr.h"
 #include "psi4/libpsio/psio.hpp"
 #include "psi4/libiwl/iwl.hpp"
-#include "arrays.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/libpsi4util/exception.h"
 #include "psi4/libmints/matrix.h"
 
 namespace psi {
-namespace dfoccwave {
+namespace libarray {
 
 /********************************************************************************************/
 /************************** 1d array ********************************************************/
 /********************************************************************************************/
 Array1d::Array1d(int d1) {
-    A1d_ = NULL;
+    A1d_ = nullptr;
     dim1_ = d1;
     memalloc();
 }  //
 
 Array1d::Array1d(std::string name, int d1) {
-    A1d_ = NULL;
+    A1d_ = nullptr;
     dim1_ = d1;
     name_ = name;
     memalloc();
 }  //
 
 Array1d::Array1d() {
-    A1d_ = NULL;
+    A1d_ = nullptr;
     dim1_ = 0;
 
 }  //
@@ -108,7 +112,7 @@ void Array1d::print(std::string out) {
 void Array1d::release() {
     if (!A1d_) return;
     delete[] A1d_;
-    A1d_ = NULL;
+    A1d_ = nullptr;
 }  //
 
 void Array1d::set(int i, double value) { A1d_[i] = value; }  //
@@ -158,7 +162,7 @@ void Array1d::subtract(int i, double value) { A1d_[i] -= value; }  //
 double Array1d::rms() {
     double summ = 0.0;
     for (int i = 0; i < dim1_; ++i) summ += A1d_[i] * A1d_[i];
-    summ = sqrt(summ) / dim1_;
+    summ = std::sqrt(summ) / dim1_;
 
     return summ;
 }  //
@@ -166,7 +170,7 @@ double Array1d::rms() {
 double Array1d::rms(const Array1d *Atemp) {
     double summ = 0.0;
     for (int i = 0; i < dim1_; ++i) summ += (A1d_[i] - Atemp->A1d_[i]) * (A1d_[i] - Atemp->A1d_[i]);
-    summ = sqrt(summ) / dim1_;
+    summ = std::sqrt(summ) / dim1_;
 
     return summ;
 }  //
@@ -266,14 +270,14 @@ void Array1d::dirprd(Array1d *a, Array1d *b) {
 /************************** 2d array ********************************************************/
 /********************************************************************************************/
 Array2d::Array2d(int d1, int d2) {
-    A2d_ = NULL;
+    A2d_ = nullptr;
     dim1_ = d1;
     dim2_ = d2;
     memalloc();
 }  //
 
 Array2d::Array2d(std::string name, int d1, int d2) {
-    A2d_ = NULL;
+    A2d_ = nullptr;
     dim1_ = d1;
     dim2_ = d2;
     name_ = name;
@@ -281,14 +285,14 @@ Array2d::Array2d(std::string name, int d1, int d2) {
 }  //
 
 Array2d::Array2d() {
-    A2d_ = NULL;
+    A2d_ = nullptr;
     dim1_ = 0;
     dim2_ = 0;
 
 }  //
 
 Array2d::Array2d(psi::PSIO *psio, size_t fileno, std::string name, int d1, int d2) {
-    A2d_ = NULL;
+    A2d_ = nullptr;
     dim1_ = d1;
     dim2_ = d2;
     name_ = name;
@@ -297,7 +301,7 @@ Array2d::Array2d(psi::PSIO *psio, size_t fileno, std::string name, int d1, int d
 }
 
 Array2d::Array2d(std::shared_ptr<psi::PSIO> psio, size_t fileno, std::string name, int d1, int d2) {
-    A2d_ = NULL;
+    A2d_ = nullptr;
     dim1_ = d1;
     dim2_ = d2;
     name_ = name;
@@ -306,7 +310,7 @@ Array2d::Array2d(std::shared_ptr<psi::PSIO> psio, size_t fileno, std::string nam
 }
 
 Array2d::Array2d(psi::PSIO &psio, size_t fileno, std::string name, int d1, int d2) {
-    A2d_ = NULL;
+    A2d_ = nullptr;
     dim1_ = d1;
     dim2_ = d2;
     name_ = name;
@@ -367,13 +371,13 @@ void Array2d::print(std::string out) {
 void Array2d::release() {
     if (!A2d_) return;
     free_block(A2d_);
-    A2d_ = NULL;
+    A2d_ = nullptr;
 }  //
 
 void Array2d::set(int i, int j, double value) { A2d_[i][j] = value; }  //
 
 void Array2d::set(double **A) {
-    if (A == NULL) return;
+    if (A == nullptr) return;
     for (int i = 0; i < dim1_; ++i) {
         for (int j = 0; j < dim2_; ++j) {
             A2d_[i][j] = A[i][j];
@@ -382,7 +386,7 @@ void Array2d::set(double **A) {
 }  //
 
 void Array2d::set(Array2d *A) {
-    if (A == NULL) return;
+    if (A == nullptr) return;
     for (int i = 0; i < dim1_; ++i) {
         for (int j = 0; j < dim2_; ++j) {
             A2d_[i][j] = A->A2d_[i][j];
@@ -414,6 +418,34 @@ void Array2d::gemm(bool transa, bool transb, const Array2d *a, const Array2d *b,
 
     if (m && n && k) {
         C_DGEMM(ta, tb, m, n, k, alpha, &(a->A2d_[0][0]), nca, &(b->A2d_[0][0]), ncb, beta, &(A2d_[0][0]), ncc);
+    }
+}  //
+
+// occ-style gemm with different parameter order
+void Array2d::gemm(bool transa, bool transb, double alpha, const Array2d *a, const Array2d *b, double beta) {
+    char ta = transa ? 't' : 'n';
+    char tb = transb ? 't' : 'n';
+    int m, n, k, nca, ncb, ncc;
+
+    m = dim1_;
+    n = dim2_;
+    k = a->dim2_;
+    nca = transa ? m : k;
+    ncb = transb ? k : n;
+    ncc = n;
+
+    if (m && n && k) {
+        C_DGEMM(ta, tb, m, n, k, alpha, &(a->A2d_[0][0]), nca, &(b->A2d_[0][0]), ncb, beta, &(A2d_[0][0]), ncc);
+    }
+}  //
+
+void Array2d::cdgesv(Array1d* Xvec, int errcod) {
+    if (dim1_) {
+        int* ipiv = init_int_array(dim1_);
+        memset(ipiv, 0, sizeof(int) * dim1_);
+        errcod = 0;
+        errcod = C_DGESV(dim1_, 1, &(A2d_[0][0]), dim2_, &(ipiv[0]), Xvec->A1d_, dim2_);
+        free(ipiv);
     }
 }  //
 
@@ -755,7 +787,7 @@ double **Array2d::to_block_matrix() {
 }  //
 
 double *Array2d::to_lower_triangle() {
-    if (dim1_ != dim2_) return NULL;
+    if (dim1_ != dim2_) return nullptr;
     int ntri = 0.5 * dim1_ * (dim1_ + 1);
     double *tri = new double[ntri];
     double **temp = to_block_matrix();
@@ -1061,7 +1093,7 @@ void Array2d::sortp3142(int d1, int d2, int d3, int d4, Array2d *A, Array2i *row
 /************************** 3d array ********************************************************/
 /********************************************************************************************/
 Array3d::Array3d(int d1, int d2, int d3) {
-    A3d_ = NULL;
+    A3d_ = nullptr;
     dim1_ = d1;
     dim2_ = d2;
     dim3_ = d3;
@@ -1069,7 +1101,7 @@ Array3d::Array3d(int d1, int d2, int d3) {
 }  //
 
 Array3d::Array3d(std::string name, int d1, int d2, int d3) {
-    A3d_ = NULL;
+    A3d_ = nullptr;
     dim1_ = d1;
     dim2_ = d2;
     dim3_ = d3;
@@ -1078,7 +1110,7 @@ Array3d::Array3d(std::string name, int d1, int d2, int d3) {
 }  //
 
 Array3d::Array3d() {
-    A3d_ = NULL;
+    A3d_ = nullptr;
     dim1_ = 0;
     dim2_ = 0;
     dim3_ = 0;
@@ -1142,7 +1174,7 @@ void Array3d::release() {
     for (int i = 0; i < dim1_; i++) {
         free_block(A3d_[i]);
     }
-    A3d_ = NULL;
+    A3d_ = nullptr;
 }  //
 
 void Array3d::set(int h, int i, int j, double value) { A3d_[h][i][j] = value; }  //
@@ -1153,20 +1185,20 @@ double Array3d::get(int h, int i, int j) { return A3d_[h][i][j]; }  //
 /************************** 1i array ********************************************************/
 /********************************************************************************************/
 Array1i::Array1i(int d1) {
-    A1i_ = NULL;
+    A1i_ = nullptr;
     dim1_ = d1;
     memalloc();
 }  //
 
 Array1i::Array1i(std::string name, int d1) {
-    A1i_ = NULL;
+    A1i_ = nullptr;
     dim1_ = d1;
     name_ = name;
     memalloc();
 }  //
 
 Array1i::Array1i() {
-    A1i_ = NULL;
+    A1i_ = nullptr;
     dim1_ = 0;
 
 }  //
@@ -1208,7 +1240,7 @@ void Array1i::print() {
 void Array1i::release() {
     if (!A1i_) return;
     delete[] A1i_;
-    A1i_ = NULL;
+    A1i_ = nullptr;
 }  //
 
 void Array1i::set(int i, int value) { A1i_[i] = value; }  //
@@ -1251,14 +1283,14 @@ void Array1i::subtract(int i, int value) { A1i_[i] -= value; }  //
 /************************** 2i array ********************************************************/
 /********************************************************************************************/
 Array2i::Array2i(int d1, int d2) {
-    A2i_ = NULL;
+    A2i_ = nullptr;
     dim1_ = d1;
     dim2_ = d2;
     memalloc();
 }  //
 
 Array2i::Array2i(std::string name, int d1, int d2) {
-    A2i_ = NULL;
+    A2i_ = nullptr;
     dim1_ = d1;
     dim2_ = d2;
     name_ = name;
@@ -1266,7 +1298,7 @@ Array2i::Array2i(std::string name, int d1, int d2) {
 }  //
 
 Array2i::Array2i() {
-    A2i_ = NULL;
+    A2i_ = nullptr;
     dim1_ = 0;
     dim2_ = 0;
 
@@ -1322,13 +1354,13 @@ void Array2i::print(std::string out) {
 void Array2i::release() {
     if (!A2i_) return;
     free_int_matrix(A2i_);
-    A2i_ = NULL;
+    A2i_ = nullptr;
 }  //
 
 void Array2i::set(int i, int j, int value) { A2i_[i][j] = value; }  //
 
 void Array2i::set(int **A) {
-    if (A == NULL) return;
+    if (A == nullptr) return;
     for (int i = 0; i < dim1_; ++i) {
         for (int j = 0; j < dim2_; ++j) {
             A2i_[i][j] = A[i][j];
@@ -1428,7 +1460,7 @@ int **Array2i::to_int_matrix() {
 /************************** 3i array ********************************************************/
 /********************************************************************************************/
 Array3i::Array3i(int d1, int d2, int d3) {
-    A3i_ = NULL;
+    A3i_ = nullptr;
     dim1_ = d1;
     dim2_ = d2;
     dim3_ = d3;
@@ -1436,7 +1468,7 @@ Array3i::Array3i(int d1, int d2, int d3) {
 }  //
 
 Array3i::Array3i(std::string name, int d1, int d2, int d3) {
-    A3i_ = NULL;
+    A3i_ = nullptr;
     dim1_ = d1;
     dim2_ = d2;
     dim3_ = d3;
@@ -1445,7 +1477,7 @@ Array3i::Array3i(std::string name, int d1, int d2, int d3) {
 }  //
 
 Array3i::Array3i() {
-    A3i_ = NULL;
+    A3i_ = nullptr;
     dim1_ = 0;
     dim2_ = 0;
     dim3_ = 0;
@@ -1509,7 +1541,7 @@ void Array3i::release() {
     for (int i = 0; i < dim1_; i++) {
         free_int_matrix(A3i_[i]);
     }
-    A3i_ = NULL;
+    A3i_ = nullptr;
 }  //
 
 void Array3i::set(int h, int i, int j, int value) { A3i_[h][i][j] = value; }  //
@@ -1518,5 +1550,5 @@ int Array3i::get(int h, int i, int j) { return A3i_[h][i][j]; }  //
 
 /********************************************************************************************/
 /********************************************************************************************/
-}  // namespace dfoccwave
+}  // namespace libarray
 }  // namespace psi
