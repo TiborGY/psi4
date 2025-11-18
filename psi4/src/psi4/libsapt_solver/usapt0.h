@@ -348,6 +348,9 @@ class CPKS_USAPT0 {
     // JK Object
     std::shared_ptr<JK> jk_;
 
+    // CPKS Hamiltonian for product computation
+    std::shared_ptr<class CPKSUSAPTHamiltonian> hamiltonian_;
+
     // => Monomer A Problem <= //
 
     // Perturbations applied to A
@@ -390,7 +393,7 @@ class CPKS_USAPT0 {
     std::shared_ptr<Vector> eps_vira_B_;
     std::shared_ptr<Vector> eps_virb_B_;
 
-    // Form the s = Ab product for the provided vectors b (may or may not need more iterations)
+    // Form the s = Ab product for the provided vectors b (uses hamiltonian_)
     std::map<std::string, std::shared_ptr<Matrix> > product(std::map<std::string, std::shared_ptr<Matrix> >& b);
     // Apply the denominator from r into zs
     void preconditioner(std::shared_ptr<Matrix> r, std::shared_ptr<Matrix> z, std::shared_ptr<Vector> o,

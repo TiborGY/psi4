@@ -17,6 +17,7 @@ list(APPEND sources
   cubature.cc
   hamiltonian.cc
   hamiltonian_fisapt.cc
+  hamiltonian_usapt.cc
   jk.cc
   points.cc
   sap.cc
