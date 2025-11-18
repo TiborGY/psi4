@@ -34,6 +34,7 @@
 #include "psi4/libpsi4util/process.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
 #include "psi4/libtrans/integraltransform.h"
+#include "psi4/libtrans/integral_permutations.h"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -1883,7 +1884,9 @@ void DCTSolver::three_idx_cumulant_density() {
     // read it from disk to get it back in core. That's just wasteful.
     global_dpd_->buf4_init(&G, PSIF_DCT_DENSITY, 0, ID("[O,O]"), ID("[O,O]"), ID("[O>O]-"), ID("[O>O]-"), 0,
                            "Lambda <OO|OO>");
-    global_dpd_->buf4_sort(&G, PSIF_DCT_DENSITY, prqs, ID("[O,O]"), ID("[O,O]"), "Lambda (OO|OO)");
+    // Transform <OO|OO> → (OO|OO) using integral permutation utility
+    libtrans::IntegralPermutations::chemist_to_physicist(&G, PSIF_DCT_DENSITY, ID("[O,O]"), ID("[O,O]"),
+                                                          "Lambda (OO|OO)");
     global_dpd_->buf4_close(&G);
 
     global_dpd_->buf4_init(&G, PSIF_DCT_DENSITY, 0, ID("[O,O]"), ID("[O,O]"), ID("[O,O]"), ID("[O,O]"), 0,
@@ -1911,7 +1914,9 @@ void DCTSolver::three_idx_cumulant_density() {
     // 3. From ijkl
     global_dpd_->buf4_init(&G, PSIF_DCT_DENSITY, 0, ID("[o,o]"), ID("[o,o]"), ID("[o>o]-"), ID("[o>o]-"), 0,
                            "Lambda <oo|oo>");
-    global_dpd_->buf4_sort(&G, PSIF_DCT_DENSITY, prqs, ID("[o,o]"), ID("[o,o]"), "Lambda (oo|oo)");
+    // Transform <oo|oo> → (oo|oo) using integral permutation utility
+    libtrans::IntegralPermutations::chemist_to_physicist(&G, PSIF_DCT_DENSITY, ID("[o,o]"), ID("[o,o]"),
+                                                          "Lambda (oo|oo)");
     global_dpd_->buf4_close(&G);
 
     global_dpd_->buf4_init(&G, PSIF_DCT_DENSITY, 0, ID("[o,o]"), ID("[o,o]"), ID("[o,o]"), ID("[o,o]"), 0,
@@ -2047,7 +2052,9 @@ void DCTSolver::three_idx_cumulant_density() {
     // 12. From ABCD
     global_dpd_->buf4_init(&G, PSIF_DCT_DENSITY, 0, ID("[V,V]"), ID("[V,V]"), ID("[V>V]-"), ID("[V>V]-"), 0,
                            "Lambda <VV|VV>");
-    global_dpd_->buf4_sort(&G, PSIF_DCT_DENSITY, prqs, ID("[V,V]"), ID("[V,V]"), "Lambda (VV|VV)");
+    // Transform <VV|VV> → (VV|VV) using integral permutation utility
+    libtrans::IntegralPermutations::chemist_to_physicist(&G, PSIF_DCT_DENSITY, ID("[V,V]"), ID("[V,V]"),
+                                                          "Lambda (VV|VV)");
     global_dpd_->buf4_close(&G);
 
     global_dpd_->buf4_init(&G, PSIF_DCT_DENSITY, 0, ID("[V,V]"), ID("[V,V]"), ID("[V,V]"), ID("[V,V]"), 0,
@@ -2076,7 +2083,9 @@ void DCTSolver::three_idx_cumulant_density() {
 
     global_dpd_->buf4_init(&G, PSIF_DCT_DENSITY, 0, ID("[v,v]"), ID("[v,v]"), ID("[v>v]-"), ID("[v>v]-"), 0,
                            "Lambda <vv|vv>");
-    global_dpd_->buf4_sort(&G, PSIF_DCT_DENSITY, prqs, ID("[v,v]"), ID("[v,v]"), "Lambda (vv|vv)");
+    // Transform <vv|vv> → (vv|vv) using integral permutation utility
+    libtrans::IntegralPermutations::chemist_to_physicist(&G, PSIF_DCT_DENSITY, ID("[v,v]"), ID("[v,v]"),
+                                                          "Lambda (vv|vv)");
     global_dpd_->buf4_close(&G);
 
     global_dpd_->buf4_init(&G, PSIF_DCT_DENSITY, 0, ID("[v,v]"), ID("[v,v]"), ID("[v,v]"), ID("[v,v]"), 0,
@@ -2134,7 +2143,9 @@ void DCTSolver::three_idx_cumulant_density_RHF() {
     // 1. From IJKL
     global_dpd_->buf4_init(&G, PSIF_DCT_DENSITY, 0, ID("[O,O]"), ID("[O,O]"), ID("[O,O]"), ID("[O,O]"), 0,
                            "Lambda <OO|OO>");
-    global_dpd_->buf4_sort(&G, PSIF_DCT_DENSITY, prqs, ID("[O,O]"), ID("[O,O]"), "Lambda (OO|OO)");
+    // Transform <OO|OO> → (OO|OO) using integral permutation utility
+    libtrans::IntegralPermutations::chemist_to_physicist(&G, PSIF_DCT_DENSITY, ID("[O,O]"), ID("[O,O]"),
+                                                          "Lambda (OO|OO)");
     global_dpd_->buf4_close(&G);
 
     global_dpd_->buf4_init(&G, PSIF_DCT_DENSITY, 0, ID("[O,O]"), ID("[O,O]"), ID("[O,O]"), ID("[O,O]"), 0,
@@ -2165,7 +2176,9 @@ void DCTSolver::three_idx_cumulant_density_RHF() {
     result.contract343(bQiaA_mo_, G, false, -1.0, 0.0);
     result.save(psio_, PSIF_DCT_DENSITY, Matrix::SaveType::SubBlocks);
     // The UHF code creates a lot of the sorted blocks we need. For RHF, we create them ourselves now.
-    global_dpd_->buf4_sort(&G, PSIF_DCT_DENSITY, prqs, ID("[O,O]"), ID("[V,V]"), "Lambda OVOV (OO|VV)");
+    // Transform Lambda (OV|OV) → Lambda OVOV (OO|VV) using chemist-to-physicist notation
+    libtrans::IntegralPermutations::chemist_to_physicist(&G, PSIF_DCT_DENSITY, ID("[O,O]"), ID("[V,V]"),
+                                                          "Lambda OVOV (OO|VV)");
     global_dpd_->buf4_close(&G);
     global_dpd_->buf4_init(&G, PSIF_DCT_DENSITY, 0, ID("[O,O]"), ID("[V,V]"), ID("[O,O]"), ID("[V,V]"), 0,
                            "Lambda OVOV (OO|VV)");
@@ -2182,7 +2195,9 @@ void DCTSolver::three_idx_cumulant_density_RHF() {
     // 4. IaJb / iAjB
     global_dpd_->buf4_init(&G, PSIF_DCT_DENSITY, 0, ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), 0,
                            "Lambda SF <OV|OV>:<Ov|Ov>");
-    global_dpd_->buf4_sort(&G, PSIF_DCT_DENSITY, prqs, ID("[O,O]"), ID("[V,V]"), "Lambda OvOv (OO|VV)");
+    // Transform spin-adapted Lambda SF <OV|OV> → Lambda OvOv (OO|VV)
+    libtrans::IntegralPermutations::chemist_to_physicist(&G, PSIF_DCT_DENSITY, ID("[O,O]"), ID("[V,V]"),
+                                                          "Lambda OvOv (OO|VV)");
     global_dpd_->buf4_close(&G);
     global_dpd_->buf4_init(&G, PSIF_DCT_DENSITY, 0, ID("[O,O]"), ID("[V,V]"), ID("[O,O]"), ID("[V,V]"), 0,
                            "Lambda OvOv (OO|VV)");
@@ -2227,7 +2242,9 @@ void DCTSolver::three_idx_cumulant_density_RHF() {
     // TPDM in three-index chunks.
     global_dpd_->buf4_init(&G, PSIF_DCT_DENSITY, 0, ID("[V,V]"), ID("[V,V]"), ID("[V,V]"), ID("[V,V]"), 0,
                            "Lambda <VV|VV>");
-    global_dpd_->buf4_sort(&G, PSIF_DCT_DENSITY, prqs, ID("[V,V]"), ID("[V,V]"), "Lambda (VV|VV)");
+    // Transform Lambda <VV|VV> → Lambda (VV|VV) using chemist-to-physicist notation
+    libtrans::IntegralPermutations::chemist_to_physicist(&G, PSIF_DCT_DENSITY, ID("[V,V]"), ID("[V,V]"),
+                                                          "Lambda (VV|VV)");
     global_dpd_->buf4_close(&G);
     global_dpd_->buf4_init(&G, PSIF_DCT_DENSITY, 0, ID("[V,V]"), ID("[V,V]"), ID("[V,V]"), ID("[V,V]"), 0,
                            "Lambda (VV|VV)");
@@ -2239,7 +2256,9 @@ void DCTSolver::three_idx_cumulant_density_RHF() {
     // 9. AaBb
     global_dpd_->buf4_init(&G, PSIF_DCT_DENSITY, 0, ID("[V,V]"), ID("[V,V]"), ID("[V,V]"), ID("[V,V]"), 0,
                            "Lambda SF <VV|VV>");
-    global_dpd_->buf4_sort(&G, PSIF_DCT_DENSITY, prqs, ID("[V,V]"), ID("[V,V]"), "Lambda SF (VV|VV)");
+    // Transform spin-adapted Lambda SF <VV|VV> → Lambda SF (VV|VV)
+    libtrans::IntegralPermutations::chemist_to_physicist(&G, PSIF_DCT_DENSITY, ID("[V,V]"), ID("[V,V]"),
+                                                          "Lambda SF (VV|VV)");
     global_dpd_->buf4_close(&G);
     global_dpd_->buf4_init(&G, PSIF_DCT_DENSITY, 0, ID("[V,V]"), ID("[V,V]"), ID("[V,V]"), ID("[V,V]"), 0,
                            "Lambda SF (VV|VV)");
