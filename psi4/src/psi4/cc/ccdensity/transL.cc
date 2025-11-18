@@ -39,7 +39,6 @@
 #include "psi4/psifiles.h"
 #include "psi4/libmints/mintshelper.h"
 #include "psi4/libmints/matrix.h"
-#include "MOInfo.h"
 #include "Params.h"
 #include "Frozen.h"
 #define EXTERN
@@ -53,7 +52,7 @@ void transL(const MintsHelper &mints, double sign) {
     moinfo.L = mints.so_angular_momentum();
     for (const auto& i : moinfo.L) {
         i->scale(-0.5 * sign);
-        i->transform(moinfo.Ca);
+        i->transform(moinfo.Ca_matrix);
     }
 
     return;

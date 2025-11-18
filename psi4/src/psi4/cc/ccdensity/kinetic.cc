@@ -40,7 +40,6 @@
 #include "psi4/libmints/matrix.h"
 #include "psi4/libmints/mintshelper.h"
 #include "psi4/psifiles.h"
-#include "MOInfo.h"
 #include "Params.h"
 #include "Frozen.h"
 #define EXTERN
@@ -55,7 +54,7 @@ void kinetic(std::shared_ptr<Wavefunction> wfn) {
 
     /*** Transform the kinetic energy integrals to the MO basis ***/
     auto T = wfn->mintshelper()->so_kinetic();
-    T->transform(moinfo.Ca);
+    T->transform(moinfo.Ca_matrix);
 
     /*** Contract the correlated kinetic energy ***/
     auto tcorr = T->vector_dot(moinfo.opdm);

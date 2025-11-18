@@ -157,6 +157,9 @@ void CCMOInfo::read_common_data(std::shared_ptr<Wavefunction> wfn, int reference
     enuc = wfn->molecule()->nuclear_repulsion_energy(wfn->get_dipole_field_strength());
     escf = wfn->reference_wavefunction() ? wfn->reference_wavefunction()->energy() : wfn->energy();
 
+    // Store SCF orbital coefficients (for ccdensity)
+    Ca_matrix = wfn->Ca();
+
     // Initialize convergence tracking
     conv = 0.0;
 

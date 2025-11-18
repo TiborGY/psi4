@@ -39,7 +39,6 @@
 #include "psi4/libiwl/iwl.h"
 #include "psi4/libdpd/dpd.h"
 #include "psi4/psi4-dec.h"
-#include "MOInfo.h"
 #include "Params.h"
 #include "Frozen.h"
 #define EXTERN

@@ -38,6 +38,7 @@
 #include "psi4/libpsio/psio.h"
 #include "psi4/libciomr/libciomr.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/cc/ccmoinfo/CCMOInfo.h"
 #include "Params.h"
 
 namespace psi {
@@ -54,7 +55,7 @@ namespace ccdensity {
 
 /* #define DEBUG_XI (1)*/
 
-EXTERN struct MOInfo moinfo;
+EXTERN ccmoinfo::CCMOInfo moinfo;
 EXTERN struct Frozen frozen;
 EXTERN struct Params params;
 EXTERN struct RHO_Params *rho_params;

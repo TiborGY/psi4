@@ -223,9 +223,6 @@ class CCMOInfo {
     double ***Ca;                    ///< Alpha virtual orbital transformation matrix
     double ***Cb;                    ///< Beta virtual orbital transformation matrix
 
-    // ccresponse Matrix version (for active MOs)
-    std::shared_ptr<Matrix> Ca_matrix;  ///< Active MO coefficients (ccresponse)
-
     //
     // ========== POLARIZABILITY/RESPONSE-SPECIFIC (ccresponse) ==========
     //
@@ -286,8 +283,6 @@ class CCMOInfo {
     // ========== PROPERTY-RELATED FIELDS (ccresponse) ==========
     //
 
-    std::vector<int> mu_irreps;      ///< Irreps of x,y,z dipole components
-    std::vector<int> l_irreps;       ///< Irreps of x,y,z angular momentum components
     int natom;                       ///< Number of atoms
     std::vector<double> zvals;       ///< Atomic Z values
 
@@ -325,10 +320,6 @@ class CCMOInfo {
     /** Get raw pointer to bvir_off array */
     int* get_bvir_off() { return bvir_off.empty() ? nullptr : bvir_off.data(); }
 
-    /** Get raw pointer to mu_irreps array */
-    int* get_mu_irreps() { return mu_irreps.empty() ? nullptr : mu_irreps.data(); }
-    /** Get raw pointer to l_irreps array */
-    int* get_l_irreps() { return l_irreps.empty() ? nullptr : l_irreps.data(); }
     /** Get raw pointer to zvals array */
     double* get_zvals() { return zvals.empty() ? nullptr : zvals.data(); }
 

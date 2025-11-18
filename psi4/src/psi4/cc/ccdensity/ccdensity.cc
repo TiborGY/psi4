@@ -40,7 +40,6 @@
 #include <cstring>
 #include <cmath>
 #include "ccdensity.h"
-#include "MOInfo.h"
 #include "Params.h"
 #include "Frozen.h"
 #include "globals.h"

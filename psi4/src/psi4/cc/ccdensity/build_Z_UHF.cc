@@ -41,7 +41,6 @@
 #include "psi4/psifiles.h"
 #include "psi4/libpsi4util/exception.h"
 
-#include "MOInfo.h"
 #include "Params.h"
 #include "Frozen.h"
 #define EXTERN

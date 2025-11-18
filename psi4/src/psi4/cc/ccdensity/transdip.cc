@@ -39,7 +39,6 @@
 #include "psi4/psifiles.h"
 #include "psi4/libmints/mintshelper.h"
 #include "psi4/libmints/matrix.h"
-#include "MOInfo.h"
 #include "Params.h"
 #include "Frozen.h"
 #define EXTERN
@@ -53,7 +52,7 @@ void transdip(const MintsHelper &mints) {
     /*** Transform the SO dipole integrals to the MO basis ***/
     moinfo.dip = mints.so_dipole();
     for (auto& i : moinfo.dip) {
-        i->transform(moinfo.Ca);
+        i->transform(moinfo.Ca_matrix);
     }
 
     return;

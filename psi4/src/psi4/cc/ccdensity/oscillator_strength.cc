@@ -42,7 +42,6 @@
 #include "psi4/libmints/mintshelper.h"
 #include "ccdensity.h"
 #include "Frozen.h"
-#include "MOInfo.h"
 #include "Params.h"
 #define EXTERN
 #include "globals.h"

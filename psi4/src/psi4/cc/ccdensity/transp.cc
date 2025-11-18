@@ -39,7 +39,6 @@
 #include "psi4/psifiles.h"
 #include "psi4/libmints/mintshelper.h"
 #include "psi4/libmints/matrix.h"
-#include "MOInfo.h"
 #include "Params.h"
 #include "Frozen.h"
 #define EXTERN
@@ -53,7 +52,7 @@ void transp(const MintsHelper &mints, double sign) {
     moinfo.nabla = mints.so_nabla();
     for (auto& i : moinfo.nabla) {
         i->scale(-1.0 * sign);
-        i->transform(moinfo.Ca);
+        i->transform(moinfo.Ca_matrix);
     }
 
     return;

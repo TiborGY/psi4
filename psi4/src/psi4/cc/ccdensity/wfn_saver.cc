@@ -34,7 +34,6 @@
 #include <unordered_set>
 #include "psi4/cc/ccwave.h"
 #include "ccdensity.h"
-#include "MOInfo.h"
 #define EXTERN
 #include "globals.h"
 

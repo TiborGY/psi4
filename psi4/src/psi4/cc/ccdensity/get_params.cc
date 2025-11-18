@@ -41,7 +41,6 @@
 #include "psi4/liboptions/liboptions.h"
 #include "psi4/psi4-dec.h"
 
-#include "MOInfo.h"
 #include "Params.h"
 #include "Frozen.h"
 #define EXTERN

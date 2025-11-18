@@ -35,7 +35,6 @@
 #include "psi4/libqt/qt.h"
 #include "psi4/libciomr/libciomr.h"
 #include <cmath>
-#include "MOInfo.h"
 #include "Params.h"
 #include "Frozen.h"
 #define EXTERN

@@ -41,7 +41,6 @@
 #include "psi4/libmints/wavefunction.h"
 #include "psi4/libmints/molecule.h"
 #include "psi4/libmints/matrix.h"
-#include "MOInfo.h"
 #include "Params.h"
 #include "Frozen.h"
 #define EXTERN
@@ -56,135 +55,22 @@ namespace ccdensity {
 **
 ** T. Daniel Crawford, October 1996.
 ** Modified by TDC, March 1999.
+** Migrated to use unified CCMOInfo, November 2025
 */
 
 void get_moinfo(std::shared_ptr<Wavefunction> wfn) {
-    int i, j, h, errcod;
-    int nactive;
+    int i, j;
 
-    moinfo.nirreps = wfn->nirrep();
-    moinfo.nmo = wfn->nmo();
-    moinfo.nso = wfn->nso();
-    moinfo.labels = wfn->molecule()->irrep_labels();
-    moinfo.enuc = wfn->molecule()->nuclear_repulsion_energy(wfn->get_dipole_field_strength());
-    if (wfn->reference_wavefunction())
-        moinfo.escf = wfn->reference_wavefunction()->energy();
-    else
-        moinfo.escf = wfn->energy();
+    // Initialize MOInfo using unified CCMOInfo class
+    moinfo.initialize(wfn, params.ref);
 
-    moinfo.orbspi = wfn->nmopi();
-    moinfo.frdocc = wfn->frzcpi();
-    moinfo.fruocc = wfn->frzvpi();
-    moinfo.clsdpi = wfn->doccpi() - moinfo.frdocc;
-    moinfo.openpi = wfn->soccpi();
-    moinfo.uoccpi = moinfo.orbspi - moinfo.clsdpi - moinfo.openpi - moinfo.fruocc - moinfo.frdocc;
-
-    moinfo.Ca = wfn->Ca();
-
+    // Compute state symmetry (ccdensity-specific)
     moinfo.sym = 0;
     for (i = 0; i < moinfo.nirreps; ++i)
-        for (j = 0; j < moinfo.openpi[i]; ++j) moinfo.sym = moinfo.sym ^ i;
+        for (j = 0; j < moinfo.openpi[i]; ++j)
+            moinfo.sym = moinfo.sym ^ i;
 
-
-    psio_read_entry(PSIF_CC_INFO, "No. of Active Orbitals", (char *)&(nactive), sizeof(int));
-    moinfo.nactive = nactive;
-
-    auto temp = std::vector<int>(moinfo.nirreps);
-    if (params.ref == 0 || params.ref == 1) { /** RHF or ROHF **/
-        moinfo.occpi = moinfo.clsdpi + wfn->soccpi();
-        moinfo.virtpi = moinfo.uoccpi + wfn->soccpi();
-
-        moinfo.occ_sym = std::vector<int>(nactive);
-        psio_read_entry(PSIF_CC_INFO, "Active Occ Orb Symmetry", (char *)moinfo.occ_sym.data(), sizeof(int) * nactive);
-        moinfo.vir_sym = std::vector<int>(nactive);
-        psio_read_entry(PSIF_CC_INFO, "Active Virt Orb Symmetry", (char *)moinfo.vir_sym.data(), sizeof(int) * nactive);
-
-        moinfo.occ_off = std::vector<int>(moinfo.nirreps);
-        psio_read_entry(PSIF_CC_INFO, "Active Occ Orb Offsets", (char *)moinfo.occ_off.data(), sizeof(int) * moinfo.nirreps);
-        moinfo.vir_off = std::vector<int>(moinfo.nirreps);
-        psio_read_entry(PSIF_CC_INFO, "Active Virt Orb Offsets", (char *)moinfo.vir_off.data(), sizeof(int) * moinfo.nirreps);
-    } else if (params.ref == 2) { /** UHF **/
-        moinfo.aoccpi = moinfo.clsdpi + wfn->soccpi();
-        moinfo.boccpi = moinfo.clsdpi;
-        moinfo.avirtpi = moinfo.uoccpi;
-        moinfo.bvirtpi = moinfo.uoccpi + wfn->soccpi();
-
-        moinfo.aocc_sym = std::vector<int>(nactive);
-        psio_read_entry(PSIF_CC_INFO, "Active Alpha Occ Orb Symmetry", (char *)moinfo.aocc_sym.data(), sizeof(int) * nactive);
-        moinfo.bocc_sym = std::vector<int>(nactive);
-        psio_read_entry(PSIF_CC_INFO, "Active Beta Occ Orb Symmetry", (char *)moinfo.bocc_sym.data(), sizeof(int) * nactive);
-        moinfo.avir_sym = std::vector<int>(nactive);
-        psio_read_entry(PSIF_CC_INFO, "Active Alpha Virt Orb Symmetry", (char *)moinfo.avir_sym.data(), sizeof(int) * nactive);
-        moinfo.bvir_sym = std::vector<int>(nactive);
-        psio_read_entry(PSIF_CC_INFO, "Active Beta Virt Orb Symmetry", (char *)moinfo.bvir_sym.data(), sizeof(int) * nactive);
-
-
-        moinfo.aocc_off = std::vector<int>(moinfo.nirreps);
-        psio_read_entry(PSIF_CC_INFO, "Active Alpha Occ Orb Offsets", (char *)moinfo.aocc_off.data(),
-                        sizeof(int) * moinfo.nirreps);
-        moinfo.bocc_off = std::vector<int>(moinfo.nirreps);
-        psio_read_entry(PSIF_CC_INFO, "Active Beta Occ Orb Offsets", (char *)moinfo.bocc_off.data(),
-                        sizeof(int) * moinfo.nirreps);
-        moinfo.avir_off = std::vector<int>(moinfo.nirreps);
-        psio_read_entry(PSIF_CC_INFO, "Active Alpha Virt Orb Offsets", (char *)moinfo.avir_off.data(),
-                        sizeof(int) * moinfo.nirreps);
-        moinfo.bvir_off = std::vector<int>(moinfo.nirreps);
-        psio_read_entry(PSIF_CC_INFO, "Active Beta Virt Orb Offsets", (char *)moinfo.bvir_off.data(),
-                        sizeof(int) * moinfo.nirreps);
-    }
-
-    /* Compute spatial-orbital reordering arrays */
-    moinfo.pitzer2qt = std::vector<int>(moinfo.nmo);
-    moinfo.qt2pitzer = std::vector<int>(moinfo.nmo);
-    reorder_qt(moinfo.clsdpi, moinfo.openpi, moinfo.frdocc, moinfo.fruocc, moinfo.pitzer2qt.data(), moinfo.orbspi,
-               moinfo.nirreps);
-    for (i = 0; i < moinfo.nmo; i++) {
-        j = moinfo.pitzer2qt[i];
-        moinfo.qt2pitzer[j] = i;
-    }
-
-
-    moinfo.nfzc = moinfo.frdocc.sum();
-    moinfo.nfzv = moinfo.fruocc.sum();
-    moinfo.nclsd = moinfo.clsdpi.sum();
-    moinfo.nopen = moinfo.openpi.sum();
-    moinfo.nuocc = moinfo.uoccpi.sum();
-
-    if (params.ref == 0 || params.ref == 1) { /** RHF or ROHF **/
-
-        /* Get CC->QT and QT->CC active occupied and virtual reordering arrays */
-        moinfo.qt_occ = std::vector<int>(nactive);
-        moinfo.qt_vir = std::vector<int>(nactive);
-        moinfo.cc_occ = std::vector<int>(nactive);
-        moinfo.cc_vir = std::vector<int>(nactive);
-        psio_read_entry(PSIF_CC_INFO, "CC->QT Active Occ Order", (char *)moinfo.qt_occ.data(), sizeof(int) * nactive);
-        psio_read_entry(PSIF_CC_INFO, "CC->QT Active Virt Order", (char *)moinfo.qt_vir.data(), sizeof(int) * nactive);
-        psio_read_entry(PSIF_CC_INFO, "QT->CC Active Occ Order", (char *)moinfo.cc_occ.data(), sizeof(int) * nactive);
-        psio_read_entry(PSIF_CC_INFO, "QT->CC Active Virt Order", (char *)moinfo.cc_vir.data(), sizeof(int) * nactive);
-    } else if (params.ref == 2) { /** UHF **/
-
-        /* Get CC->QT and QT->CC active occupied and virtual reordering arrays */
-        moinfo.qt_aocc = std::vector<int>(nactive);
-        moinfo.qt_bocc = std::vector<int>(nactive);
-        moinfo.qt_avir = std::vector<int>(nactive);
-        moinfo.qt_bvir = std::vector<int>(nactive);
-        moinfo.cc_aocc = std::vector<int>(nactive);
-        moinfo.cc_bocc = std::vector<int>(nactive);
-        moinfo.cc_avir = std::vector<int>(nactive);
-        moinfo.cc_bvir = std::vector<int>(nactive);
-
-        psio_read_entry(PSIF_CC_INFO, "CC->QT Alpha Active Occ Order", (char *)moinfo.qt_aocc.data(), sizeof(int) * nactive);
-        psio_read_entry(PSIF_CC_INFO, "CC->QT Beta Active Occ Order", (char *)moinfo.qt_bocc.data(), sizeof(int) * nactive);
-        psio_read_entry(PSIF_CC_INFO, "CC->QT Alpha Active Virt Order", (char *)moinfo.qt_avir.data(), sizeof(int) * nactive);
-        psio_read_entry(PSIF_CC_INFO, "CC->QT Beta Active Virt Order", (char *)moinfo.qt_bvir.data(), sizeof(int) * nactive);
-        psio_read_entry(PSIF_CC_INFO, "QT->CC Alpha Active Occ Order", (char *)moinfo.cc_aocc.data(), sizeof(int) * nactive);
-        psio_read_entry(PSIF_CC_INFO, "QT->CC Beta Active Occ Order", (char *)moinfo.cc_bocc.data(), sizeof(int) * nactive);
-        psio_read_entry(PSIF_CC_INFO, "QT->CC Alpha Active Virt Order", (char *)moinfo.cc_avir.data(), sizeof(int) * nactive);
-        psio_read_entry(PSIF_CC_INFO, "QT->CC Beta Active Virt Order", (char *)moinfo.cc_bvir.data(), sizeof(int) * nactive);
-    }
-
-    psio_read_entry(PSIF_CC_INFO, "Reference Energy", (char *)&(moinfo.eref), sizeof(double));
-
+    // Print energy summary
     outfile->Printf("\n\tNuclear Rep. energy (wfn)     = %20.15f\n", moinfo.enuc);
     outfile->Printf("\tSCF energy          (wfn)     = %20.15f\n", moinfo.escf);
     outfile->Printf("\tReference energy    (file100) = %20.15f\n", moinfo.eref);
