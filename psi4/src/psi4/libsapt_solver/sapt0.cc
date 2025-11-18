@@ -741,7 +741,7 @@ void SAPT0::df_integrals() {
         int length = max_size;
         if (gimp && Pbl == Pblocks - 1) length = gimp;
 
-        psio_->read(PSIF_SAPT_TEMP, "AO RI Integrals", (char *)&(B_p_munu[0][0]),
+        psio_->read(PSIF_SAPT_TEMP, "AO RI Integrals", (char *)B_p_munup[0],
                     sizeof(double) * length * nsotri_screened, next_DF_AO, &next_DF_AO);
 
 #pragma omp parallel
@@ -752,7 +752,7 @@ void SAPT0::df_integrals() {
                 rank = omp_get_thread_num();
 #endif
 
-                memset(&(munu_temp[rank][0]), '\0', sizeof(double) * nso_ * nso_);
+                memset(munu_tempp[rank], '\0', sizeof(double) * nso_ * nso_);
 
                 int PQoff = 0;
                 for (int MU = 0, MUNU = 0; MU < basisset_->nshell(); MU++) {
@@ -767,8 +767,8 @@ void SAPT0::df_integrals() {
                                     for (int nu = 0; nu < numnu; ++nu, ++munu) {
                                         int onu = basisset_->shell(NU).function_index() + nu;
 
-                                        munu_temp[rank][omu * nso_ + onu] = B_p_munu[Prel][munu + PQoff];
-                                        munu_temp[rank][onu * nso_ + omu] = B_p_munu[Prel][munu + PQoff];
+                                        munu_tempp[rank][omu * nso_ + onu] = B_p_munup[Prel][munu + PQoff];
+                                        munu_tempp[rank][onu * nso_ + omu] = B_p_munup[Prel][munu + PQoff];
                                     }
                                 }
                                 PQoff += nummu * numnu;
@@ -779,8 +779,8 @@ void SAPT0::df_integrals() {
                                     for (int nu = 0; nu <= mu; ++nu, ++munu) {
                                         int onu = basisset_->shell(NU).function_index() + nu;
 
-                                        munu_temp[rank][omu * nso_ + onu] = B_p_munu[Prel][munu + PQoff];
-                                        munu_temp[rank][onu * nso_ + omu] = B_p_munu[Prel][munu + PQoff];
+                                        munu_tempp[rank][omu * nso_ + onu] = B_p_munup[Prel][munu + PQoff];
+                                        munu_tempp[rank][onu * nso_ + omu] = B_p_munup[Prel][munu + PQoff];
                                     }
                                 }
                                 PQoff += nummu * (nummu + 1) / 2;
@@ -789,86 +789,69 @@ void SAPT0::df_integrals() {
                     }
                 }
 
-                C_DGEMM('T', 'N', nmoA_, nso_, nso_, 1.0, &(CA_[0][0]), nmoA_, munu_temp[rank], nso_, 0.0,
-                        Inu_temp[rank], nso_);
-                C_DGEMM('N', 'N', nmoA_, nmoA_, nso_, 1.0, Inu_temp[rank], nso_, &(CA_[0][0]), nmoA_, 0.0,
-                        IJ_temp[rank], nmoA_);
+                C_DGEMM('T', 'N', nmoA_, nso_, nso_, 1.0, &(CA_[0][0]), nmoA_, munu_tempp[rank], nso_, 0.0,
+                        Inu_tempp[rank], nso_);
+                C_DGEMM('N', 'N', nmoA_, nmoA_, nso_, 1.0, Inu_tempp[rank], nso_, &(CA_[0][0]), nmoA_, 0.0,
+                        IJ_tempp[rank], nmoA_);
 
                 for (int a = 0; a < noccA_; a++) {
-                    C_DCOPY(noccA_, &(IJ_temp[rank][a * nmoA_]), 1, &(B_p_AA[Prel][a * noccA_]), 1);
-                    C_DCOPY(nvirA_, &(IJ_temp[rank][a * nmoA_ + noccA_]), 1, &(B_p_AR[Prel][a * nvirA_]), 1);
+                    C_DCOPY(noccA_, &(IJ_tempp[rank][a * nmoA_]), 1, &(B_p_AAp[Prel][a * noccA_]), 1);
+                    C_DCOPY(nvirA_, &(IJ_tempp[rank][a * nmoA_ + noccA_]), 1, &(B_p_ARp[Prel][a * nvirA_]), 1);
                 }
                 for (int r = 0; r < nvirA_; r++) {
-                    C_DCOPY(r + 1, &(IJ_temp[rank][(r + noccA_) * nmoA_ + noccA_]), 1, &(B_p_RR[Prel][r * (r + 1) / 2]),
+                    C_DCOPY(r + 1, &(IJ_tempp[rank][(r + noccA_) * nmoA_ + noccA_]), 1, &(B_p_RRp[Prel][r * (r + 1) / 2]),
                             1);
                 }
 
-                C_DGEMM('N', 'N', nmoA_, nmoB_, nso_, 1.0, Inu_temp[rank], nso_, &(CB_[0][0]), nmoB_, 0.0,
-                        IJ_temp[rank], nmoB_);
+                C_DGEMM('N', 'N', nmoA_, nmoB_, nso_, 1.0, Inu_tempp[rank], nso_, &(CB_[0][0]), nmoB_, 0.0,
+                        IJ_tempp[rank], nmoB_);
 
                 for (int a = 0; a < noccA_; a++) {
-                    C_DCOPY(noccB_, &(IJ_temp[rank][a * nmoB_]), 1, &(B_p_AB[Prel][a * noccB_]), 1);
-                    C_DCOPY(nvirB_, &(IJ_temp[rank][a * nmoB_ + noccB_]), 1, &(B_p_AS[Prel][a * nvirB_]), 1);
+                    C_DCOPY(noccB_, &(IJ_tempp[rank][a * nmoB_]), 1, &(B_p_ABp[Prel][a * noccB_]), 1);
+                    C_DCOPY(nvirB_, &(IJ_tempp[rank][a * nmoB_ + noccB_]), 1, &(B_p_ASp[Prel][a * nvirB_]), 1);
                 }
                 for (int r = 0; r < nvirA_; r++) {
-                    C_DCOPY(noccB_, &(IJ_temp[rank][(r + noccA_) * nmoB_]), 1, &(B_p_RB[Prel][r * noccB_]), 1);
+                    C_DCOPY(noccB_, &(IJ_tempp[rank][(r + noccA_) * nmoB_]), 1, &(B_p_RBp[Prel][r * noccB_]), 1);
                 }
 
-                C_DGEMM('T', 'N', nmoB_, nso_, nso_, 1.0, &(CB_[0][0]), nmoB_, munu_temp[rank], nso_, 0.0,
-                        Inu_temp[rank], nso_);
-                C_DGEMM('N', 'N', nmoB_, nmoB_, nso_, 1.0, Inu_temp[rank], nso_, &(CB_[0][0]), nmoB_, 0.0,
-                        IJ_temp[rank], nmoB_);
+                C_DGEMM('T', 'N', nmoB_, nso_, nso_, 1.0, &(CB_[0][0]), nmoB_, munu_tempp[rank], nso_, 0.0,
+                        Inu_tempp[rank], nso_);
+                C_DGEMM('N', 'N', nmoB_, nmoB_, nso_, 1.0, Inu_tempp[rank], nso_, &(CB_[0][0]), nmoB_, 0.0,
+                        IJ_tempp[rank], nmoB_);
 
                 for (int b = 0; b < noccB_; b++) {
-                    C_DCOPY(noccB_, &(IJ_temp[rank][b * nmoB_]), 1, &(B_p_BB[Prel][b * noccB_]), 1);
-                    C_DCOPY(nvirB_, &(IJ_temp[rank][b * nmoB_ + noccB_]), 1, &(B_p_BS[Prel][b * nvirB_]), 1);
+                    C_DCOPY(noccB_, &(IJ_tempp[rank][b * nmoB_]), 1, &(B_p_BBp[Prel][b * noccB_]), 1);
+                    C_DCOPY(nvirB_, &(IJ_tempp[rank][b * nmoB_ + noccB_]), 1, &(B_p_BSp[Prel][b * nvirB_]), 1);
                 }
                 for (int s = 0; s < nvirB_; s++) {
-                    C_DCOPY(s + 1, &(IJ_temp[rank][(s + noccB_) * nmoB_ + noccB_]), 1, &(B_p_SS[Prel][s * (s + 1) / 2]),
+                    C_DCOPY(s + 1, &(IJ_tempp[rank][(s + noccB_) * nmoB_ + noccB_]), 1, &(B_p_SSp[Prel][s * (s + 1) / 2]),
                             1);
                 }
             }
         }
-        psio_->write(PSIF_SAPT_AA_DF_INTS, "AA RI Integrals", (char *)&(B_p_AA[0][0]),
+        psio_->write(PSIF_SAPT_AA_DF_INTS, "AA RI Integrals", (char *)B_p_AAp[0],
                      sizeof(double) * length * noccA_ * noccA_, next_DF_AA, &next_DF_AA);
-        psio_->write(PSIF_SAPT_AA_DF_INTS, "AR RI Integrals", (char *)&(B_p_AR[0][0]),
+        psio_->write(PSIF_SAPT_AA_DF_INTS, "AR RI Integrals", (char *)B_p_ARp[0],
                      sizeof(double) * length * noccA_ * nvirA_, next_DF_AR, &next_DF_AR);
-        psio_->write(PSIF_SAPT_AA_DF_INTS, "RR RI Integrals", (char *)&(B_p_RR[0][0]),
+        psio_->write(PSIF_SAPT_AA_DF_INTS, "RR RI Integrals", (char *)B_p_RRp[0],
                      sizeof(double) * length * (nvirA_ * (nvirA_ + 1) / 2), next_DF_RR, &next_DF_RR);
 
-        psio_->write(PSIF_SAPT_BB_DF_INTS, "BB RI Integrals", (char *)&(B_p_BB[0][0]),
+        psio_->write(PSIF_SAPT_BB_DF_INTS, "BB RI Integrals", (char *)B_p_BBp[0],
                      sizeof(double) * length * noccB_ * noccB_, next_DF_BB, &next_DF_BB);
-        psio_->write(PSIF_SAPT_BB_DF_INTS, "BS RI Integrals", (char *)&(B_p_BS[0][0]),
+        psio_->write(PSIF_SAPT_BB_DF_INTS, "BS RI Integrals", (char *)B_p_BSp[0],
                      sizeof(double) * length * noccB_ * nvirB_, next_DF_BS, &next_DF_BS);
-        psio_->write(PSIF_SAPT_BB_DF_INTS, "SS RI Integrals", (char *)&(B_p_SS[0][0]),
+        psio_->write(PSIF_SAPT_BB_DF_INTS, "SS RI Integrals", (char *)B_p_SSp[0],
                      sizeof(double) * length * (nvirB_ * (nvirB_ + 1) / 2), next_DF_SS, &next_DF_SS);
 
-        psio_->write(PSIF_SAPT_AB_DF_INTS, "AB RI Integrals", (char *)&(B_p_AB[0][0]),
+        psio_->write(PSIF_SAPT_AB_DF_INTS, "AB RI Integrals", (char *)B_p_ABp[0],
                      sizeof(double) * length * noccA_ * noccB_, next_DF_AB, &next_DF_AB);
-        psio_->write(PSIF_SAPT_AB_DF_INTS, "AS RI Integrals", (char *)&(B_p_AS[0][0]),
+        psio_->write(PSIF_SAPT_AB_DF_INTS, "AS RI Integrals", (char *)B_p_ASp[0],
                      sizeof(double) * length * noccA_ * nvirB_, next_DF_AS, &next_DF_AS);
-        psio_->write(PSIF_SAPT_AB_DF_INTS, "RB RI Integrals", (char *)&(B_p_RB[0][0]),
+        psio_->write(PSIF_SAPT_AB_DF_INTS, "RB RI Integrals", (char *)B_p_RBp[0],
                      sizeof(double) * length * nvirA_ * noccB_, next_DF_RB, &next_DF_RB);
     }
 
-    free_block(B_p_munu);
-    free_block(B_p_AA);
-    free_block(B_p_AR);
-    free_block(B_p_RR);
-    free_block(B_p_BB);
-    free_block(B_p_BS);
-    free_block(B_p_SS);
-    free_block(B_p_AB);
-    free_block(B_p_AS);
-    free_block(B_p_RB);
-    free_block(munu_temp);
-    free_block(Inu_temp);
-    free_block(IJ_temp);
-    free(Schwartz);
-    free(DFSchwartz);
-    free(PQ_start);
-    free(PQ_stop);
-    free(block_length);
+    // All matrices automatically cleaned up via shared_ptr
 
     psio_->close(PSIF_SAPT_TEMP, 0);
 }
