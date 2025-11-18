@@ -38,6 +38,7 @@
 #include "psi4/libciomr/libciomr.h"
 #include "psi4/libpsio/psio.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/cc/ccmoinfo/CCMOInfo.h"
 
 namespace psi {
 
@@ -53,7 +54,7 @@ namespace cclambda {
 
 /* #define EOM_DEBUG (1) */
 
-EXTERN struct MOInfo moinfo;
+EXTERN ccmoinfo::CCMOInfo moinfo;
 EXTERN struct Params params;
 EXTERN struct L_Params *pL_params;
 EXTERN struct Local local;

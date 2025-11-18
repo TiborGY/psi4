@@ -40,7 +40,7 @@
 #include "psi4/libpsi4util/exception.h"
 #include "cclambda.h"
 #include "psi4/psifiles.h"
-#include "MOInfo.h"
+
 #include "Params.h"
 #define EXTERN
 #include "globals.h"

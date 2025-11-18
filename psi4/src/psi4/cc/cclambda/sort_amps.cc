@@ -33,7 +33,7 @@
 #include <cstdio>
 #include "psi4/libdpd/dpd.h"
 #include "cclambda.h"
-#include "MOInfo.h"
+
 #include "Params.h"
 #define EXTERN
 #include "globals.h"

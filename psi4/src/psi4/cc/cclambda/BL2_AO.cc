@@ -42,7 +42,7 @@
 #include "psi4/libdpd/dpd.h"
 #include "psi4/libqt/qt.h"
 #include "psi4/psifiles.h"
-#include "MOInfo.h"
+
 #include "Params.h"
 #define EXTERN
 #include "globals.h"
