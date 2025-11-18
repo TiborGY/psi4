@@ -91,89 +91,78 @@ double SAPT2p3::ind30r_1(double **cAR, double **cBS, double **wBAA, double **wBR
                          size_t nvirA, size_t noccB, size_t nvirB) {
     double energy = 0.0;
 
-    double **xAR = block_matrix(noccA, nvirA);
+    auto xAR = std::make_shared<Matrix>("xAR", noccA, nvirA);
 
-    C_DGEMM('N', 'N', noccA, nvirA, nvirA, 1.0, cAR[0], nvirA, wBRR[0], nvirA, 0.0, xAR[0], nvirA);
+    C_DGEMM('N', 'N', noccA, nvirA, nvirA, 1.0, cAR[0], nvirA, wBRR[0], nvirA, 0.0, xAR->get_pointer(), nvirA);
 
-    C_DGEMM('N', 'N', noccA, nvirA, noccA, -1.0, wBAA[0], noccA, cAR[0], nvirA, 1.0, xAR[0], nvirA);
+    C_DGEMM('N', 'N', noccA, nvirA, noccA, -1.0, wBAA[0], noccA, cAR[0], nvirA, 1.0, xAR->get_pointer(), nvirA);
 
-    energy = 2.0 * C_DDOT(noccA * nvirA, cAR[0], 1, xAR[0], 1);
+    energy = 2.0 * C_DDOT(noccA * nvirA, cAR[0], 1, xAR->get_pointer(), 1);
 
-    free_block(xAR);
-
-    double *X = init_array(ndf_ + 3);
-    double *Y = init_array(ndf_ + 3);
+    std::vector<double> X(ndf_ + 3);
+    std::vector<double> Y(ndf_ + 3);
 
     double **B_p_BS = get_DF_ints(intfileB, BSlabel, 0, noccB, 0, nvirB);
 
-    C_DGEMV('t', noccB * nvirB, ndf_ + 3, 1.0, B_p_BS[0], ndf_ + 3, cBS[0], 1, 0.0, Y, 1);
+    C_DGEMV('t', noccB * nvirB, ndf_ + 3, 1.0, B_p_BS[0], ndf_ + 3, cBS[0], 1, 0.0, Y.data(), 1);
 
     free_block(B_p_BS);
 
     double **B_p_AR = get_DF_ints(intfileA, ARlabel, 0, noccA, 0, nvirA);
 
-    C_DGEMV('t', noccA * nvirA, ndf_ + 3, 1.0, B_p_AR[0], ndf_ + 3, cAR[0], 1, 0.0, X, 1);
+    C_DGEMV('t', noccA * nvirA, ndf_ + 3, 1.0, B_p_AR[0], ndf_ + 3, cAR[0], 1, 0.0, X.data(), 1);
 
-    energy += 8.0 * C_DDOT(ndf_ + 3, X, 1, Y, 1);
+    energy += 8.0 * C_DDOT(ndf_ + 3, X.data(), 1, Y.data(), 1);
 
-    double **xAA = block_matrix(noccA, noccA);
-    double **xRR = block_matrix(nvirA, nvirA);
+    auto xAA = std::make_shared<Matrix>("xAA", noccA, noccA);
+    auto xRR = std::make_shared<Matrix>("xRR", nvirA, nvirA);
 
-    C_DGEMM('N', 'T', noccA, noccA, nvirA, 1.0, cAR[0], nvirA, cAR[0], nvirA, 0.0, xAA[0], noccA);
+    C_DGEMM('N', 'T', noccA, noccA, nvirA, 1.0, cAR[0], nvirA, cAR[0], nvirA, 0.0, xAA->get_pointer(), noccA);
 
-    C_DGEMM('T', 'N', nvirA, nvirA, noccA, 1.0, cAR[0], nvirA, cAR[0], nvirA, 0.0, xRR[0], nvirA);
+    C_DGEMM('T', 'N', nvirA, nvirA, noccA, 1.0, cAR[0], nvirA, cAR[0], nvirA, 0.0, xRR->get_pointer(), nvirA);
 
     double **B_p_RR = get_DF_ints(intfileA, RRlabel, 0, nvirA, 0, nvirA);
 
-    C_DGEMV('t', nvirA * nvirA, ndf_ + 3, 1.0, B_p_RR[0], ndf_ + 3, xRR[0], 1, 0.0, Y, 1);
+    C_DGEMV('t', nvirA * nvirA, ndf_ + 3, 1.0, B_p_RR[0], ndf_ + 3, xRR->get_pointer(), 1, 0.0, Y.data(), 1);
 
-    energy += 8.0 * C_DDOT(ndf_ + 3, X, 1, Y, 1);
+    energy += 8.0 * C_DDOT(ndf_ + 3, X.data(), 1, Y.data(), 1);
 
-    double **C_p_AR = block_matrix(noccA * nvirA, ndf_ + 3);
+    auto C_p_AR = std::make_shared<Matrix>("C_p_AR", noccA * nvirA, ndf_ + 3);
 
     C_DGEMM('N', 'N', noccA, nvirA * (ndf_ + 3), nvirA, 1.0, cAR[0], nvirA, B_p_RR[0], nvirA * (ndf_ + 3), 0.0,
-            C_p_AR[0], nvirA * (ndf_ + 3));
+            C_p_AR->get_pointer(), nvirA * (ndf_ + 3));
 
     free_block(B_p_RR);
 
-    double **D_p_AR = block_matrix(noccA * nvirA, ndf_ + 3);
+    auto D_p_AR = std::make_shared<Matrix>("D_p_AR", noccA * nvirA, ndf_ + 3);
 
     for (int a = 0; a < noccA; a++) {
-        C_DGEMM('N', 'N', nvirA, ndf_ + 3, nvirA, 1.0, xRR[0], nvirA, C_p_AR[a * nvirA], ndf_ + 3, 0.0,
-                D_p_AR[a * nvirA], ndf_ + 3);
+        C_DGEMM('N', 'N', nvirA, ndf_ + 3, nvirA, 1.0, xRR->get_pointer(), nvirA, C_p_AR->get_pointer(a * nvirA), ndf_ + 3, 0.0,
+                D_p_AR->get_pointer(a * nvirA), ndf_ + 3);
     }
 
-    energy -= 4.0 * C_DDOT(noccA * nvirA * (ndf_ + 3), B_p_AR[0], 1, D_p_AR[0], 1);
-
-    free_block(C_p_AR);
-    free_block(D_p_AR);
+    energy -= 4.0 * C_DDOT(noccA * nvirA * (ndf_ + 3), B_p_AR[0], 1, D_p_AR->get_pointer(), 1);
 
     double **B_p_AA = get_DF_ints(intfileA, AAlabel, 0, noccA, 0, noccA);
 
-    C_DGEMV('t', noccA * noccA, ndf_ + 3, 1.0, B_p_AA[0], ndf_ + 3, xAA[0], 1, 0.0, Y, 1);
+    C_DGEMV('t', noccA * noccA, ndf_ + 3, 1.0, B_p_AA[0], ndf_ + 3, xAA->get_pointer(), 1, 0.0, Y.data(), 1);
 
-    energy -= 8.0 * C_DDOT(ndf_ + 3, X, 1, Y, 1);
+    energy -= 8.0 * C_DDOT(ndf_ + 3, X.data(), 1, Y.data(), 1);
 
-    double **C_p_AA = block_matrix(noccA * noccA, ndf_ + 3);
-    double **D_p_AA = block_matrix(noccA * noccA, ndf_ + 3);
+    auto C_p_AA = std::make_shared<Matrix>("C_p_AA", noccA * noccA, ndf_ + 3);
+    auto D_p_AA = std::make_shared<Matrix>("D_p_AA", noccA * noccA, ndf_ + 3);
 
     for (int a = 0; a < noccA; a++) {
         C_DGEMM('N', 'N', noccA, ndf_ + 3, nvirA, 1.0, cAR[0], nvirA, B_p_AR[a * nvirA], ndf_ + 3, 0.0,
-                C_p_AA[a * noccA], ndf_ + 3);
+                C_p_AA->get_pointer(a * noccA), ndf_ + 3);
     }
 
-    C_DGEMM('N', 'N', noccA, noccA * (ndf_ + 3), noccA, 1.0, xAA[0], noccA, C_p_AA[0], noccA * (ndf_ + 3), 0.0,
-            D_p_AA[0], noccA * (ndf_ + 3));
+    C_DGEMM('N', 'N', noccA, noccA * (ndf_ + 3), noccA, 1.0, xAA->get_pointer(), noccA, C_p_AA->get_pointer(), noccA * (ndf_ + 3), 0.0,
+            D_p_AA->get_pointer(), noccA * (ndf_ + 3));
 
-    energy += 4.0 * C_DDOT(noccA * noccA * (ndf_ + 3), B_p_AA[0], 1, D_p_AA[0], 1);
+    energy += 4.0 * C_DDOT(noccA * noccA * (ndf_ + 3), B_p_AA[0], 1, D_p_AA->get_pointer(), 1);
 
-    free(X);
-    free(Y);
-    free_block(xAA);
-    free_block(xRR);
     free_block(B_p_AA);
-    free_block(C_p_AA);
-    free_block(D_p_AA);
     free_block(B_p_AR);
 
     return (energy);
