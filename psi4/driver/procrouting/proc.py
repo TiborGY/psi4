@@ -3379,9 +3379,7 @@ def run_cc_property(name, **kwargs):
         for oe_prop_name in one:
             oe.add(oe_prop_name.upper())
         # ==> OEProp for the ground state <==
-        # TODO: When Psi is Py 3.9+, transition to the removeprefix version.
-        title = name.upper().replace("EOM-", "")
-        #title = name.upper().removeprefix("EOM-")
+        title = name.upper().removeprefix("EOM-")
         oe.set_title(title)
         set_of_names = {title + " {}", "CC {}"}
         if name.startswith("eom"):
