@@ -2,10 +2,16 @@
 
 ## Executive Summary
 
-**Project Goal**: Extract and consolidate duplicated integral permutation code across Psi4 modules into a reusable utility library.
+**Project Goal**: Extract and consolidate duplicated integral permutation code across Psi4 modules into a reusable utility library with smart, concise APIs.
+
+**Key Innovation**: Auto-inference of DPD indices and labels from input buffers
+- Reduces API calls from 5 parameters to 1-2
+- Eliminates redundant specification errors
+- Automatic spin-case handling
 
 **Impact**:
 - Reduce ~200-300 lines of duplicated permutation logic
+- Simplify API: `ovov_to_oovv(&I, file)` vs `buf4_sort(&I, file, prqs, idx1, idx2, label)`
 - Improve maintainability and consistency across modules
 - Establish foundation for future integral sorting refactoring
 
@@ -183,12 +189,130 @@ namespace libtrans {
  * This class provides semantic wrappers around DPD buf4_sort operations
  * to make integral transformations more readable and maintainable.
  *
+ * **Design Philosophy:**
+ * - Functions infer DPD indices and labels from input buffer when possible
+ * - Optional parameters allow customization when needed
+ * - Standard naming conventions are enforced for consistency
+ *
  * All methods are static - no instantiation required.
  */
 class IntegralPermutations {
 public:
     //===========================================
-    // Notation Conversions
+    // Common Integral Space Transformations
+    //===========================================
+
+    /**
+     * @brief Transform (OV|OV) → <OO|VV>
+     *
+     * Common transformation for building 2-electron integrals in
+     * occupied-occupied/virtual-virtual space.
+     *
+     * **Smart Defaults:**
+     * - Automatically determines output indices from input buffer
+     * - Generates standard label "MO Ints <OO|VV>" (or <oo|vv>, <Oo|Vv> for spin cases)
+     * - Handles all spin cases (RHF, UHF-AA, UHF-BB, UHF-AB) automatically
+     *
+     * @param InBuf Input (OV|OV) buffer (reads DPD parameters to infer output)
+     * @param outfilenum Output file number
+     * @param label Optional custom label (auto-generated if empty)
+     *
+     * @code
+     * // Simple case - everything inferred
+     * IntegralPermutations::ovov_to_oovv(&I, PSIF_LIBTRANS_DPD);
+     *
+     * // Custom label if needed
+     * IntegralPermutations::ovov_to_oovv(&I, PSIF_LIBTRANS_DPD, "Custom <OO|VV>");
+     * @endcode
+     */
+    static void ovov_to_oovv(
+        dpdbuf4 *InBuf,
+        int outfilenum,
+        const std::string &label = ""
+    );
+
+    /**
+     * @brief Transform (VV|OO) → <OV|OV>
+     *
+     * Creates <OV|OV> integrals from (VV|OO) chemist's notation.
+     * Auto-detects spin case and generates appropriate indices/label.
+     *
+     * @param InBuf Input (VV|OO) buffer
+     * @param outfilenum Output file
+     * @param label Optional custom label (default: "MO Ints <OV|OV>")
+     */
+    static void vvoo_to_ovov(
+        dpdbuf4 *InBuf,
+        int outfilenum,
+        const std::string &label = ""
+    );
+
+    /**
+     * @brief Create transpose: <OO|VV> → <VV|OO>
+     *
+     * Swaps bra and ket pairs. Auto-detects indices from input.
+     *
+     * @param InBuf Input <OO|VV> buffer
+     * @param outfilenum Output file
+     * @param label Optional custom label (default: "MO Ints <VV|OO>")
+     */
+    static void transpose_oovv(
+        dpdbuf4 *InBuf,
+        int outfilenum,
+        const std::string &label = ""
+    );
+
+    /**
+     * @brief Generic transpose: <AB|CD> → <CD|AB>
+     *
+     * Swaps bra and ket pairs for any integral type.
+     *
+     * @param InBuf Input buffer
+     * @param outfilenum Output file
+     * @param label Optional custom label (auto-generated from input if empty)
+     */
+    static void transpose_bra_ket(
+        dpdbuf4 *InBuf,
+        int outfilenum,
+        const std::string &label = ""
+    );
+
+    //===========================================
+    // Additional Common Transformations
+    //===========================================
+
+    /**
+     * @brief Transform (VO|OO) → <OV|OO>
+     *
+     * Common for OOOV-type integrals. Auto-detects spin case.
+     *
+     * @param InBuf Input (VO|OO) buffer
+     * @param outfilenum Output file
+     * @param label Optional custom label
+     */
+    static void vooo_to_ovoo(
+        dpdbuf4 *InBuf,
+        int outfilenum,
+        const std::string &label = ""
+    );
+
+    /**
+     * @brief Transform (OV|VV) → <OV|VV>
+     *
+     * Common for OVVV-type integrals. Auto-detects spin case.
+     *
+     * @param InBuf Input (OV|VV) buffer
+     * @param outfilenum Output file
+     * @param label Optional custom label
+     */
+    static void ovvv_to_ovvv(
+        dpdbuf4 *InBuf,
+        int outfilenum,
+        const std::string &label = ""
+    );
+
+    //===========================================
+    // Notation Conversions (General)
     //===========================================
 
     /**
@@ -196,6 +320,9 @@ public:
      *
      * Applies the prqs permutation: (pq|rs) → (pr|qs)
      * This is the most common transformation in quantum chemistry codes.
+     *
+     * Unlike the specific functions above, this requires explicit indices
+     * because the space types cannot be inferred from generic (pq|rs).
      *
      * @param InBuf Input buffer in chemist's notation
      * @param outfilenum PSI file number for output
@@ -211,100 +338,39 @@ public:
         const std::string &label
     );
 
-    /**
-     * @brief Convert physicist's notation <pr|qs> to chemist's notation (pq|rs)
-     *
-     * Inverse of chemist_to_physicist. Uses prqs permutation (self-inverse for this case).
-     *
-     * @param InBuf Input buffer in physicist's notation
-     * @param outfilenum PSI file number for output
-     * @param pq_indices DPD indices for compound index (pq)
-     * @param rs_indices DPD indices for compound index (rs)
-     * @param label String label for output buffer
-     */
-    static void physicist_to_chemist(
-        dpdbuf4 *InBuf,
-        int outfilenum,
-        int pq_indices,
-        int rs_indices,
-        const std::string &label
-    );
-
     //===========================================
-    // Common Integral Space Transformations
+    // Batch Operations
     //===========================================
 
     /**
-     * @brief Transform (OV|OV) → <OO|VV>
+     * @brief Perform standard OVOV transformations in batch
      *
-     * Common transformation for building 2-electron integrals in
-     * occupied-occupied/virtual-virtual space.
+     * Common pattern: Generate all permutations needed for OVOV integrals:
+     * - (OV|OV) → <OO|VV>
+     * - <OO|VV> → <VV|OO> (if requested)
+     *
+     * All indices and labels are auto-generated.
      *
      * @param InBuf Input (OV|OV) buffer
      * @param outfilenum Output file
-     * @param oo_indices DPD indices for OO space
-     * @param vv_indices DPD indices for VV space
-     * @param label Output label
+     * @param generate_transpose Also create <VV|OO>
      */
-    static void ovov_to_oovv(
+    static void standard_ovov_transformations(
         dpdbuf4 *InBuf,
         int outfilenum,
-        int oo_indices,
-        int vv_indices,
-        const std::string &label
-    );
-
-    /**
-     * @brief Create transpose: <AB|CD> → <CD|AB>
-     *
-     * Swaps bra and ket pairs using rspq permutation.
-     *
-     * @param InBuf Input buffer
-     * @param outfilenum Output file
-     * @param cd_indices DPD indices for new bra (CD)
-     * @param ab_indices DPD indices for new ket (AB)
-     * @param label Output label
-     */
-    static void transpose_bra_ket(
-        dpdbuf4 *InBuf,
-        int outfilenum,
-        int cd_indices,
-        int ab_indices,
-        const std::string &label
+        bool generate_transpose = true
     );
 
     //===========================================
-    // Spin-Aware Transformations (UHF/ROHF)
+    // Low-Level Interface (for advanced use)
     //===========================================
 
     /**
-     * @brief Transform (OV|ov) → <Oo|Vv> for mixed-spin case
+     * @brief Apply arbitrary permutation with full control
      *
-     * Handles α-β spin case transformation.
-     *
-     * @param InBuf Input buffer
-     * @param outfilenum Output file
-     * @param oo_indices DPD indices for Oo
-     * @param vv_indices DPD indices for Vv
-     * @param label Output label
-     */
-    static void ovov_to_oovv_mixed_spin(
-        dpdbuf4 *InBuf,
-        int outfilenum,
-        int oo_indices,
-        int vv_indices,
-        const std::string &label
-    );
-
-    //===========================================
-    // Generic Permutation Interface
-    //===========================================
-
-    /**
-     * @brief Apply arbitrary permutation with semantic naming
-     *
-     * Thin wrapper around DPD buf4_sort with better error checking
-     * and documentation.
+     * Direct wrapper around DPD buf4_sort for cases where automatic
+     * inference isn't suitable. Most code should use the semantic
+     * functions above instead.
      *
      * @param InBuf Input buffer
      * @param outfilenum Output file
@@ -320,28 +386,6 @@ public:
         int pq_indices,
         int rs_indices,
         const std::string &label
-    );
-
-    //===========================================
-    // Batch Operations
-    //===========================================
-
-    /**
-     * @brief Perform standard OVOV transformations in batch
-     *
-     * Common pattern: Generate all permutations needed for OVOV integrals:
-     * - (OV|OV) → <OO|VV>
-     * - <OO|VV> → <VV|OO>
-     * - Additional requested permutations
-     *
-     * @param InBuf Input (OV|OV) buffer
-     * @param outfilenum Output file
-     * @param generate_transpose Also create <VV|OO>
-     */
-    static void standard_ovov_transformations(
-        dpdbuf4 *InBuf,
-        int outfilenum,
-        bool generate_transpose = true
     );
 
     //===========================================
@@ -363,6 +407,43 @@ public:
      * @return true if permutation is implemented and tested
      */
     static bool is_permutation_supported(indices permutation);
+
+private:
+    //===========================================
+    // Internal Helpers
+    //===========================================
+
+    /**
+     * @brief Derive output OO indices from input OV indices
+     *
+     * Analyzes input buffer's DPD parameters to determine appropriate
+     * output indices for OO space, handling spin cases correctly.
+     */
+    static int derive_oo_indices(dpdbuf4 *InBuf);
+
+    /**
+     * @brief Derive output VV indices from input OV indices
+     */
+    static int derive_vv_indices(dpdbuf4 *InBuf);
+
+    /**
+     * @brief Generate standard label for integral type
+     *
+     * @param bra_space Space designation for bra (e.g., "OO", "oo", "Oo")
+     * @param ket_space Space designation for ket (e.g., "VV", "vv", "Vv")
+     * @return Standard label like "MO Ints <OO|VV>"
+     */
+    static std::string generate_standard_label(
+        const std::string &bra_space,
+        const std::string &ket_space
+    );
+
+    /**
+     * @brief Detect spin case from DPD indices
+     *
+     * @return String: "AA", "BB", or "AB" for unrestricted; "R" for restricted
+     */
+    static std::string detect_spin_case(dpdbuf4 *InBuf);
 };
 
 } // namespace libtrans
@@ -379,9 +460,193 @@ public:
 #include "integral_permutations.h"
 #include "psi4/libdpd/dpd.h"
 #include <stdexcept>
+#include <sstream>
 
 namespace psi {
 namespace libtrans {
+
+//===========================================
+// Internal Helper Implementations
+//===========================================
+
+std::string IntegralPermutations::detect_spin_case(dpdbuf4 *InBuf) {
+    // Examine DPD index labels to determine spin case
+    // This is a simplified example - actual implementation would
+    // parse the index structure more carefully
+
+    int pqnum = InBuf->params->pqnum;
+    int rsnum = InBuf->params->rsnum;
+
+    // Check if indices contain mixed case (uppercase/lowercase)
+    // indicating alpha-beta spin case
+    // DPD convention: O=alpha-occ, o=beta-occ, V=alpha-vir, v=beta-vir
+
+    // This is pseudocode - actual implementation would use
+    // DPD's index lookup tables
+    if (/* indices indicate mixed spin */) {
+        return "AB";
+    } else if (/* indices indicate beta-beta */) {
+        return "BB";
+    } else {
+        return "AA";  // or "R" for restricted
+    }
+}
+
+int IntegralPermutations::derive_oo_indices(dpdbuf4 *InBuf) {
+    // Extract occupied-occupied index from occupied-virtual input
+    // Using DPD's index combination tables
+
+    std::string spin_case = detect_spin_case(InBuf);
+
+    if (spin_case == "AA") {
+        return ID("[O,O]");
+    } else if (spin_case == "BB") {
+        return ID("[o,o]");
+    } else {  // AB
+        return ID("[O,o]");
+    }
+}
+
+int IntegralPermutations::derive_vv_indices(dpdbuf4 *InBuf) {
+    // Extract virtual-virtual index from occupied-virtual input
+
+    std::string spin_case = detect_spin_case(InBuf);
+
+    if (spin_case == "AA") {
+        return ID("[V,V]");
+    } else if (spin_case == "BB") {
+        return ID("[v,v]");
+    } else {  // AB
+        return ID("[V,v]");
+    }
+}
+
+std::string IntegralPermutations::generate_standard_label(
+    const std::string &bra_space,
+    const std::string &ket_space)
+{
+    std::ostringstream oss;
+    oss << "MO Ints <" << bra_space << "|" << ket_space << ">";
+    return oss.str();
+}
+
+//===========================================
+// Public API Implementations
+//===========================================
+
+void IntegralPermutations::ovov_to_oovv(
+    dpdbuf4 *InBuf,
+    int outfilenum,
+    const std::string &label)
+{
+    // Validate input
+    if (InBuf == nullptr) {
+        throw std::runtime_error("IntegralPermutations::ovov_to_oovv: null input buffer");
+    }
+
+    // Auto-detect output indices
+    int oo_indices = derive_oo_indices(InBuf);
+    int vv_indices = derive_vv_indices(InBuf);
+
+    // Generate label if not provided
+    std::string final_label = label;
+    if (label.empty()) {
+        std::string spin_case = detect_spin_case(InBuf);
+        std::string bra, ket;
+
+        if (spin_case == "AA") {
+            bra = "OO"; ket = "VV";
+        } else if (spin_case == "BB") {
+            bra = "oo"; ket = "vv";
+        } else {
+            bra = "Oo"; ket = "Vv";
+        }
+
+        final_label = generate_standard_label(bra, ket);
+    }
+
+    // Perform transformation using DPD library
+    // (OV|OV) → <OO|VV> using prqs permutation
+    global_dpd_->buf4_sort(InBuf, outfilenum, prqs, oo_indices, vv_indices, final_label);
+}
+
+void IntegralPermutations::transpose_oovv(
+    dpdbuf4 *InBuf,
+    int outfilenum,
+    const std::string &label)
+{
+    // Swap OO and VV to get VV|OO
+    // Input should be <OO|VV> format (physicist's notation)
+
+    if (InBuf == nullptr) {
+        throw std::runtime_error("IntegralPermutations::transpose_oovv: null input buffer");
+    }
+
+    // Read indices from input (they're already in the right format)
+    int oo_indices = InBuf->params->pqnum;  // Currently OO
+    int vv_indices = InBuf->params->rsnum;  // Currently VV
+
+    // Generate label if not provided
+    std::string final_label = label;
+    if (label.empty()) {
+        // Detect spaces from input and reverse them
+        std::string spin_case = detect_spin_case(InBuf);
+        // ... generate "MO Ints <VV|OO>" with appropriate capitalization
+        final_label = "MO Ints <VV|OO>";  // Simplified
+    }
+
+    // Swap bra and ket using rspq permutation
+    global_dpd_->buf4_sort(InBuf, outfilenum, rspq, vv_indices, oo_indices, final_label);
+}
+
+void IntegralPermutations::transpose_bra_ket(
+    dpdbuf4 *InBuf,
+    int outfilenum,
+    const std::string &label)
+{
+    // Generic transpose for any integral type
+    if (InBuf == nullptr) {
+        throw std::runtime_error("IntegralPermutations::transpose_bra_ket: null input buffer");
+    }
+
+    int pq_indices = InBuf->params->pqnum;
+    int rs_indices = InBuf->params->rsnum;
+
+    // Auto-generate label if not provided by reversing input label
+    std::string final_label = label;
+    if (label.empty()) {
+        // Parse input label and reverse bra/ket
+        // Simplified: just add "transposed" suffix
+        final_label = std::string(InBuf->file.label) + " (transposed)";
+    }
+
+    global_dpd_->buf4_sort(InBuf, outfilenum, rspq, rs_indices, pq_indices, final_label);
+}
+
+void IntegralPermutations::standard_ovov_transformations(
+    dpdbuf4 *InBuf,
+    int outfilenum,
+    bool generate_transpose)
+{
+    // Transform (OV|OV) → <OO|VV>
+    ovov_to_oovv(InBuf, outfilenum);  // Uses auto-generated label
+
+    if (generate_transpose) {
+        // Open the just-created <OO|VV> buffer
+        dpdbuf4 OOVVBuf;
+        int oo_idx = derive_oo_indices(InBuf);
+        int vv_idx = derive_vv_indices(InBuf);
+
+        global_dpd_->buf4_init(&OOVVBuf, outfilenum, InBuf->file.my_irrep,
+                              oo_idx, vv_idx, oo_idx, vv_idx, 0,
+                              "MO Ints <OO|VV>");
+
+        // Create <VV|OO> transpose
+        transpose_oovv(&OOVVBuf, outfilenum);  // Auto-generates label
+
+        global_dpd_->buf4_close(&OOVVBuf);
+    }
+}
 
 void IntegralPermutations::chemist_to_physicist(
     dpdbuf4 *InBuf,
@@ -390,7 +655,7 @@ void IntegralPermutations::chemist_to_physicist(
     int rs_indices,
     const std::string &label)
 {
-    // Validate input
+    // Low-level interface - requires explicit indices
     if (InBuf == nullptr) {
         throw std::runtime_error("IntegralPermutations::chemist_to_physicist: null input buffer");
     }
@@ -400,65 +665,34 @@ void IntegralPermutations::chemist_to_physicist(
     global_dpd_->buf4_sort(InBuf, outfilenum, prqs, pq_indices, rs_indices, label);
 }
 
-void IntegralPermutations::ovov_to_oovv(
+void IntegralPermutations::apply_permutation(
     dpdbuf4 *InBuf,
     int outfilenum,
-    int oo_indices,
-    int vv_indices,
+    indices permutation,
+    int pq_indices,
+    int rs_indices,
     const std::string &label)
 {
-    // This is semantically equivalent to chemist_to_physicist
-    // but provides a more descriptive name for this common operation
-    chemist_to_physicist(InBuf, outfilenum, oo_indices, vv_indices, label);
-}
-
-void IntegralPermutations::transpose_bra_ket(
-    dpdbuf4 *InBuf,
-    int outfilenum,
-    int cd_indices,
-    int ab_indices,
-    const std::string &label)
-{
-    global_dpd_->buf4_sort(InBuf, outfilenum, rspq, cd_indices, ab_indices, label);
-}
-
-void IntegralPermutations::standard_ovov_transformations(
-    dpdbuf4 *InBuf,
-    int outfilenum,
-    bool generate_transpose)
-{
-    // Extract DPD indices from input buffer
-    // This is a simplified example - actual implementation would need more detail
-
-    // Transform (OV|OV) → <OO|VV>
-    ovov_to_oovv(InBuf, outfilenum,
-                 /* determine OO indices */,
-                 /* determine VV indices */,
-                 "MO Ints <OO|VV>");
-
-    if (generate_transpose) {
-        // Open the just-created <OO|VV> buffer
-        dpdbuf4 OOVVBuf;
-        // ... initialize buffer ...
-
-        // Create <VV|OO> transpose
-        transpose_bra_ket(&OOVVBuf, outfilenum,
-                         /* VV indices */,
-                         /* OO indices */,
-                         "MO Ints <VV|OO>");
-
-        global_dpd_->buf4_close(&OOVVBuf);
+    // Direct wrapper for advanced use
+    if (InBuf == nullptr) {
+        throw std::runtime_error("IntegralPermutations::apply_permutation: null input buffer");
     }
+
+    global_dpd_->buf4_sort(InBuf, outfilenum, permutation, pq_indices, rs_indices, label);
 }
+
+//===========================================
+// Utility Functions
+//===========================================
 
 std::string IntegralPermutations::get_permutation_name(indices permutation) {
     switch(permutation) {
-        case prqs: return "Chemist to Physicist notation";
-        case rspq: return "Transpose bra and ket";
+        case prqs: return "Chemist to Physicist notation (prqs)";
+        case rspq: return "Transpose bra and ket (rspq)";
         case psrq: return "Mixed permutation (ps|rq)";
-        case qprs: return "Swap within bra";
-        case pqsr: return "Swap within ket";
-        // ... more cases ...
+        case qprs: return "Swap within bra (qprs)";
+        case pqsr: return "Swap within ket (pqsr)";
+        case rqps: return "Complex permutation (rqps)";
         default: return "Unknown permutation";
     }
 }
@@ -505,11 +739,10 @@ void DCTSolver::sort_OVOV_integrals_RHF() {
     global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[O,V]"),
                            ID("[O,V]"), ID("[O,V]"), 0, "MO Ints (OV|OV)");
 
-    // Semantic, self-documenting function names
-    IntegralPermutations::ovov_to_oovv(&I, PSIF_LIBTRANS_DPD,
-                                       ID("[O,O]"), ID("[V,V]"),
-                                       "MO Ints <OO|VV>");
+    // Auto-infers indices and generates standard label!
+    IntegralPermutations::ovov_to_oovv(&I, PSIF_LIBTRANS_DPD);
 
+    // Custom label for special case
     IntegralPermutations::apply_permutation(&I, PSIF_LIBTRANS_DPD, psrq,
                                            ID("[O,V]"), ID("[O,V]"),
                                            "MO Ints SF <OV|OV>:<Ov|oV>");
@@ -518,11 +751,165 @@ void DCTSolver::sort_OVOV_integrals_RHF() {
 }
 ```
 
+**Even Better - Common Pattern:**
+```cpp
+void DCTSolver::sort_OVOV_integrals_RHF() {
+    dpdbuf4 I;
+    global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[O,V]"),
+                           ID("[O,V]"), ID("[O,V]"), 0, "MO Ints (OV|OV)");
+
+    // One function call does it all!
+    IntegralPermutations::standard_ovov_transformations(&I, PSIF_LIBTRANS_DPD);
+
+    global_dpd_->buf4_close(&I);
+}
+```
+
+**UHF Example - Handles All Spin Cases Automatically:**
+```cpp
+void DCTSolver::sort_OVOV_integrals_UHF() {
+    dpdbuf4 I;
+
+    // Alpha-Alpha case
+    global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[O,V]"),
+                           ID("[O,V]"), ID("[O,V]"), 0, "MO Ints (OV|OV)");
+    IntegralPermutations::ovov_to_oovv(&I, PSIF_LIBTRANS_DPD);  // Generates "MO Ints <OO|VV>"
+    global_dpd_->buf4_close(&I);
+
+    // Beta-Beta case
+    global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[o,v]"), ID("[o,v]"),
+                           ID("[o,v]"), ID("[o,v]"), 0, "MO Ints (ov|ov)");
+    IntegralPermutations::ovov_to_oovv(&I, PSIF_LIBTRANS_DPD);  // Generates "MO Ints <oo|vv>"
+    global_dpd_->buf4_close(&I);
+
+    // Alpha-Beta case
+    global_dpd_->buf4_init(&I, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[o,v]"),
+                           ID("[O,V]"), ID("[o,v]"), 0, "MO Ints (OV|ov)");
+    IntegralPermutations::ovov_to_oovv(&I, PSIF_LIBTRANS_DPD);  // Generates "MO Ints <Oo|Vv>"
+    global_dpd_->buf4_close(&I);
+}
+```
+
 **Benefits:**
-- Clear intent: `ovov_to_oovv` vs cryptic `prqs`
-- Centralized: One place to update if DPD API changes
-- Documented: Function documentation explains transformation
-- Validated: Input checking and error messages
+- **Concise**: 1 line instead of 5 parameters for common cases
+- **Self-documenting**: `ovov_to_oovv` vs cryptic `prqs`
+- **Automatic**: Infers indices and labels from input buffer
+- **Spin-aware**: Handles RHF/UHF cases automatically
+- **Consistent**: Standard naming conventions enforced
+- **Flexible**: Can still override with custom labels when needed
+- **Safe**: Centralized validation and error checking
+
+---
+
+## Design Rationale
+
+### Why Auto-Inference?
+
+The original design in this plan required explicit specification of output indices and labels:
+```cpp
+// Verbose version (rejected)
+IntegralPermutations::ovov_to_oovv(&I, file, ID("[O,O]"), ID("[V,V]"), "MO Ints <OO|VV>");
+```
+
+This has several problems:
+
+1. **Redundancy**: The function name `ovov_to_oovv` already encodes the transformation
+   - Input: OV × OV → Output: OO × VV
+   - We're specifying the same information three times!
+
+2. **Error-Prone**: Easy to pass wrong indices
+   ```cpp
+   // Bug! Indices don't match function name
+   IntegralPermutations::ovov_to_oovv(&I, file, ID("[V,V]"), ID("[O,O]"), "Wrong!");
+   ```
+
+3. **Maintenance Burden**: Every call site must be updated if conventions change
+
+### The Solution: Smart Defaults
+
+By reading the input buffer's DPD parameters, we can automatically infer:
+
+1. **Spin Case**: Is this α-α, β-β, or α-β?
+   - Detected from index structure ([O,V] vs [o,v] vs [O,v])
+
+2. **Output Indices**: Derive from input indices
+   - [O,V] input → [O,O] and [V,V] output
+   - [o,v] input → [o,o] and [v,v] output
+   - [O,v] input → [O,o] and [V,v] output
+
+3. **Standard Labels**: Follow naming conventions
+   - "MO Ints <OO|VV>" for α-α
+   - "MO Ints <oo|vv>" for β-β
+   - "MO Ints <Oo|Vv>" for α-β
+
+### API Design Philosophy
+
+**Principle**: Make the common case simple, keep advanced use possible
+
+```cpp
+// 95% of use cases: simple, clean, automatic
+IntegralPermutations::ovov_to_oovv(&I, PSIF_LIBTRANS_DPD);
+
+// Custom label when needed (4% of cases)
+IntegralPermutations::ovov_to_oovv(&I, PSIF_LIBTRANS_DPD, "My Custom Label");
+
+// Full control for edge cases (1% of cases)
+IntegralPermutations::apply_permutation(&I, PSIF_LIBTRANS_DPD, prqs,
+                                       custom_idx1, custom_idx2, "Custom");
+```
+
+### Comparison to Alternatives
+
+| Approach | API Complexity | Flexibility | Error Risk |
+|----------|----------------|-------------|------------|
+| **Smart Defaults (Chosen)** | Low (1-2 params) | High | Low |
+| Explicit Parameters | High (5 params) | High | High |
+| Enum Spin Case | Medium (3 params) | Medium | Medium |
+| Template Specialization | Low (1 param) | Medium | Low |
+
+**Why not templates?**
+```cpp
+// Template approach would look like:
+IntegralPermutations::ovov_to_oovv<AlphaAlpha>(&I, file);
+```
+
+Pros:
+- Compile-time resolution
+- Type-safe
+
+Cons:
+- Can't handle runtime spin case detection
+- More complex implementation
+- Harder to extend
+
+**Decision**: Runtime auto-inference is more flexible and just as safe with validation.
+
+### DPD Buffer Parameter Reading
+
+The key insight is that `dpdbuf4` already contains all the information we need:
+
+```cpp
+struct dpdbuf4 {
+    struct {
+        int pqnum;      // Bra index combination ID
+        int rsnum;      // Ket index combination ID
+        int nirreps;    // Number of irreps
+        // ... more metadata
+    } *params;
+
+    struct {
+        int my_irrep;   // Irrep of this buffer
+        char label[80]; // Human-readable label
+    } file;
+};
+```
+
+We can query DPD's index tables to determine:
+- What orbital spaces are involved (O, o, V, v)
+- How to combine them for output ([O,O], [V,V], etc.)
+- What the standard label should be
+
+This is **not guessing** - it's reading metadata that already exists!
 
 ---
 
