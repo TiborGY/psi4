@@ -1226,7 +1226,8 @@ bool ROHF::stability_analysis() {
 
             // Store the row indices, for convenience
             size_t rank = 0;
-            double** U = block_matrix(npairs, npairs);
+            auto U = std::make_shared<Matrix>("U", npairs, npairs);
+            double** Up = U->pointer();
             for (int ia = 0; ia < npairs; ++ia) {
                 int iabs = Aab.params->roworb[h][ia][0];
                 int aabs = Aab.params->roworb[h][ia][1];
@@ -1235,20 +1236,20 @@ bool ROHF::stability_analysis() {
                 int irel = iabs - Aab.params->poff[isym];
                 int arel = aabs - Aab.params->qoff[asym];
                 if ((arel >= nvirpi[asym]) && (irel >= docc[isym])) {
-                    U[ia][ia] = 0.0;
+                    Up[ia][ia] = 0.0;
                 } else {
-                    U[ia][ia] = 1.0;
+                    Up[ia][ia] = 1.0;
                     rank++;
                 }
             }
             if (rank == 0) continue;
             int lastcol = npairs - 1;
             for (int ia = 0; ia < npairs; ++ia) {
-                if (U[ia][ia] == 0.0) {
-                    while (U[lastcol][lastcol] == 0.0) lastcol--;
+                if (Up[ia][ia] == 0.0) {
+                    while (Up[lastcol][lastcol] == 0.0) lastcol--;
                     if (lastcol > ia) {
-                        U[lastcol][ia] = U[ia][lastcol] = 1.0;
-                        U[lastcol][lastcol] = 0.0;
+                        Up[lastcol][ia] = Up[ia][lastcol] = 1.0;
+                        Up[lastcol][lastcol] = 0.0;
                     }
                 }
             }
@@ -1257,15 +1258,16 @@ bool ROHF::stability_analysis() {
             global_dpd_->buf4_mat_irrep_rd(&A, h);
 
             // Use the transformation matrix to rearrange the columns
-            double** temp = block_matrix(npairs, npairs);
-            C_DGEMM('n', 'n', npairs, npairs, npairs, 1.0, A.matrix[h][0], npairs, U[0], npairs, 0.0, temp[0], npairs);
-            C_DGEMM('n', 'n', npairs, npairs, npairs, 1.0, U[0], npairs, temp[0], npairs, 0.0, A.matrix[h][0], npairs);
-            free_block(temp);
+            auto temp = std::make_shared<Matrix>("temp", npairs, npairs);
+            double** tempp = temp->pointer();
+            C_DGEMM('n', 'n', npairs, npairs, npairs, 1.0, A.matrix[h][0], npairs, Up[0], npairs, 0.0, tempp[0], npairs);
+            C_DGEMM('n', 'n', npairs, npairs, npairs, 1.0, Up[0], npairs, tempp[0], npairs, 0.0, A.matrix[h][0], npairs);
 
             auto* evals = new double[rank];
-            double** evecs = block_matrix(rank, rank);
+            auto evecs = std::make_shared<Matrix>("evecs", rank, rank);
+            double** evecsp = evecs->pointer();
 
-            if (DSYEV_ascending(rank, A.matrix[h], evals, evecs) != 0){
+            if (DSYEV_ascending(rank, A.matrix[h], evals, evecsp) != 0){
                 throw PSIEXCEPTION("DSYEV diagonalizer failed in ROHF stability check!");
             }
             global_dpd_->buf4_mat_irrep_close(&A, h);
@@ -1273,7 +1275,6 @@ bool ROHF::stability_analysis() {
             for (int i = 0; i < mindim; i++) eval_sym.push_back(std::make_pair(evals[i], h));
             for (int i = 0; i < nsave; ++i) pEvals[i][0] = evals[i];
 
-            free_block(evecs);
             delete[] evals;
         }
         global_dpd_->buf4_close(&A);

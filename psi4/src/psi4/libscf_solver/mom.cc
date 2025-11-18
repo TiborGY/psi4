@@ -613,23 +613,22 @@ void HF::MOM() {
         // for (int a = 0; a < nmo - nalpha; a++)
         //    outfile->Printf("   a = %3d: Index = %3d, %14.10f\n", a + 1, virvec[a].second, virvec[a].first);
 
-        double** Ct = block_matrix(nso, nmo);
+        auto Ct = std::make_shared<Matrix>("Ct", nso, nmo);
+        double** Ctp = Ct->pointer();
 
         // Use Cold and p as a buffer
-        memcpy(static_cast<void*>(Ct[0]), static_cast<void*>(Cnew[0]), sizeof(double) * nso * nmo);
+        memcpy(static_cast<void*>(Ctp[0]), static_cast<void*>(Cnew[0]), sizeof(double) * nso * nmo);
         memcpy(static_cast<void*>(p), static_cast<void*>(eps), sizeof(double) * nmo);
 
         for (int a = 0; a < nalpha; a++) {
             eps[a] = occvec[a].first;
-            C_DCOPY(nso, &Ct[0][occvec[a].second], nmo, &Cnew[0][a], nmo);
+            C_DCOPY(nso, &Ctp[0][occvec[a].second], nmo, &Cnew[0][a], nmo);
         }
 
         for (int a = 0; a < nmo - nalpha; a++) {
             eps[a + nalpha] = virvec[a].first;
-            C_DCOPY(nso, &Ct[0][virvec[a].second], nmo, &Cnew[0][a + nalpha], nmo);
+            C_DCOPY(nso, &Ctp[0][virvec[a].second], nmo, &Cnew[0][a + nalpha], nmo);
         }
-
-        free_block(Ct);
 
         delete[] c;
         delete[] d;
@@ -697,23 +696,22 @@ void HF::MOM() {
         // for (int a = 0; a < nmo - nalpha; a++)
         //    outfile->Printf("   a = %3d: Index = %3d, %14.10f\n", a + 1, virvec[a].second, virvec[a].first);
 
-        double** Ct = block_matrix(nso, nmo);
+        auto Ct = std::make_shared<Matrix>("Ct", nso, nmo);
+        double** Ctp = Ct->pointer();
 
         // Use Cold and p as a buffer
-        memcpy(static_cast<void*>(Ct[0]), static_cast<void*>(Cnew[0]), sizeof(double) * nso * nmo);
+        memcpy(static_cast<void*>(Ctp[0]), static_cast<void*>(Cnew[0]), sizeof(double) * nso * nmo);
         memcpy(static_cast<void*>(p), static_cast<void*>(eps), sizeof(double) * nmo);
 
         for (int a = 0; a < nbeta; a++) {
             eps[a] = occvec[a].first;
-            C_DCOPY(nso, &Ct[0][occvec[a].second], nmo, &Cnew[0][a], nmo);
+            C_DCOPY(nso, &Ctp[0][occvec[a].second], nmo, &Cnew[0][a], nmo);
         }
 
         for (int a = 0; a < nmo - nbeta; a++) {
             eps[a + nbeta] = virvec[a].first;
-            C_DCOPY(nso, &Ct[0][virvec[a].second], nmo, &Cnew[0][a + nbeta], nmo);
+            C_DCOPY(nso, &Ctp[0][virvec[a].second], nmo, &Cnew[0][a + nbeta], nmo);
         }
-
-        free_block(Ct);
 
         delete[] c;
         delete[] d;

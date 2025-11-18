@@ -582,12 +582,12 @@ SharedMatrix CIWavefunction::hamiltonian(size_t hsize) {
     /* construct and print one block at a time for debugging */
     /*
     int ii2, jj2, blk, blk2, det1, det2;
-    double **Hpart;
-
     for (blk = 0; blk < CIblks_->num_blocks; blk++) {
       for (blk2 = 0; blk2 < CIblks_->num_blocks; blk2++) {
-        Hpart = init_matrix(CIblks_->Ia_size[blk]*CIblks_->Ib_size[blk],
-                            CIblks_->Ia_size[blk2]*CIblks_->Ib_size[blk2]);
+        auto Hpart = std::make_shared<Matrix>("Hpart",
+                                                CIblks_->Ia_size[blk]*CIblks_->Ib_size[blk],
+                                                CIblks_->Ia_size[blk2]*CIblks_->Ib_size[blk2]);
+        double **Hp = Hpart->pointer();
         for (ii=0,det1=0; ii<CIblks_->Ia_size[blk]; ii++) {
           for (jj=0; jj<CIblks_->Ib_size[blk]; jj++, det1++) {
             I.set(CalcInfo_->num_alp_expl,alplist[CIblks_->Ia_code[blk]][ii].occs,
@@ -598,7 +598,7 @@ SharedMatrix CIWavefunction::hamiltonian(size_t hsize) {
                       alplist[CIblks_->Ia_code[blk2]][ii2].occs,
                       CalcInfo_->num_bet_expl,
                       betlist[CIblks_->Ib_code[blk2]][jj2].occs);
-                Hpart[det1][det2] = matrix_element(&I,&J);
+                Hp[det1][det2] = matrix_element(&I,&J);
               }
             }
           }
@@ -606,11 +606,10 @@ SharedMatrix CIWavefunction::hamiltonian(size_t hsize) {
         if (print_ > 4 && size < 200) {
           outfile->Printf( "\nBlock %d %d of ", blk, blk2);
           outfile->Printf( "Hamiltonian matrix:\n");
-          print_mat(Hpart, CIblks_->Ia_size[blk]*CIblks_->Ib_size[blk],
+          print_mat(Hp, CIblks_->Ia_size[blk]*CIblks_->Ib_size[blk],
                            CIblks_->Ia_size[blk2]*CIblks_->Ib_size[blk2],
                     outfile);
         }
-        free_matrix(Hpart, CIblks_->Ia_size[blk]*CIblks_->Ib_size[blk]);
       }
     }
     */

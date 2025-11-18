@@ -972,11 +972,12 @@ bool RHF::stability_analysis() {
             int dim = Asing.params->rowtot[h];
             if (dim == 0) continue;
             double* evals = init_array(dim);
-            double** evecs = block_matrix(dim, dim);
+            auto evecs = std::make_shared<Matrix>("evecs", dim, dim);
+            double** evecsp = evecs->pointer();
 
             global_dpd_->buf4_mat_irrep_init(&Asing, h);
             global_dpd_->buf4_mat_irrep_rd(&Asing, h);
-            if (DSYEV_ascending(dim, Asing.matrix[h], evals, evecs) != 0){
+            if (DSYEV_ascending(dim, Asing.matrix[h], evals, evecsp) != 0){
                 throw PSIEXCEPTION("DSYEV diagonalizer failed in RHF stability check!");
             }
             global_dpd_->buf4_mat_irrep_close(&Asing, h);
@@ -985,18 +986,17 @@ bool RHF::stability_analysis() {
             for (int i = 0; i < mindim; i++) singlet_eval_sym.push_back(std::make_pair(evals[i], h));
 
             zero_arr(evals, dim);
-            zero_mat(evecs, dim, dim);
+            zero_mat(evecsp, dim, dim);
 
             global_dpd_->buf4_mat_irrep_init(&Atrip, h);
             global_dpd_->buf4_mat_irrep_rd(&Atrip, h);
-            if (DSYEV_ascending(dim, Atrip.matrix[h], evals, evecs) != 0){
+            if (DSYEV_ascending(dim, Atrip.matrix[h], evals, evecsp) != 0){
                 throw PSIEXCEPTION("DSYEV diagonalizer failed in RHF stability check!");
             }
             global_dpd_->buf4_mat_irrep_close(&Atrip, h);
 
             for (int i = 0; i < mindim; i++) triplet_eval_sym.push_back(std::make_pair(evals[i], h));
 
-            free_block(evecs);
             free(evals);
         }
 

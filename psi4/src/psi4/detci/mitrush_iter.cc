@@ -45,6 +45,7 @@
 #include "psi4/libciomr/libciomr.h"
 #include "psi4/libqt/qt.h"
 #include "psi4/libmints/vector.h"
+#include "psi4/libmints/matrix.h"
 #include "psi4/libpsi4util/process.h"
 
 #include "psi4/detci/structs.h"
@@ -86,14 +87,15 @@ void CIWavefunction::mitrush_iter(CIvect &Hd, struct stringwr **alplist, struct 
     int num_alp_str, num_bet_str, detH0 = -1;
     double *oei, *tei;
     double E, E_curr, E_last, E_est, E12, norm = 1.0, S;
-    double **H2x2, *evals2x2, **evecs2x2, alast, acur;
+    SharedMatrix H2x2, evecs2x2, alpha;
+    double *evals2x2, alast, acur;
     double x, y, c1norm = 0.0;
     int sm_tridim, buf;
     double *sm_mat, *sm_evals, **sm_evecs;
     int *mi_iac, *mi_ibc, *mi_iaidx, *mi_ibidx;
     double testS = 0.0;
     double tval, *mi_coeff, *buffer1, *buffer2;
-    double **alpha, chknorm;
+    double chknorm;
     int diag_method;
     CIvect Cvec;
     CIvect Sigma;
@@ -143,10 +145,10 @@ void CIWavefunction::mitrush_iter(CIvect &Hd, struct stringwr **alplist, struct 
 
     /* stuff for the 2x2 Davidson procedure */
 
-    H2x2 = init_matrix(2, 2);
+    H2x2 = std::make_shared<Matrix>("H2x2", 2, 2);
     evals2x2 = init_array(2);
-    evecs2x2 = init_matrix(2, 2);
-    alpha = init_matrix(1, 1);
+    evecs2x2 = std::make_shared<Matrix>("evecs2x2", 2, 2);
+    alpha = std::make_shared<Matrix>("alpha", 1, 1);
     /* not used but is necessary for call to olsen_iter_xy */
 
     /* setup initial guess vector */
@@ -371,16 +373,17 @@ void CIWavefunction::mitrush_iter(CIvect &Hd, struct stringwr **alplist, struct 
             E12 += edrc * S;
 
             /* fill up little H matrix and solve 2x2 eigenvalue problem */
-            H2x2[0][0] = E_last;
-            H2x2[0][1] = H2x2[1][0] = E12;
-            H2x2[1][1] = E_curr;
+            H2x2->set(0, 0, 0, E_last);
+            H2x2->set(0, 0, 1, E12);
+            H2x2->set(0, 1, 0, E12);
+            H2x2->set(0, 1, 1, E_curr);
 
-            solve_2x2_pep(H2x2, S, evals2x2, evecs2x2);
+            solve_2x2_pep(H2x2->pointer(), S, evals2x2, evecs2x2->pointer());
 
             /* recalculate C(i) = alpha(i-1) * C(i-1) + alpha(i) * C(i)     */
             /* and sigma(i) = alpha(i-1) * sigma(i-1) + alpha(i) * sigma(i) */
-            alast = evecs2x2[0][0];
-            acur = evecs2x2[0][1];
+            alast = evecs2x2->get(0, 0, 0);
+            acur = evecs2x2->get(0, 0, 1);
             norm = 1.0 / sqrt(acur * acur + alast * alast + 2.0 * acur * alast * S);
 
             Cvec.buf_unlock();
@@ -485,9 +488,7 @@ void CIWavefunction::mitrush_iter(CIvect &Hd, struct stringwr **alplist, struct 
             outfile->Printf("    Delta_E %10.3E   Delta_C %10.3E %c\n", E - E_last, c1norm,
                             (std::fabs(E - E_last) < conv_e && c1norm < conv_rms) ? 'c' : ' ');
             evals[0] = E;
-            free_matrix(H2x2, 2);
             free(evals2x2);
-            free_matrix(evecs2x2, 2);
             outfile->Printf("\n\n* ROOT 1 CI total energy = %19.15lf\n", E + enuc);
 
             Cvec.max_abs_vals(Parameters_->nprint, mi_iac, mi_ibc, mi_iaidx, mi_ibidx, mi_coeff, Parameters_->neg_only);

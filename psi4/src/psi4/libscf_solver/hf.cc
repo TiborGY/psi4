@@ -1394,12 +1394,11 @@ SharedMatrix HF::form_Fia(SharedMatrix Fso, SharedMatrix Cso, int* noccpi) {
         double** F = Fso->pointer(h);
         double** Fiap = Fia->pointer(h);
 
-        double** Temp = block_matrix(nocc, nso);
+        auto Temp = std::make_shared<Matrix>("Temp", nocc, nso);
+        double** Tempp = Temp->pointer();
 
-        C_DGEMM('T', 'N', nocc, nso, nso, 1.0, C[0], nmo, F[0], nso, 0.0, Temp[0], nso);
-        C_DGEMM('N', 'N', nocc, nvir, nso, 1.0, Temp[0], nso, &C[0][nocc], nmo, 0.0, Fiap[0], nvir);
-
-        free_block(Temp);
+        C_DGEMM('T', 'N', nocc, nso, nso, 1.0, C[0], nmo, F[0], nso, 0.0, Tempp[0], nso);
+        C_DGEMM('N', 'N', nocc, nvir, nso, 1.0, Tempp[0], nso, &C[0][nocc], nmo, 0.0, Fiap[0], nvir);
 
         // double* eps = E2->pointer(h);
         // for (int i = 0; i < nocc; i++)
