@@ -1447,7 +1447,7 @@ void SAPT0::oo_df_integrals() {
     // Get Schwartz screening arrays
     double maxSchwartz = 0.0;
     int nshelltri = basisset_->nshell() * (basisset_->nshell() + 1) / 2;
-    double *Schwartz = init_array(basisset_->nshell() * (basisset_->nshell() + 1) / 2);
+    std::vector<double> Schwartz(basisset_->nshell() * (basisset_->nshell() + 1) / 2);
 
     auto ao_eri_factory =
         std::make_shared<IntegralFactory>(basisset_, basisset_, basisset_, basisset_);
@@ -1476,7 +1476,7 @@ void SAPT0::oo_df_integrals() {
     ao_eri.reset();
     ao_eri_factory.reset();
 
-    double *DFSchwartz = init_array(elstbasis_->nshell());
+    std::vector<double> DFSchwartz(elstbasis_->nshell());
 
     auto df_eri_factory =
         std::make_shared<IntegralFactory>(elstbasis_, zero_, elstbasis_, zero_);
@@ -1529,13 +1529,17 @@ void SAPT0::oo_df_integrals() {
 
     if (0 > avail_mem) throw PsiException("Not enough memory", __FILE__, __LINE__);
 
-    double **B_p_AA = block_matrix(maxPshell, noccA_ * noccA_);
-    double **B_p_AB = block_matrix(maxPshell, noccA_ * noccB_);
-    double **B_p_BB = block_matrix(maxPshell, noccB_ * noccB_);
+    auto B_p_AA = std::make_shared<Matrix>("B_p_AA", maxPshell, noccA_ * noccA_);
+    double **B_p_AAp = B_p_AA->pointer();
+    auto B_p_AB = std::make_shared<Matrix>("B_p_AB", maxPshell, noccA_ * noccB_);
+    double **B_p_ABp = B_p_AB->pointer();
+    auto B_p_BB = std::make_shared<Matrix>("B_p_BB", maxPshell, noccB_ * noccB_);
+    double **B_p_BBp = B_p_BB->pointer();
 
-    double **temp = block_matrix(maxPshell, nso_ * nso_);
-    double *tempA = init_array(noccA_ * nso_);
-    double *tempB = init_array(noccB_ * nso_);
+    auto temp = std::make_shared<Matrix>("temp", maxPshell, nso_ * nso_);
+    double **tempp = temp->pointer();
+    std::vector<double> tempA(noccA_ * nso_);
+    std::vector<double> tempB(noccB_ * nso_);
 
     psio_address next_DF_AA = PSIO_ZERO;
     psio_address next_DF_AB = PSIO_ZERO;
@@ -1570,38 +1574,31 @@ void SAPT0::oo_df_integrals() {
                             for (int nu = 0; nu < numnu; ++nu, ++index) {
                                 int onu = basisset_->shell(NU).function_index() + nu;
 
-                                temp[P][omu * nso_ + onu] = eri[rank]->buffer()[index];
-                                temp[P][onu * nso_ + omu] = eri[rank]->buffer()[index];
-                            }
+                                tempp[P][omu * nso_ + onu] = eri[rank]->buffer()[index];
+                                tempp[P][onu * nso_ + omu] = eri[rank]->buffer()[index];
+            }
                         }
                     }
                 }
             }
         }
         for (int P = 0, index = 0; P < numPshell; ++P) {
-            C_DGEMM('T', 'N', noccA_, nso_, nso_, 1.0, &(CA_[0][0]), nmoA_, temp[P], nso_, 0.0, tempA, nso_);
-            C_DGEMM('N', 'N', noccA_, noccA_, nso_, 1.0, tempA, nso_, &(CA_[0][0]), nmoA_, 0.0, B_p_AA[P], noccA_);
-            C_DGEMM('N', 'N', noccA_, noccB_, nso_, 1.0, tempA, nso_, &(CB_[0][0]), nmoB_, 0.0, B_p_AB[P], noccB_);
-            C_DGEMM('T', 'N', noccB_, nso_, nso_, 1.0, &(CB_[0][0]), nmoB_, temp[P], nso_, 0.0, tempB, nso_);
-            C_DGEMM('N', 'N', noccB_, noccB_, nso_, 1.0, tempB, nso_, &(CB_[0][0]), nmoB_, 0.0, B_p_BB[P], noccB_);
+            C_DGEMM('T', 'N', noccA_, nso_, nso_, 1.0, &(CA_[0][0]), nmoA_, tempp[P], nso_, 0.0, tempA.data(), nso_);
+            C_DGEMM('N', 'N', noccA_, noccA_, nso_, 1.0, tempA.data(), nso_, &(CA_[0][0]), nmoA_, 0.0, B_p_AAp[P], noccA_);
+            C_DGEMM('N', 'N', noccA_, noccB_, nso_, 1.0, tempA.data(), nso_, &(CB_[0][0]), nmoB_, 0.0, B_p_ABp[P], noccB_);
+            C_DGEMM('T', 'N', noccB_, nso_, nso_, 1.0, &(CB_[0][0]), nmoB_, tempp[P], nso_, 0.0, tempB.data(), nso_);
+            C_DGEMM('N', 'N', noccB_, noccB_, nso_, 1.0, tempB.data(), nso_, &(CB_[0][0]), nmoB_, 0.0, B_p_BBp[P], noccB_);
         }
 
-        psio_->write(PSIF_SAPT_TEMP, "AA RI Integrals", (char *)&(B_p_AA[0][0]),
+        psio_->write(PSIF_SAPT_TEMP, "AA RI Integrals", (char *)B_p_AAp[0],
                      sizeof(double) * numPshell * noccA_ * noccA_, next_DF_AA, &next_DF_AA);
-        psio_->write(PSIF_SAPT_TEMP, "AB RI Integrals", (char *)&(B_p_AB[0][0]),
+        psio_->write(PSIF_SAPT_TEMP, "AB RI Integrals", (char *)B_p_ABp[0],
                      sizeof(double) * numPshell * noccA_ * noccB_, next_DF_AB, &next_DF_AB);
-        psio_->write(PSIF_SAPT_TEMP, "BB RI Integrals", (char *)&(B_p_BB[0][0]),
+        psio_->write(PSIF_SAPT_TEMP, "BB RI Integrals", (char *)B_p_BBp[0],
                      sizeof(double) * numPshell * noccB_ * noccB_, next_DF_BB, &next_DF_BB);
     }
 
-    free(Schwartz);
-    free(DFSchwartz);
-    free_block(temp);
-    free(tempA);
-    free(tempB);
-    free_block(B_p_AA);
-    free_block(B_p_AB);
-    free_block(B_p_BB);
+    // Schwartz, DFSchwartz, temp, tempA, tempB, B_p_AA, B_p_AB, B_p_BB automatically cleaned up
 
     // Get fitting metric
     auto metric = get_metric(elstbasis_);
@@ -1614,8 +1611,10 @@ void SAPT0::oo_df_integrals() {
     long int max_size = avail_mem / (2L * ndf_);
     if (max_size > noccA_ * noccA_) max_size = noccA_ * noccA_;
 
-    B_p_AA = block_matrix(ndf_, max_size);
-    double **B_q_AA = block_matrix(ndf_, max_size);
+    auto B_p_AA_2 = std::make_shared<Matrix>("B_p_AA_2", ndf_, max_size);
+    double **B_p_AA_2p = B_p_AA_2->pointer();
+    auto B_q_AA = std::make_shared<Matrix>("B_q_AA", ndf_, max_size);
+    double **B_q_AAp = B_q_AA->pointer();
 
     next_DF_AA = PSIO_ZERO;
     psio_address next_DFJ_AA = PSIO_ZERO;
@@ -1632,27 +1631,28 @@ void SAPT0::oo_df_integrals() {
 
         for (int P = 0; P < ndf_; P++) {
             next_DF_AA = psio_get_address(PSIO_ZERO, sizeof(double) * P * noccA_ * noccA_ + sizeof(double) * start);
-            psio_->read(PSIF_SAPT_TEMP, "AA RI Integrals", (char *)&(B_p_AA[P][0]), sizeof(double) * size, next_DF_AA,
+            psio_->read(PSIF_SAPT_TEMP, "AA RI Integrals", (char *)&(B_p_AA_2p[P][0]), sizeof(double) * size, next_DF_AA,
                         &next_DF_AA);
         }
 
-        C_DGEMM('N', 'N', ndf_, size, ndf_, 1.0, J_mhalf[0], ndf_, B_p_AA[0], max_size, 0.0, B_q_AA[0], max_size);
+        C_DGEMM('N', 'N', ndf_, size, ndf_, 1.0, J_mhalf[0], ndf_, B_p_AA_2p[0], max_size, 0.0, B_q_AAp[0], max_size);
 
         for (int P = 0; P < ndf_; P++) {
             next_DFJ_AA = psio_get_address(PSIO_ZERO, sizeof(double) * P * noccA_ * noccA_ + sizeof(double) * start);
-            psio_->write(PSIF_SAPT_AA_DF_INTS, "AA RI Integrals", (char *)&(B_q_AA[P][0]), sizeof(double) * size,
+            psio_->write(PSIF_SAPT_AA_DF_INTS, "AA RI Integrals", (char *)&(B_q_AAp[P][0]), sizeof(double) * size,
                          next_DFJ_AA, &next_DFJ_AA);
         }
     }
 
-    free_block(B_p_AA);
-    free_block(B_q_AA);
+    // B_p_AA_2, B_q_AA automatically cleaned up
 
     max_size = avail_mem / (2L * ndf_);
     if (max_size > noccA_ * noccB_) max_size = noccA_ * noccB_;
 
-    B_p_AB = block_matrix(ndf_, max_size);
-    double **B_q_AB = block_matrix(ndf_, max_size);
+    auto B_p_AB_2 = std::make_shared<Matrix>("B_p_AB_2", ndf_, max_size);
+    double **B_p_AB_2p = B_p_AB_2->pointer();
+    auto B_q_AB = std::make_shared<Matrix>("B_q_AB", ndf_, max_size);
+    double **B_q_ABp = B_q_AB->pointer();
 
     next_DF_AB = PSIO_ZERO;
     psio_address next_DFJ_AB = PSIO_ZERO;
@@ -1669,27 +1669,28 @@ void SAPT0::oo_df_integrals() {
 
         for (int P = 0; P < ndf_; P++) {
             next_DF_AB = psio_get_address(PSIO_ZERO, sizeof(double) * P * noccA_ * noccB_ + sizeof(double) * start);
-            psio_->read(PSIF_SAPT_TEMP, "AB RI Integrals", (char *)&(B_p_AB[P][0]), sizeof(double) * size, next_DF_AB,
+            psio_->read(PSIF_SAPT_TEMP, "AB RI Integrals", (char *)&(B_p_AB_2p[P][0]), sizeof(double) * size, next_DF_AB,
                         &next_DF_AB);
         }
 
-        C_DGEMM('N', 'N', ndf_, size, ndf_, 1.0, J_mhalf[0], ndf_, B_p_AB[0], max_size, 0.0, B_q_AB[0], max_size);
+        C_DGEMM('N', 'N', ndf_, size, ndf_, 1.0, J_mhalf[0], ndf_, B_p_AB_2p[0], max_size, 0.0, B_q_ABp[0], max_size);
 
         for (int P = 0; P < ndf_; P++) {
             next_DFJ_AB = psio_get_address(PSIO_ZERO, sizeof(double) * P * noccA_ * noccB_ + sizeof(double) * start);
-            psio_->write(PSIF_SAPT_AB_DF_INTS, "AB RI Integrals", (char *)&(B_q_AB[P][0]), sizeof(double) * size,
+            psio_->write(PSIF_SAPT_AB_DF_INTS, "AB RI Integrals", (char *)&(B_q_ABp[P][0]), sizeof(double) * size,
                          next_DFJ_AB, &next_DFJ_AB);
         }
     }
 
-    free_block(B_p_AB);
-    free_block(B_q_AB);
+    // B_p_AB_2, B_q_AB automatically cleaned up
 
     max_size = avail_mem / (2L * ndf_);
     if (max_size > noccB_ * noccB_) max_size = noccB_ * noccB_;
 
-    B_p_BB = block_matrix(ndf_, max_size);
-    double **B_q_BB = block_matrix(ndf_, max_size);
+    auto B_p_BB_2 = std::make_shared<Matrix>("B_p_BB_2", ndf_, max_size);
+    double **B_p_BB_2p = B_p_BB_2->pointer();
+    auto B_q_BB = std::make_shared<Matrix>("B_q_BB", ndf_, max_size);
+    double **B_q_BBp = B_q_BB->pointer();
 
     next_DF_BB = PSIO_ZERO;
     psio_address next_DFJ_BB = PSIO_ZERO;
@@ -1706,21 +1707,20 @@ void SAPT0::oo_df_integrals() {
 
         for (int P = 0; P < ndf_; P++) {
             next_DF_BB = psio_get_address(PSIO_ZERO, sizeof(double) * P * noccB_ * noccB_ + sizeof(double) * start);
-            psio_->read(PSIF_SAPT_TEMP, "BB RI Integrals", (char *)&(B_p_BB[P][0]), sizeof(double) * size, next_DF_BB,
+            psio_->read(PSIF_SAPT_TEMP, "BB RI Integrals", (char *)&(B_p_BB_2p[P][0]), sizeof(double) * size, next_DF_BB,
                         &next_DF_BB);
         }
 
-        C_DGEMM('N', 'N', ndf_, size, ndf_, 1.0, J_mhalf[0], ndf_, B_p_BB[0], max_size, 0.0, B_q_BB[0], max_size);
+        C_DGEMM('N', 'N', ndf_, size, ndf_, 1.0, J_mhalf[0], ndf_, B_p_BB_2p[0], max_size, 0.0, B_q_BBp[0], max_size);
 
         for (int P = 0; P < ndf_; P++) {
             next_DFJ_BB = psio_get_address(PSIO_ZERO, sizeof(double) * P * noccB_ * noccB_ + sizeof(double) * start);
-            psio_->write(PSIF_SAPT_BB_DF_INTS, "BB RI Integrals", (char *)&(B_q_BB[P][0]), sizeof(double) * size,
+            psio_->write(PSIF_SAPT_BB_DF_INTS, "BB RI Integrals", (char *)&(B_q_BBp[P][0]), sizeof(double) * size,
                          next_DFJ_BB, &next_DFJ_BB);
         }
     }
 
-    free_block(B_p_BB);
-    free_block(B_q_BB);
+    // B_p_BB_2, B_q_BB automatically cleaned up
 
     free(MUNUtoMU);
     free(MUNUtoNU);
