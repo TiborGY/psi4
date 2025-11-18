@@ -412,7 +412,7 @@ void SAPT0::df_integrals() {
 
     // Get Schwartz screening arrays
     double maxSchwartz = 0.0;
-    double *Schwartz = init_array(basisset_->nshell() * (basisset_->nshell() + 1) / 2);
+    std::vector<double> Schwartz(basisset_->nshell() * (basisset_->nshell() + 1) / 2);
 
     auto ao_eri_factory =
         std::make_shared<IntegralFactory>(basisset_, basisset_, basisset_, basisset_);
@@ -441,7 +441,7 @@ void SAPT0::df_integrals() {
     ao_eri.reset();
     ao_eri_factory.reset();
 
-    double *DFSchwartz = init_array(ribasis_->nshell());
+    std::vector<double> DFSchwartz(ribasis_->nshell());
 
     auto df_eri_factory =
         std::make_shared<IntegralFactory>(ribasis_, zero_, ribasis_, zero_);
@@ -510,9 +510,9 @@ void SAPT0::df_integrals() {
 
     if (debug_) outfile->Printf("Block %d : %d\n\n", num_blocks, size);
 
-    int *PQ_start = init_int_array(num_blocks);
-    int *PQ_stop = init_int_array(num_blocks);
-    int *block_length = init_int_array(num_blocks);
+    std::vector<int> PQ_start(num_blocks);
+    std::vector<int> PQ_stop(num_blocks);
+    std::vector<int> block_length(num_blocks);
 
     int block_num = 0;
     size = 0;
@@ -569,8 +569,10 @@ void SAPT0::df_integrals() {
 
     psio_address next_DF_AO = PSIO_ZERO;
 
-    double **AO_RI = block_matrix(max_size, ndf_);
-    double **J_AO_RI = block_matrix(ndf_, max_size);
+    auto AO_RI = std::make_shared<Matrix>("AO_RI", max_size, ndf_);
+    double **AO_RIp = AO_RI->pointer();
+    auto J_AO_RI = std::make_shared<Matrix>("J_AO_RI", ndf_, max_size);
+    double **J_AO_RIp = J_AO_RI->pointer();
 
     int munu_offset = 0;
     int curr_block = 0;
@@ -607,7 +609,7 @@ void SAPT0::df_integrals() {
                                         for (int nu = 0; nu < numnu; ++nu, ++index, ++munu) {
                                             int onu = basisset_->shell(NU).function_index() + nu;
 
-                                            AO_RI[munu + munu_offset][oP] = buffer[index];
+                                            AO_RIp[munu + munu_offset][oP] = buffer[index];
                                         }
                                     }
                                 }
@@ -622,7 +624,7 @@ void SAPT0::df_integrals() {
                                             int onu = basisset_->shell(NU).function_index() + nu;
                                             int index = P * nummu * nummu + mu * nummu + nu;
 
-                                            AO_RI[munu + munu_offset][oP] = buffer[index];
+                                            AO_RIp[munu + munu_offset][oP] = buffer[index];
                                         }
                                     }
                                 }
@@ -637,18 +639,18 @@ void SAPT0::df_integrals() {
                 }
             }
             if (PQ_stop[curr_block] == MUNU) {
-                C_DGEMM('N', 'T', ndf_, block_length[curr_block], ndf_, 1.0, J_mhalf[0], ndf_, &(AO_RI[0][0]), ndf_,
-                        0.0, &(J_AO_RI[0][0]), max_size);
+                C_DGEMM('N', 'T', ndf_, block_length[curr_block], ndf_, 1.0, J_mhalf[0], ndf_, AO_RIp[0], ndf_,
+                        0.0, J_AO_RIp[0], max_size);
 
                 for (int P = 0; P < ndf_; ++P) {
                     next_DF_AO =
                         psio_get_address(PSIO_ZERO, sizeof(double) * P * nsotri_screened + sizeof(double) * offset);
-                    psio_->write(PSIF_SAPT_TEMP, "AO RI Integrals", (char *)&(J_AO_RI[P][0]),
+                    psio_->write(PSIF_SAPT_TEMP, "AO RI Integrals", (char *)&(J_AO_RIp[P][0]),
                                  sizeof(double) * block_length[curr_block], next_DF_AO, &next_DF_AO);
                 }
 
-                memset(&(AO_RI[0][0]), '\0', sizeof(double) * max_size * ndf_);
-                memset(&(J_AO_RI[0][0]), '\0', sizeof(double) * max_size * ndf_);
+                memset(AO_RIp[0], '\0', sizeof(double) * max_size * ndf_);
+                memset(J_AO_RIp[0], '\0', sizeof(double) * max_size * ndf_);
 
                 offset += block_length[curr_block];
                 munu_offset = 0;
@@ -657,17 +659,16 @@ void SAPT0::df_integrals() {
         }
     }
 
-    C_DGEMM('N', 'T', ndf_, block_length[curr_block], ndf_, 1.0, J_mhalf[0], ndf_, &(AO_RI[0][0]), ndf_, 0.0,
-            &(J_AO_RI[0][0]), max_size);
+    C_DGEMM('N', 'T', ndf_, block_length[curr_block], ndf_, 1.0, J_mhalf[0], ndf_, AO_RIp[0], ndf_, 0.0,
+            J_AO_RIp[0], max_size);
 
     for (int P = 0; P < ndf_; ++P) {
         next_DF_AO = psio_get_address(PSIO_ZERO, sizeof(double) * P * nsotri_screened + sizeof(double) * offset);
-        psio_->write(PSIF_SAPT_TEMP, "AO RI Integrals", (char *)&(J_AO_RI[P][0]),
+        psio_->write(PSIF_SAPT_TEMP, "AO RI Integrals", (char *)&(J_AO_RIp[P][0]),
                      sizeof(double) * block_length[curr_block], next_DF_AO, &next_DF_AO);
     }
 
-    free_block(AO_RI);
-    free_block(J_AO_RI);
+    // AO_RI, J_AO_RI automatically cleaned up
 
     avail_mem = mem_;
     long int indices = nsotri_screened + noccA_ * noccA_ + noccA_ * nvirA_ + nvirA_ * (nvirA_ + 1) / 2 +
@@ -685,20 +686,33 @@ void SAPT0::df_integrals() {
 
     int Plength = max_size;
 
-    double **B_p_munu = block_matrix(Plength, nsotri_screened);
-    double **B_p_AA = block_matrix(Plength, noccA_ * noccA_);
-    double **B_p_AR = block_matrix(Plength, noccA_ * nvirA_);
-    double **B_p_RR = block_matrix(Plength, nvirA_ * (nvirA_ + 1) / 2);
-    double **B_p_BB = block_matrix(Plength, noccB_ * noccB_);
-    double **B_p_BS = block_matrix(Plength, noccB_ * nvirB_);
-    double **B_p_SS = block_matrix(Plength, nvirB_ * (nvirB_ + 1) / 2);
-    double **B_p_AB = block_matrix(Plength, noccA_ * noccB_);
-    double **B_p_AS = block_matrix(Plength, noccA_ * nvirB_);
-    double **B_p_RB = block_matrix(Plength, noccB_ * nvirA_);
+    auto B_p_munu = std::make_shared<Matrix>("B_p_munu", Plength, nsotri_screened);
+    double **B_p_munup = B_p_munu->pointer();
+    auto B_p_AA = std::make_shared<Matrix>("B_p_AA", Plength, noccA_ * noccA_);
+    double **B_p_AAp = B_p_AA->pointer();
+    auto B_p_AR = std::make_shared<Matrix>("B_p_AR", Plength, noccA_ * nvirA_);
+    double **B_p_ARp = B_p_AR->pointer();
+    auto B_p_RR = std::make_shared<Matrix>("B_p_RR", Plength, nvirA_ * (nvirA_ + 1) / 2);
+    double **B_p_RRp = B_p_RR->pointer();
+    auto B_p_BB = std::make_shared<Matrix>("B_p_BB", Plength, noccB_ * noccB_);
+    double **B_p_BBp = B_p_BB->pointer();
+    auto B_p_BS = std::make_shared<Matrix>("B_p_BS", Plength, noccB_ * nvirB_);
+    double **B_p_BSp = B_p_BS->pointer();
+    auto B_p_SS = std::make_shared<Matrix>("B_p_SS", Plength, nvirB_ * (nvirB_ + 1) / 2);
+    double **B_p_SSp = B_p_SS->pointer();
+    auto B_p_AB = std::make_shared<Matrix>("B_p_AB", Plength, noccA_ * noccB_);
+    double **B_p_ABp = B_p_AB->pointer();
+    auto B_p_AS = std::make_shared<Matrix>("B_p_AS", Plength, noccA_ * nvirB_);
+    double **B_p_ASp = B_p_AS->pointer();
+    auto B_p_RB = std::make_shared<Matrix>("B_p_RB", Plength, noccB_ * nvirA_);
+    double **B_p_RBp = B_p_RB->pointer();
 
-    double **munu_temp = block_matrix(nthreads, nso_ * nso_);
-    double **Inu_temp = block_matrix(nthreads, nmo_ * nso_);
-    double **IJ_temp = block_matrix(nthreads, nmo_ * nmo_);
+    auto munu_temp = std::make_shared<Matrix>("munu_temp", nthreads, nso_ * nso_);
+    double **munu_tempp = munu_temp->pointer();
+    auto Inu_temp = std::make_shared<Matrix>("Inu_temp", nthreads, nmo_ * nso_);
+    double **Inu_tempp = Inu_temp->pointer();
+    auto IJ_temp = std::make_shared<Matrix>("IJ_temp", nthreads, nmo_ * nmo_);
+    double **IJ_tempp = IJ_temp->pointer();
 
     next_DF_AO = PSIO_ZERO;
     psio_address next_DF_AA = PSIO_ZERO;
