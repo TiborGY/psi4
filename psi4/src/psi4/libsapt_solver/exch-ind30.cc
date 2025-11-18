@@ -160,13 +160,13 @@ double SAPT2p3::exch_ind30_2(double **sAR) {
 
     energy += 2.0 * C_DDOT(noccA_ * noccB_ * (ndf_ + 3), C_p_AB->get_pointer(), 1, D_p_AB->get_pointer(), 1);
 
-    double *X = init_array(ndf_ + 3);
-    double *Y = init_array(ndf_ + 3);
+    std::vector<double> X(ndf_ + 3);
+    std::vector<double> Y(ndf_ + 3);
 
-    C_DGEMV('t', noccA_ * nvirA_, ndf_ + 3, 1.0, A_p_AR[0], ndf_ + 3, sAR[0], 1, 0.0, X, 1);
-    C_DGEMV('t', nvirA_ * noccB_, ndf_ + 3, 1.0, B_p_RB[0], ndf_ + 3, ssRB->get_pointer(), 1, 0.0, Y, 1);
+    C_DGEMV('t', noccA_ * nvirA_, ndf_ + 3, 1.0, A_p_AR[0], ndf_ + 3, sAR[0], 1, 0.0, X.data(), 1);
+    C_DGEMV('t', nvirA_ * noccB_, ndf_ + 3, 1.0, B_p_RB[0], ndf_ + 3, ssRB->get_pointer(), 1, 0.0, Y.data(), 1);
 
-    energy -= 4.0 * C_DDOT(ndf_ + 3, X, 1, Y, 1);
+    energy -= 4.0 * C_DDOT(ndf_ + 3, X.data(), 1, Y.data(), 1);
 
     auto xAB = std::make_shared<Matrix>("xAB", noccA_, noccB_);
     auto xAR = std::make_shared<Matrix>("xAR", noccA_, nvirA_);
@@ -198,12 +198,11 @@ double SAPT2p3::exch_ind30_2(double **sAR) {
 
     C_DGEMM('T', 'N', noccB_, noccB_, nvirA_, 1.0, ssRB->get_pointer(), noccB_, sAB_[noccA_], nmoB_, 0.0, xBB->get_pointer(), noccB_);
 
-    C_DGEMV('t', noccB_ * noccB_, ndf_ + 3, 1.0, B_p_BB[0], ndf_ + 3, xBB->get_pointer(), 1, 0.0, Y, 1);
+    C_DGEMV('t', noccB_ * noccB_, ndf_ + 3, 1.0, B_p_BB[0], ndf_ + 3, xBB->get_pointer(), 1, 0.0, Y.data(), 1);
 
-    energy += 4.0 * C_DDOT(ndf_ + 3, X, 1, Y, 1);
+    energy += 4.0 * C_DDOT(ndf_ + 3, X.data(), 1, Y.data(), 1);
 
-    free(X);
-    free(Y);
+    // Automatic cleanup via std::vector
 
     free_block(A_p_AR);
     free_block(B_p_RB);
@@ -241,13 +240,13 @@ double SAPT2p3::exch_ind30_3(double **sBS) {
 
     energy += 2.0 * C_DDOT(noccA_ * noccB_ * (ndf_ + 3), C_p_AB->get_pointer(), 1, D_p_AB->get_pointer(), 1);
 
-    double *X = init_array(ndf_ + 3);
-    double *Y = init_array(ndf_ + 3);
+    std::vector<double> X(ndf_ + 3);
+    std::vector<double> Y(ndf_ + 3);
 
-    C_DGEMV('t', noccB_ * nvirB_, ndf_ + 3, 1.0, B_p_BS[0], ndf_ + 3, sBS[0], 1, 0.0, X, 1);
-    C_DGEMV('t', noccA_ * nvirB_, ndf_ + 3, 1.0, A_p_AS[0], ndf_ + 3, ssASp[0], 1, 0.0, Y, 1);
+    C_DGEMV('t', noccB_ * nvirB_, ndf_ + 3, 1.0, B_p_BS[0], ndf_ + 3, sBS[0], 1, 0.0, X.data(), 1);
+    C_DGEMV('t', noccA_ * nvirB_, ndf_ + 3, 1.0, A_p_AS[0], ndf_ + 3, ssASp[0], 1, 0.0, Y.data(), 1);
 
-    energy -= 4.0 * C_DDOT(ndf_ + 3, X, 1, Y, 1);
+    energy -= 4.0 * C_DDOT(ndf_ + 3, X.data(), 1, Y.data(), 1);
 
     auto xAB = std::make_shared<Matrix>("xAB", noccA_, noccB_);
     double **xABp = xAB->pointer();
@@ -282,11 +281,10 @@ double SAPT2p3::exch_ind30_3(double **sBS) {
 
     C_DGEMM('N', 'T', noccA_, noccA_, nvirB_, 1.0, ssASp[0], nvirB_, &(sAB_[0][noccB_]), nmoB_, 0.0, xAAp[0], noccA_);
 
-    C_DGEMV('t', noccA_ * noccA_, ndf_ + 3, 1.0, A_p_AA[0], ndf_ + 3, xAAp[0], 1, 0.0, Y, 1);
+    C_DGEMV('t', noccA_ * noccA_, ndf_ + 3, 1.0, A_p_AA[0], ndf_ + 3, xAAp[0], 1, 0.0, Y.data(), 1);
 
-    energy += 4.0 * C_DDOT(ndf_ + 3, X, 1, Y, 1);
-    free(X);
-    free(Y);
+    energy += 4.0 * C_DDOT(ndf_ + 3, X.data(), 1, Y.data(), 1);
+    // Automatic cleanup via std::vector
 
     free_block(A_p_AS);
     free_block(A_p_AA);
