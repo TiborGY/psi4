@@ -56,8 +56,8 @@ void SAPT0::disp20() {
     SAPTDFInts C_p_BS = set_act_C_BS();
     Iterator C_ARBS_iter = get_iterator(avail_mem / 3, &C_p_AR, &C_p_BS);
 
-    double *xPQ = init_array((long int)B_ARBS_iter.block_size[0] * C_ARBS_iter.block_size[0]);
-    double *yPQ = init_array((long int)B_ARBS_iter.block_size[0] * C_ARBS_iter.block_size[0]);
+    std::vector<double> xPQ((long int)B_ARBS_iter.block_size[0] * C_ARBS_iter.block_size[0]);
+    std::vector<double> yPQ((long int)B_ARBS_iter.block_size[0] * C_ARBS_iter.block_size[0]);
 
     auto T_p_AR = std::make_shared<Matrix>("T_p_AR", C_ARBS_iter.block_size[0], aoccA_ * nvirA_);
     auto T_p_BS = std::make_shared<Matrix>("T_p_BS", C_ARBS_iter.block_size[0], aoccB_ * nvirB_);
@@ -89,12 +89,12 @@ void SAPT0::disp20() {
                 }
 
                 C_DGEMM('N', 'T', B_ARBS_iter.curr_size, C_ARBS_iter.curr_size, aoccA_ * nvirA_, 2.0, B_p_AR.B_p_[0],
-                        aoccA_ * nvirA_, T_p_AR->get_pointer(), aoccA_ * nvirA_, 0.0, xPQ, C_ARBS_iter.curr_size);
+                        aoccA_ * nvirA_, T_p_AR->get_pointer(), aoccA_ * nvirA_, 0.0, xPQ.data(), C_ARBS_iter.curr_size);
 
                 C_DGEMM('N', 'T', B_ARBS_iter.curr_size, C_ARBS_iter.curr_size, aoccB_ * nvirB_, 2.0, B_p_BS.B_p_[0],
-                        aoccB_ * nvirB_, T_p_BS->get_pointer(), aoccB_ * nvirB_, 0.0, yPQ, C_ARBS_iter.curr_size);
+                        aoccB_ * nvirB_, T_p_BS->get_pointer(), aoccB_ * nvirB_, 0.0, yPQ.data(), C_ARBS_iter.curr_size);
 
-                e_disp20_ -= C_DDOT(B_ARBS_iter.curr_size * C_ARBS_iter.curr_size, xPQ, 1, yPQ, 1);
+                e_disp20_ -= C_DDOT(B_ARBS_iter.curr_size * C_ARBS_iter.curr_size, xPQ.data(), 1, yPQ.data(), 1);
             }
         }
         C_p_AR.rewind();
@@ -106,9 +106,6 @@ void SAPT0::disp20() {
     C_p_AR.done();
     B_p_BS.done();
     C_p_BS.done();
-
-    free(xPQ);
-    free(yPQ);
 
     if (print_) {
         outfile->Printf("    Disp20              = %18.12lf [Eh]\n", e_disp20_);
