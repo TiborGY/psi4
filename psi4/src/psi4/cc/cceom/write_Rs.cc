@@ -38,7 +38,6 @@
 #include <string>
 #include <cmath>
 #include "psi4/libpsio/psio.h"
-#include "MOInfo.h"
 #include "Params.h"
 #include "Local.h"
 #define EXTERN

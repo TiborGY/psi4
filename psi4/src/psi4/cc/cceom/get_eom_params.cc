@@ -42,7 +42,6 @@
 #include "psi4/libmints/pointgrp.h"
 #include "psi4/libmints/molecule.h"
 #include "psi4/libmints/corrtab.h"
-#include "MOInfo.h"
 #include "Params.h"
 #include "Local.h"
 #define EXTERN

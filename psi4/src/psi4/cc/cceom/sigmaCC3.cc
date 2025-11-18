@@ -30,7 +30,6 @@
     \ingroup CCEOM
     \brief Enter brief description of file here
 */
-#include "MOInfo.h"
 #include "Params.h"
 #include "Local.h"
 #define EXTERN

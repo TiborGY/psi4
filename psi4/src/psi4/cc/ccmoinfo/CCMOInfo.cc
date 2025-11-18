@@ -116,6 +116,7 @@ void CCMOInfo::read_common_data(std::shared_ptr<Wavefunction> wfn, int reference
     nmo = wfn->nmo();
     nso = wfn->nso();
     nao = wfn->basisset()->nao();
+    iopen = wfn->nsopi().n();  // For cceom: 0=closed shell, >0=open shell
 
     // Dimension arrays
     sopi = wfn->nsopi();
@@ -128,6 +129,15 @@ void CCMOInfo::read_common_data(std::shared_ptr<Wavefunction> wfn, int reference
 
     // Labels
     labels = wfn->molecule()->irrep_labels();
+
+    // Lowercase labels (for cceom)
+    irr_labs_lowercase.resize(nirreps);
+    for (int i = 0; i < nirreps; i++) {
+        irr_labs_lowercase[i] = labels[i];
+        for (char &c : irr_labs_lowercase[i]) {
+            c = std::tolower(c);
+        }
+    }
 
     // Energies from wavefunction
     enuc = wfn->molecule()->nuclear_repulsion_energy(wfn->get_dipole_field_strength());
@@ -256,6 +266,9 @@ void CCMOInfo::allocate_transformation_matrices(std::shared_ptr<Wavefunction> wf
             }
         }
 
+        // Alias C to Cv for cceom compatibility
+        C = Cv;
+
     } else if (reference == 2) { // UHF
         // Allocate and read alpha virtual orbital transformation matrix
         Cav = (double ***)malloc(nirreps * sizeof(double **));
@@ -280,6 +293,10 @@ void CCMOInfo::allocate_transformation_matrices(std::shared_ptr<Wavefunction> wf
                          sizeof(double) * sopi[h] * bvirtpi[h], next, &next);
             }
         }
+
+        // Alias Ca and Cb to Cav and Cbv for cceom compatibility
+        Ca = Cav;
+        Cb = Cbv;
 
         // Note: UHF occupied transformation matrices (Cao, Cbo) would be allocated here
         // if needed by specific modules. For now, they're left as nullptr.

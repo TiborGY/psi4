@@ -37,6 +37,7 @@
 #include "psi4/psifiles.h"
 #include "psi4/libdpd/dpd.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/cc/ccmoinfo/CCMOInfo.h"
 
 namespace psi {
 
@@ -58,7 +59,7 @@ EXTERN void check_sum(const char *term_lbl, int index, int irrep);
 #define MAX(I, J) ((I > J) ? I : J)
 #define MIN(I, J) ((I < J) ? I : J)
 
-EXTERN struct MOInfo moinfo;
+EXTERN ccmoinfo::CCMOInfo moinfo;
 EXTERN struct Params params;
 EXTERN struct Eom_params eom_params;
 EXTERN struct Local local;
