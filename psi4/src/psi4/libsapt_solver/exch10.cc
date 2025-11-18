@@ -210,34 +210,38 @@ void SAPT0::exch10() {
 #endif
     int rank = 0;
 
-    double **P = block_matrix(noccA_ + noccB_, noccA_ + noccB_);
+    auto P = std::make_shared<Matrix>("P", noccA_ + noccB_, noccA_ + noccB_);
+    double **Pp = P->pointer();
 
-    for (int i = 0; i < noccA_ + noccB_; i++) P[i][i] = 1.0;
+    for (int i = 0; i < noccA_ + noccB_; i++) Pp[i][i] = 1.0;
 
     for (int a = 0; a < noccA_; a++) {
         for (int b = 0; b < noccB_; b++) {
-            P[a][b + noccA_] = sAB_[a][b];
-            P[b + noccA_][a] = sAB_[a][b];
+            Pp[a][b + noccA_] = sAB_[a][b];
+            Pp[b + noccA_][a] = sAB_[a][b];
         }
     }
 
-    C_DPOTRF('L', noccA_ + noccB_, P[0], noccA_ + noccB_);
-    C_DPOTRI('L', noccA_ + noccB_, P[0], noccA_ + noccB_);
+    C_DPOTRF('L', noccA_ + noccB_, P->get_pointer(), noccA_ + noccB_);
+    C_DPOTRI('L', noccA_ + noccB_, P->get_pointer(), noccA_ + noccB_);
 
-    for (int i = 0; i < noccA_ + noccB_; i++) P[i][i] -= 1.0;
+    for (int i = 0; i < noccA_ + noccB_; i++) Pp[i][i] -= 1.0;
 
     // mat_print(P,noccA_+noccB_,noccA_+noccB_,outfile);
 
-    double **pAA = block_matrix(noccA_, noccA_);
-    double **pBB = block_matrix(noccB_, noccB_);
-    double **pAB = block_matrix(noccA_, noccB_);
+    auto pAA = std::make_shared<Matrix>("pAA", noccA_, noccA_);
+    double **pAAp = pAA->pointer();
+    auto pBB = std::make_shared<Matrix>("pBB", noccB_, noccB_);
+    double **pBBp = pBB->pointer();
+    auto pAB = std::make_shared<Matrix>("pAB", noccA_, noccB_);
+    double **pABp = pAB->pointer();
 
     for (int a1 = 0; a1 < noccA_; a1++) {
         for (int a2 = 0; a2 < noccA_; a2++) {
             if (a2 > a1) {
-                pAA[a1][a2] = P[a1][a2];
+                pAAp[a1][a2] = Pp[a1][a2];
             } else {
-                pAA[a1][a2] = P[a2][a1];
+                pAAp[a1][a2] = Pp[a2][a1];
             }
         }
     }
@@ -245,28 +249,28 @@ void SAPT0::exch10() {
     for (int b1 = 0; b1 < noccB_; b1++) {
         for (int b2 = 0; b2 < noccB_; b2++) {
             if (b2 > b1) {
-                pBB[b1][b2] = P[b1 + noccA_][b2 + noccA_];
+                pBBp[b1][b2] = Pp[b1 + noccA_][b2 + noccA_];
             } else {
-                pBB[b1][b2] = P[b2 + noccA_][b1 + noccA_];
+                pBBp[b1][b2] = Pp[b2 + noccA_][b1 + noccA_];
             }
         }
     }
 
     for (int a = 0; a < noccA_; a++) {
         for (int b = 0; b < noccB_; b++) {
-            pAB[a][b] = P[a][b + noccA_];
+            pABp[a][b] = Pp[a][b + noccA_];
         }
     }
-
-    free_block(P);
 
     double *W = init_array(ndf_ + 3);
     double *X = init_array(ndf_ + 3);
     double *Y = init_array(ndf_ + 3);
     double *Z = init_array(ndf_ + 3);
 
-    double **xAB = block_matrix(nthreads, noccA_ * noccB_);
-    double **yAB = block_matrix(nthreads, noccA_ * noccB_);
+    auto xAB = std::make_shared<Matrix>("xAB", nthreads, noccA_ * noccB_);
+    double **xABp = xAB->pointer();
+    auto yAB = std::make_shared<Matrix>("yAB", nthreads, noccA_ * noccB_);
+    double **yABp = yAB->pointer();
 
     SAPTDFInts A_p_AA = set_A_AA();
     SAPTDFInts B_p_BB = set_B_BB();
@@ -279,10 +283,10 @@ void SAPT0::exch10() {
         read_block(&E1_iter, &A_p_AB, &B_p_AB);
         ex1 += C_DDOT((long int)E1_iter.curr_size * noccA_ * noccB_, A_p_AB.B_p_[0], 1, B_p_AB.B_p_[0], 1);
 
-        C_DGEMV('n', E1_iter.curr_size, noccA_ * noccB_, 1.0, &(B_p_AB.B_p_[0][0]), noccA_ * noccB_, pAB[0], 1, 0.0,
+        C_DGEMV('n', E1_iter.curr_size, noccA_ * noccB_, 1.0, &(B_p_AB.B_p_[0][0]), noccA_ * noccB_, pAB->get_pointer(), 1, 0.0,
                 &(W[off]), 1);
 
-        C_DGEMV('n', E1_iter.curr_size, noccA_ * noccB_, 1.0, &(A_p_AB.B_p_[0][0]), noccA_ * noccB_, pAB[0], 1, 0.0,
+        C_DGEMV('n', E1_iter.curr_size, noccA_ * noccB_, 1.0, &(A_p_AB.B_p_[0][0]), noccA_ * noccB_, pAB->get_pointer(), 1, 0.0,
                 &(X[off]), 1);
 
 #pragma omp parallel
@@ -293,17 +297,17 @@ void SAPT0::exch10() {
                 rank = omp_get_thread_num();
 #endif
 
-                C_DGEMM('N', 'N', noccA_, noccB_, noccA_, 1.0, pAA[0], noccA_, A_p_AB.B_p_[j], noccB_, 0.0, xAB[rank],
+                C_DGEMM('N', 'N', noccA_, noccB_, noccA_, 1.0, pAA->get_pointer(), noccA_, A_p_AB.B_p_[j], noccB_, 0.0, xABp[rank],
                         noccB_);
-                ex2 += C_DDOT(noccA_ * noccB_, xAB[rank], 1, B_p_AB.B_p_[j], 1);
+                ex2 += C_DDOT(noccA_ * noccB_, xABp[rank], 1, B_p_AB.B_p_[j], 1);
 
-                C_DGEMM('N', 'N', noccA_, noccB_, noccB_, 1.0, B_p_AB.B_p_[j], noccB_, pBB[0], noccB_, 0.0, yAB[rank],
+                C_DGEMM('N', 'N', noccA_, noccB_, noccB_, 1.0, B_p_AB.B_p_[j], noccB_, pBB->get_pointer(), noccB_, 0.0, yABp[rank],
                         noccB_);
-                ex3 += C_DDOT(noccA_ * noccB_, yAB[rank], 1, A_p_AB.B_p_[j], 1);
+                ex3 += C_DDOT(noccA_ * noccB_, yABp[rank], 1, A_p_AB.B_p_[j], 1);
 
-                C_DGEMM('N', 'N', noccA_, noccB_, noccB_, 1.0, xAB[rank], noccB_, pBB[0], noccB_, 0.0, yAB[rank],
+                C_DGEMM('N', 'N', noccA_, noccB_, noccB_, 1.0, xABp[rank], noccB_, pBB->get_pointer(), noccB_, 0.0, yABp[rank],
                         noccB_);
-                ex8 += C_DDOT(noccA_ * noccB_, yAB[rank], 1, B_p_AB.B_p_[j], 1);
+                ex8 += C_DDOT(noccA_ * noccB_, yABp[rank], 1, B_p_AB.B_p_[j], 1);
             }
         }
         off += E1_iter.curr_size;
