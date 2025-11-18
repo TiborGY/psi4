@@ -81,7 +81,6 @@
 #include "psi4/libmints/wavefunction.h"
 #include "psi4/psi4-dec.h"
 
-#include "MOInfo.h"
 #include "Params.h"
 #include "Local.h"
 #define EXTERN

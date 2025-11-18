@@ -40,7 +40,6 @@
 #include "psi4/libmints/matrix.h"
 #include "psi4/libmints/mintshelper.h"
 #include "psi4/libmints/basisset.h"
-#include "MOInfo.h"
 #include "Params.h"
 #include "Local.h"
 #define EXTERN
@@ -68,14 +67,14 @@ void preppert(std::shared_ptr<BasisSet> primary) {
 
     // Electric dipole integrals
     for (int i = 0; i < 3; i++) {
-        dipole[i]->transform(moinfo.Ca);
+        dipole[i]->transform(moinfo.Ca_matrix);
         dipole[i]->set_name("Mu_" + cartstr[i]);
         write_blocks(*dipole[i]);
     }
 
     // Velocity-gauge electric dipole integrals
     for (int i = 0; i < 3; i++) {
-        nabla[i]->transform(moinfo.Ca);
+        nabla[i]->transform(moinfo.Ca_matrix);
         nabla[i]->set_name("P_" + cartstr[i]);
         write_blocks(*nabla[i]);
     }
@@ -90,7 +89,7 @@ void preppert(std::shared_ptr<BasisSet> primary) {
     // Magnetic dipole integrals (these require a -1/2 prefactor)
     for (int i = 0; i < 3; i++) {
         angmom[i]->scale(-0.5);
-        angmom[i]->transform(moinfo.Ca);
+        angmom[i]->transform(moinfo.Ca_matrix);
         angmom[i]->set_name("L_" + cartstr[i]);
         write_blocks(*angmom[i]);
     }
@@ -105,7 +104,7 @@ void preppert(std::shared_ptr<BasisSet> primary) {
     // Traceless quadrupole integrals
     for (int i = 0, ij = 0; i < 3; i++) {
         for (int j = i; j < 3; j++, ij++) {
-            trquad[ij]->transform(moinfo.Ca);
+            trquad[ij]->transform(moinfo.Ca_matrix);
             trquad[ij]->set_name("Q_" + cartstr[i] + cartstr[j]);
             write_blocks(*trquad[ij]);
             if (i != j) {

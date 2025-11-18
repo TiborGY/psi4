@@ -35,6 +35,7 @@
 */
 #include "psi4/psifiles.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/cc/ccmoinfo/CCMOInfo.h"
 #include <cstdio>
 
 namespace psi {
@@ -48,7 +49,7 @@ namespace ccresponse {
 #define EXTERN
 #endif
 
-EXTERN struct MOInfo moinfo;
+EXTERN ccmoinfo::CCMOInfo moinfo;
 EXTERN struct Params params;
 EXTERN struct Local local;
 

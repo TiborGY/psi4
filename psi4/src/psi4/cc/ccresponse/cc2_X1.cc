@@ -34,7 +34,6 @@
 #include <cstring>
 #include "psi4/libdpd/dpd.h"
 #include "psi4/libqt/qt.h"
-#include "MOInfo.h"
 #include "Params.h"
 #include "Local.h"
 #define EXTERN

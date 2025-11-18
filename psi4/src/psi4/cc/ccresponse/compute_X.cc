@@ -39,7 +39,6 @@
 #include "psi4/libpsio/psio.h"
 #include "psi4/libpsi4util/exception.h"
 #include "psi4/psifiles.h"
-#include "MOInfo.h"
 #include "Params.h"
 #include "Local.h"
 #define EXTERN

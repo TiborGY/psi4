@@ -91,6 +91,9 @@ CCMOInfo::CCMOInfo()
       C(nullptr),
       Ca(nullptr),
       Cb(nullptr),
+      Ca_matrix(nullptr),
+      mu_irreps(nullptr),
+      l_irreps(nullptr),
       reference_type_(0) {}
 
 CCMOInfo::~CCMOInfo() {
@@ -126,6 +129,17 @@ void CCMOInfo::read_common_data(std::shared_ptr<Wavefunction> wfn, int reference
     openpi = wfn->soccpi();
     clsdpi = wfn->doccpi() - frdocc;
     uoccpi = orbspi - clsdpi - openpi - fruocc - frdocc;
+
+    // Active orbitals per irrep (for ccresponse)
+    actpi = orbspi - frdocc - fruocc;
+
+    // Number of atoms (for ccresponse)
+    natom = wfn->molecule()->natom();
+
+    // Triangle sizes (for ccresponse)
+    ntri = nmo * (nmo + 1) / 2;
+    noei = nso * (nso + 1) / 2;
+    noei_ao = nao * (nao + 1) / 2;
 
     // Labels
     labels = wfn->molecule()->irrep_labels();

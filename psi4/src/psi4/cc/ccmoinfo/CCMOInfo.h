@@ -223,6 +223,16 @@ class CCMOInfo {
     double ***Ca;                    ///< Alpha virtual orbital transformation matrix
     double ***Cb;                    ///< Beta virtual orbital transformation matrix
 
+    // ccresponse Matrix version (for active MOs)
+    std::shared_ptr<Matrix> Ca_matrix;  ///< Active MO coefficients (ccresponse)
+
+    //
+    // ========== POLARIZABILITY/RESPONSE-SPECIFIC (ccresponse) ==========
+    //
+
+    int *mu_irreps;                  ///< Irreps of x,y,z dipole components
+    int *l_irreps;                   ///< Irreps of x,y,z angular momentum components
+
     //
     // ========== REORDERING ARRAYS (ccdensity) ==========
     //

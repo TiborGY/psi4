@@ -47,7 +47,6 @@
 #include "psi4/libmints/wavefunction.h"
 #include "psi4/psi4-dec.h"
 #include "Params.h"
-#include "MOInfo.h"
 #include "Local.h"
 #include "globals.h"
 

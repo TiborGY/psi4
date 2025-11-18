@@ -48,7 +48,6 @@
 #include "psi4/libmints/multipolesymmetry.h"
 #include "psi4/liboptions/liboptions.h"
 
-#include "MOInfo.h"
 #include "Params.h"
 #include "Local.h"
 #define EXTERN
