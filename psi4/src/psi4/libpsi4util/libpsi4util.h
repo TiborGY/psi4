@@ -30,6 +30,7 @@
 #define _psi_src_lib_libpsi4util_libpsi4util_h_
 
 #include "psi4/pragma.h"
+#include "psi4/libpsi4util/header_printer.h"
 
 #include <cctype>
 #include <algorithm>

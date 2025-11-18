@@ -44,6 +44,7 @@
 
 #include <sstream>
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/libpsi4util/header_printer.h"
 #ifdef _OPENMP
 #include <omp.h>
 #include "psi4/libpsi4util/process.h"
@@ -113,18 +114,20 @@ void MemDFJK::postiterations() {}
 void MemDFJK::print_header() const {
     // dfh_->print_header();
     if (print_) {
-        outfile->Printf("  ==> MemDFJK: Density-Fitted J/K Matrices <==\n\n");
-
-        outfile->Printf("    J tasked:           %11s\n", (do_J_ ? "Yes" : "No"));
-        outfile->Printf("    K tasked:           %11s\n", (do_K_ ? "Yes" : "No"));
-        outfile->Printf("    wK tasked:          %11s\n", (do_wK_ ? "Yes" : "No"));
-        if (do_wK_) outfile->Printf("    Omega:              %11.3E\n", omega_);
-        outfile->Printf("    OpenMP threads:     %11d\n", omp_nthread_);
-        outfile->Printf("    Memory [MiB]:       %11ld\n", (memory_ * 8L) / (1024L * 1024L));
-        outfile->Printf("    Algorithm:          %11s\n", (dfh_->get_AO_core() ? "Core" : "Disk"));
-        outfile->Printf("    Schwarz Cutoff:     %11.0E\n", cutoff_);
-        outfile->Printf("    Mask sparsity (%%):  %11.4f\n", 100. * dfh_->ao_sparsity());
-        outfile->Printf("    Fitting Condition:  %11.0E\n\n", condition_);
+        HeaderPrinter header("MemDFJK: Density-Fitted J/K Matrices");
+        header.add_parameter("J tasked", do_J_)
+              .add_parameter("K tasked", do_K_)
+              .add_parameter("wK tasked", do_wK_);
+        if (do_wK_) {
+            header.add_parameter("Omega", omega_, "%11.3E");
+        }
+        header.add_parameter("OpenMP threads", omp_nthread_)
+              .add_parameter("Memory [MiB]", (memory_ * 8L) / (1024L * 1024L))
+              .add_parameter("Algorithm", dfh_->get_AO_core() ? "Core" : "Disk")
+              .add_parameter("Schwarz Cutoff", cutoff_, "%11.0E")
+              .add_parameter("Mask sparsity (%)", 100. * dfh_->ao_sparsity(), "%11.4f")
+              .add_parameter("Fitting Condition", condition_, "%11.0E")
+              .print();
 
         outfile->Printf("   => Auxiliary Basis Set <=\n\n");
         auxiliary_->print_by_level("outfile", print_);

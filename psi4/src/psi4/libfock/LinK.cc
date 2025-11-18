@@ -40,6 +40,7 @@
 #include "psi4/liboptions/liboptions.h"
 #include "psi4/lib3index/dftensor.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
+#include "psi4/libpsi4util/header_printer.h"
 
 #include <unordered_set>
 #include <vector>
@@ -84,12 +85,9 @@ size_t LinK::num_computed_shells() {
 }
 
 void LinK::print_header() const {
-    if (print_) {
-        outfile->Printf("\n");
-        outfile->Printf("  ==> LinK: Linear Exchange K <==\n\n");
-
-        outfile->Printf("    K Screening Cutoff:%11.0E\n", linK_ints_cutoff_);
-    }
+    HeaderPrinter header("LinK: Linear Exchange K");
+    header.add_parameter("K Screening Cutoff", linK_ints_cutoff_)
+          .print_if(print_);
 }
 
 // build the K matrix using Ochsenfelds's Linear Exchange (LinK) algorithm
