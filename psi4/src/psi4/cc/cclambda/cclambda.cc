@@ -48,6 +48,7 @@
 #include "psi4/libpsio/psio.hpp"
 #include "psi4/libqt/qt.h"
 #include "psi4/psi4-dec.h"
+#include "psi4/libdiis/diismanager.h"
 #include "psi4/libmints/wavefunction.h"
 #include "psi4/libmints/matrix.h"
 
@@ -123,6 +124,20 @@ double CCLambdaWavefunction::compute_energy() {
     moinfo.iter = 0;
     get_moinfo(reference_wavefunction_);
     get_params(options_);
+
+    // Initialize DIISManager for lambda amplitude extrapolation
+    if (params.diis) {
+        const char* ref_label = (params.ref == 0) ? "RHF" : (params.ref == 1) ? "ROHF" : "UHF";
+        std::string diis_label = std::string("Lambda DIIS ") + ref_label;
+
+        ccsd_diis_manager_ = std::make_shared<DIISManager>(
+            8,                                          // max 8 vectors
+            diis_label,                                 // label with reference type
+            DIISManager::RemovalPolicy::LargestError,  // removal policy
+            DIISManager::StoragePolicy::OnDisk         // storage policy
+        );
+        outfile->Printf("  Using libdiis for Lambda DIIS extrapolation (%s)\n", ref_label);
+    }
 
     /* throw any existing CC_LAMBDA, CC_DENOM away */
     /* Do this only if we're not running an analytic gradient on the

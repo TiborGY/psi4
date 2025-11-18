@@ -39,6 +39,9 @@ target_sources(cc
     ${CMAKE_CURRENT_SOURCE_DIR}/converged.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/denom.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/diis.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/diis_RHF_libdiis.cc   # libdiis implementation for RHF
+    ${CMAKE_CURRENT_SOURCE_DIR}/diis_ROHF_libdiis.cc  # libdiis implementation for ROHF
+    ${CMAKE_CURRENT_SOURCE_DIR}/diis_UHF_libdiis.cc   # libdiis implementation for UHF
     ${CMAKE_CURRENT_SOURCE_DIR}/dijabL2.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/get_moinfo.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/get_params.cc

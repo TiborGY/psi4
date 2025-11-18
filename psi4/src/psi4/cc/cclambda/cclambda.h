@@ -66,6 +66,9 @@ class CCLambdaWavefunction final : public psi::ccenergy::CCEnergyWavefunction {
 
     int converged(int);
     void diis(int, int);
+    void diis_RHF_libdiis(int, int);   // libdiis implementation for RHF
+    void diis_ROHF_libdiis(int, int);  // libdiis implementation for ROHF
+    void diis_UHF_libdiis(int, int);   // libdiis implementation for UHF
     void sort_amps(int);
     void status(const char *, std::string);
     void update();
