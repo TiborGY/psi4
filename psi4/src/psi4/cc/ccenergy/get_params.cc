@@ -35,6 +35,7 @@
 #include "Local.h"
 #include "MOInfo.h"
 #include "psi4/cc/ccwave.h"
+#include "psi4/cc/common/CCParamsParser.h"
 
 #include "psi4/libpsi4util/PsiOutStream.h"
 #include "psi4/libpsi4util/process.h"
@@ -55,22 +56,35 @@ void CCEnergyWavefunction::get_params(Options &options) {
     std::string cachetype = "";
     std::string junk;
 
-    params_.newtrips = options.get_bool("NEW_TRIPLES");
+    // Parse common CC parameters using shared parser
+    psi::cc::common::parse_wfn(params_.wfn, options);
+    psi::cc::common::parse_print(params_.print, options);
+    psi::cc::common::parse_maxiter(params_.maxiter, options);
+    psi::cc::common::parse_convergence(params_.convergence, options);
+    psi::cc::common::parse_restart(params_.restart, options);
+    psi::cc::common::parse_memory(params_.memory);
+    psi::cc::common::parse_cachelev(params_.cachelev, options);
+    psi::cc::common::parse_dertype(params_.dertype, options);
 
-    params_.wfn = options.get_str("WFN");
-
+    // Module-specific: WFN validation
     if (params_.wfn == "NONE") throw PsiException("Invalid value of input keyword WFN", __FILE__, __LINE__);
 
+    // Module-specific parameters
+    params_.newtrips = options.get_bool("NEW_TRIPLES");
+    params_.df = options.get_str("CC_TYPE") == "DF";
+    params_.e_convergence = options.get_double("E_CONVERGENCE");
+    params_.aobasis = options.get_str("AO_BASIS");
+    params_.analyze = options.get_bool("ANALYZE");
+
+    // Module-specific: Brueckner determination
     if (params_.wfn == "BCCD" || params_.wfn == "BCCD_T")
         params_.brueckner = 1;
     else
         params_.brueckner = 0;
 
-    params_.df = options.get_str("CC_TYPE") == "DF";
-
+    // Module-specific: REFERENCE parsing with semicanonical logic
     params_.semicanonical = 0;
     junk = options.get_str("REFERENCE");
-    /* if no reference is given, assume rhf */
     if (junk == "RHF")
         params_.ref = 0;
     else if (junk == "ROHF" && (params_.wfn == "MP2" || params_.wfn == "CCSD_T" || params_.wfn == "CCSD_AT" ||
@@ -91,30 +105,6 @@ void CCEnergyWavefunction::get_params(Options &options) {
         if (params_.semicanonical) params_.ref = 2;
     }
 
-    params_.analyze = options.get_bool("ANALYZE");
-
-    params_.dertype = 0;
-    junk = options.get_str("DERTYPE");
-    if (junk == "NONE")
-        params_.dertype = 0;
-    else if (junk == "FIRST")
-        params_.dertype = 1;
-    else if (junk == "RESPONSE")
-        params_.dertype = 3; /* linear response */
-    else
-        throw PsiException("Invalid value of input keyword DERTYPE", __FILE__, __LINE__);
-
-    params_.print = options.get_int("PRINT");
-    params_.maxiter = options.get_int("MAXITER");
-    params_.convergence = options.get_double("R_CONVERGENCE");
-    params_.e_convergence = options.get_double("E_CONVERGENCE");
-    params_.restart = options.get_bool("RESTART");
-
-    params_.memory = Process::environment.get_memory();
-
-    params_.aobasis = options.get_str("AO_BASIS");
-    params_.cachelev = options.get_int("CACHELEVEL");
-
     params_.cachetype = 1;
     cachetype = options.get_str("CACHETYPE");
     if (cachetype == "LOW")
@@ -127,15 +117,20 @@ void CCEnergyWavefunction::get_params(Options &options) {
     if (params_.ref == 2) /* No LOW cacheing yet for UHF references */
         params_.cachetype = 0;
 
+    // Parse common CC parameters using shared parser
+    psi::cc::common::parse_diis(params_.diis, options);
+    psi::cc::common::parse_abcd(params_.abcd, options);
+    psi::cc::common::parse_local(params_.local, options);
+    psi::cc::common::parse_num_amps(params_.num_amps, options);
+
+    // Module-specific parameters
     params_.nthreads = Process::environment.get_n_threads();
     if (options["CC_NUM_THREADS"].has_changed()) {
         params_.nthreads = options.get_int("CC_NUM_THREADS");
     }
-    params_.diis = options.get_bool("DIIS");
     params_.t2_coupled = options.get_bool("T2_COUPLED");
     params_.prop = options.get_str("PROPERTY");
-    params_.abcd = options.get_str("ABCD");
-    params_.local = options.get_bool("LOCAL");
+
     local_.cutoff = options.get_double("LOCAL_CUTOFF");
     local_.method = options.get_str("LOCAL_METHOD");
     local_.weakp = options.get_str("LOCAL_WEAKP");
@@ -152,8 +147,6 @@ void CCEnergyWavefunction::get_params(Options &options) {
         local_.pairdef = "RESPONSE";
     else if (params_.local)
         local_.pairdef = "BP";
-
-    params_.num_amps = options.get_int("NUM_AMPS_PRINT");
     params_.bconv = options.get_double("BRUECKNER_ORBS_R_CONVERGENCE");
 
     // Tying orbital convergence to the desired e_conv,
