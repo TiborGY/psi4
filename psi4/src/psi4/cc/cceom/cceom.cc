@@ -39,6 +39,7 @@
 #include "globals.h"
 
 #include "psi4/cc/ccwave.h"
+#include "psi4/cc/ccmoinfo/dpd_utils.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
 #include "psi4/libciomr/libciomr.h"
 #include "psi4/libpsio/psio.h"
@@ -96,26 +97,12 @@ PsiReturnType cceom(std::shared_ptr<ccenergy::CCEnergyWavefunction> ref_wfn, Opt
         cachelist = cacheprep_uhf(params.cachelev, cachefiles);
         /* cachelist = init_int_matrix(32,32); */
 
-        std::vector<int *> spaces;
-        spaces.push_back(moinfo.aoccpi);
-        spaces.push_back(moinfo.aocc_sym.data());
-        spaces.push_back(moinfo.avirtpi);
-        spaces.push_back(moinfo.avir_sym.data());
-        spaces.push_back(moinfo.boccpi);
-        spaces.push_back(moinfo.bocc_sym.data());
-        spaces.push_back(moinfo.bvirtpi);
-        spaces.push_back(moinfo.bvir_sym.data());
-        dpd_init(0, moinfo.nirreps, params.memory, 0, cachefiles, cachelist, nullptr, 4, spaces);
+        ccmoinfo::dpd_init_uhf(moinfo, 0, params.memory, 0, cachefiles, cachelist);
     } else { /* RHF or ROHF */
         cachelist = cacheprep_rhf(params.cachelev, cachefiles);
         /* cachelist = init_int_matrix(12,12); */
 
-        std::vector<int *> spaces;
-        spaces.push_back(moinfo.occpi);
-        spaces.push_back(moinfo.occ_sym.data());
-        spaces.push_back(moinfo.virtpi);
-        spaces.push_back(moinfo.vir_sym.data());
-        dpd_init(0, moinfo.nirreps, params.memory, 0, cachefiles, cachelist, nullptr, 2, spaces);
+        ccmoinfo::dpd_init_rhf(moinfo, 0, params.memory, 0, cachefiles, cachelist);
     }
 
     if (params.local) local_init();

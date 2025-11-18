@@ -37,6 +37,7 @@
 #include "Params.h"
 #include "globals.h"
 
+#include "psi4/cc/ccmoinfo/dpd_utils.h"
 #include "psi4/liboptions/liboptions.h"
 #include "psi4/libmints/wavefunction.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
@@ -101,26 +102,12 @@ PsiReturnType cchbar(std::shared_ptr<Wavefunction> ref_wfn, Options &options) {
 
         cachelist = cacheprep_rhf(params.cachelev, cachefiles);
 
-        std::vector<int *> spaces;
-        spaces.push_back(moinfo.occpi);
-        spaces.push_back(moinfo.occ_sym.data());
-        spaces.push_back(moinfo.virtpi);
-        spaces.push_back(moinfo.vir_sym.data());
-        dpd_init(0, moinfo.nirreps, params.memory, 0, cachefiles, cachelist, nullptr, 2, spaces);
+        ccmoinfo::dpd_init_rhf(moinfo, 0, params.memory, 0, cachefiles, cachelist);
     } else if (params.ref == 2) { /** UHF **/
 
         cachelist = cacheprep_uhf(params.cachelev, cachefiles);
-        std::vector<int *> spaces;
-        spaces.push_back(moinfo.aoccpi);
-        spaces.push_back(moinfo.aocc_sym.data());
-        spaces.push_back(moinfo.avirtpi);
-        spaces.push_back(moinfo.avir_sym.data());
-        spaces.push_back(moinfo.boccpi);
-        spaces.push_back(moinfo.bocc_sym.data());
-        spaces.push_back(moinfo.bvirtpi);
-        spaces.push_back(moinfo.bvir_sym.data());
 
-        dpd_init(0, moinfo.nirreps, params.memory, 0, cachefiles, cachelist, nullptr, 4, spaces);
+        ccmoinfo::dpd_init_uhf(moinfo, 0, params.memory, 0, cachefiles, cachelist);
     }
 
     sort_amps();
