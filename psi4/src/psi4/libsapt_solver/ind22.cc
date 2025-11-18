@@ -212,19 +212,16 @@ double SAPT2::ind220_2(int ampfile, const char *tlabel, double **iAR, double **w
                        size_t noccA, size_t nvirA) {
     size_t aoccA = noccA - foccA;
 
-    double **tAR = block_matrix(aoccA, nvirA);
-    psio_->read_entry(ampfile, tlabel, (char *)tAR[0], sizeof(double) * aoccA * nvirA);
+    auto tAR = std::make_shared<Matrix>("tAR", aoccA, nvirA);
+    psio_->read_entry(ampfile, tlabel, (char *)tAR->get_pointer(), sizeof(double) * aoccA * nvirA);
 
-    double **zAR = block_matrix(aoccA, nvirA);
+    auto zAR = std::make_shared<Matrix>("zAR", aoccA, nvirA);
 
-    C_DGEMM('N', 'T', aoccA, nvirA, nvirA, 1.0, iAR[0], nvirA, wBRR[0], nvirA, 0.0, zAR[0], nvirA);
+    C_DGEMM('N', 'T', aoccA, nvirA, nvirA, 1.0, iAR[0], nvirA, wBRR[0], nvirA, 0.0, zAR->get_pointer(), nvirA);
 
-    C_DGEMM('N', 'N', aoccA, nvirA, aoccA, -1.0, &(wBAA[foccA][foccA]), noccA, iAR[0], nvirA, 1.0, zAR[0], nvirA);
+    C_DGEMM('N', 'N', aoccA, nvirA, aoccA, -1.0, &(wBAA[foccA][foccA]), noccA, iAR[0], nvirA, 1.0, zAR->get_pointer(), nvirA);
 
-    double energy = 4.0 * C_DDOT((long int)aoccA * nvirA, tAR[0], 1, zAR[0], 1);
-
-    free_block(tAR);
-    free_block(zAR);
+    double energy = 4.0 * C_DDOT((long int)aoccA * nvirA, tAR->get_pointer(), 1, zAR->get_pointer(), 1);
 
     if (debug_) {
         outfile->Printf("    Ind22_2             = %18.12lf [Eh]\n", energy);
@@ -237,27 +234,22 @@ double SAPT2::ind220_3(int ampfile, const char *AAlabel, const char *RRlabel, do
                        size_t noccA, size_t nvirA) {
     size_t aoccA = noccA - foccA;
 
-    double **pAA = block_matrix(aoccA, aoccA);
-    double **pRR = block_matrix(nvirA, nvirA);
+    auto pAA = std::make_shared<Matrix>("pAA", aoccA, aoccA);
+    auto pRR = std::make_shared<Matrix>("pRR", nvirA, nvirA);
 
-    psio_->read_entry(ampfile, AAlabel, (char *)pAA[0], sizeof(double) * aoccA * aoccA);
-    psio_->read_entry(ampfile, RRlabel, (char *)pRR[0], sizeof(double) * nvirA * nvirA);
+    psio_->read_entry(ampfile, AAlabel, (char *)pAA->get_pointer(), sizeof(double) * aoccA * aoccA);
+    psio_->read_entry(ampfile, RRlabel, (char *)pRR->get_pointer(), sizeof(double) * nvirA * nvirA);
 
-    double **xAA = block_matrix(aoccA, aoccA);
-    double **xRR = block_matrix(nvirA, nvirA);
+    auto xAA = std::make_shared<Matrix>("xAA", aoccA, aoccA);
+    auto xRR = std::make_shared<Matrix>("xRR", nvirA, nvirA);
 
-    C_DGEMM('N', 'T', aoccA, aoccA, nvirA, 1.0, iAR[0], nvirA, wBAR[foccA], nvirA, 0.0, xAA[0], aoccA);
-    C_DGEMM('T', 'N', nvirA, nvirA, aoccA, 1.0, iAR[0], nvirA, wBAR[foccA], nvirA, 0.0, xRR[0], nvirA);
+    C_DGEMM('N', 'T', aoccA, aoccA, nvirA, 1.0, iAR[0], nvirA, wBAR[foccA], nvirA, 0.0, xAA->get_pointer(), aoccA);
+    C_DGEMM('T', 'N', nvirA, nvirA, aoccA, 1.0, iAR[0], nvirA, wBAR[foccA], nvirA, 0.0, xRR->get_pointer(), nvirA);
 
     double energy = 0.0;
 
-    energy -= 2.0 * C_DDOT(aoccA * aoccA, pAA[0], 1, xAA[0], 1);
-    energy -= 2.0 * C_DDOT(nvirA * nvirA, pRR[0], 1, xRR[0], 1);
-
-    free_block(pAA);
-    free_block(pRR);
-    free_block(xAA);
-    free_block(xRR);
+    energy -= 2.0 * C_DDOT(aoccA * aoccA, pAA->get_pointer(), 1, xAA->get_pointer(), 1);
+    energy -= 2.0 * C_DDOT(nvirA * nvirA, pRR->get_pointer(), 1, xRR->get_pointer(), 1);
 
     if (debug_) {
         outfile->Printf("    Ind22_3             = %18.12lf [Eh]\n", energy);
@@ -270,34 +262,29 @@ double SAPT2::ind220_4(int ampfile, const char *thetalabel, int intfile, const c
                        size_t noccA, size_t nvirA) {
     size_t aoccA = noccA - foccA;
 
-    double **xAA = block_matrix(aoccA, aoccA);
-    double **xRR = block_matrix(nvirA, nvirA);
+    auto xAA = std::make_shared<Matrix>("xAA", aoccA, aoccA);
+    auto xRR = std::make_shared<Matrix>("xRR", nvirA, nvirA);
 
-    C_DGEMM('N', 'T', aoccA, aoccA, nvirA, 1.0, iAR[0], nvirA, iAR[0], nvirA, 0.0, xAA[0], aoccA);
-    C_DGEMM('T', 'N', nvirA, nvirA, aoccA, 1.0, iAR[0], nvirA, iAR[0], nvirA, 0.0, xRR[0], nvirA);
+    C_DGEMM('N', 'T', aoccA, aoccA, nvirA, 1.0, iAR[0], nvirA, iAR[0], nvirA, 0.0, xAA->get_pointer(), aoccA);
+    C_DGEMM('T', 'N', nvirA, nvirA, aoccA, 1.0, iAR[0], nvirA, iAR[0], nvirA, 0.0, xRR->get_pointer(), nvirA);
 
     double **B_p_AR = get_DF_ints(intfile, ARlabel, foccA, noccA, 0, nvirA);
-    double **C_p_AR = block_matrix(aoccA * nvirA, ndf_ + 3);
+    auto C_p_AR = std::make_shared<Matrix>("C_p_AR", aoccA * nvirA, ndf_ + 3);
 
-    C_DGEMM('N', 'N', aoccA, nvirA * (ndf_ + 3), aoccA, 1.0, xAA[0], aoccA, B_p_AR[0], nvirA * (ndf_ + 3), 0.0,
-            C_p_AR[0], nvirA * (ndf_ + 3));
+    C_DGEMM('N', 'N', aoccA, nvirA * (ndf_ + 3), aoccA, 1.0, xAA->get_pointer(), aoccA, B_p_AR[0], nvirA * (ndf_ + 3), 0.0,
+            C_p_AR->get_pointer(), nvirA * (ndf_ + 3));
 
     for (int a = 0; a < aoccA; a++) {
-        C_DGEMM('N', 'N', nvirA, ndf_ + 3, nvirA, 1.0, xRR[0], nvirA, B_p_AR[a * nvirA], ndf_ + 3, 1.0,
-                C_p_AR[a * nvirA], ndf_ + 3);
+        C_DGEMM('N', 'N', nvirA, ndf_ + 3, nvirA, 1.0, xRR->get_pointer(), nvirA, B_p_AR[a * nvirA], ndf_ + 3, 1.0,
+                C_p_AR->get_pointer(a * nvirA), ndf_ + 3);
     }
 
-    free_block(xAA);
-    free_block(xRR);
     free_block(B_p_AR);
 
-    double **T_p_AR = block_matrix(aoccA * nvirA, ndf_ + 3);
-    psio_->read_entry(ampfile, thetalabel, (char *)T_p_AR[0], sizeof(double) * aoccA * nvirA * (ndf_ + 3));
+    auto T_p_AR = std::make_shared<Matrix>("T_p_AR", aoccA * nvirA, ndf_ + 3);
+    psio_->read_entry(ampfile, thetalabel, (char *)T_p_AR->get_pointer(), sizeof(double) * aoccA * nvirA * (ndf_ + 3));
 
-    double energy = -2.0 * C_DDOT(aoccA * nvirA * (ndf_ + 3), C_p_AR[0], 1, T_p_AR[0], 1);
-
-    free_block(C_p_AR);
-    free_block(T_p_AR);
+    double energy = -2.0 * C_DDOT(aoccA * nvirA * (ndf_ + 3), C_p_AR->get_pointer(), 1, T_p_AR->get_pointer(), 1);
 
     if (debug_) {
         outfile->Printf("    Ind22_4             = %18.12lf [Eh]\n", energy);
@@ -309,28 +296,26 @@ double SAPT2::ind220_4(int ampfile, const char *thetalabel, int intfile, const c
 double SAPT2::ind220_5(int ampfile, const char *tlabel, double **iAR, size_t foccA, size_t noccA, size_t nvirA, double *evalsA) {
     size_t aoccA = noccA - foccA;
 
-    double **tARAR = block_matrix(aoccA * nvirA, aoccA * nvirA);
-    psio_->read_entry(ampfile, tlabel, (char *)tARAR[0], sizeof(double) * aoccA * nvirA * aoccA * nvirA);
-    antisym(tARAR, aoccA, nvirA);
+    auto tARAR = std::make_shared<Matrix>("tARAR", aoccA * nvirA, aoccA * nvirA);
+    psio_->read_entry(ampfile, tlabel, (char *)tARAR->get_pointer(), sizeof(double) * aoccA * nvirA * aoccA * nvirA);
+    double **tARARp = tARAR->pointer();
+    antisym(tARARp, aoccA, nvirA);
 
     for (int a = 0, ar = 0; a < aoccA; a++) {
         for (int r = 0; r < nvirA; r++, ar++) {
             for (int aa = 0, aarr = 0; aa < aoccA; aa++) {
                 for (int rr = 0; rr < nvirA; rr++, aarr++) {
-                    tARAR[ar][aarr] *= evalsA[a + foccA] + evalsA[aa + foccA] - evalsA[r + noccA] - evalsA[rr + noccA];
+                    tARARp[ar][aarr] *= evalsA[a + foccA] + evalsA[aa + foccA] - evalsA[r + noccA] - evalsA[rr + noccA];
                 }
             }
         }
     }
 
-    double **xAR = block_matrix(aoccA, nvirA);
+    auto xAR = std::make_shared<Matrix>("xAR", aoccA, nvirA);
 
-    C_DGEMV('n', aoccA * nvirA, aoccA * nvirA, 1.0, tARAR[0], aoccA * nvirA, iAR[0], 1, 0.0, xAR[0], 1);
+    C_DGEMV('n', aoccA * nvirA, aoccA * nvirA, 1.0, tARAR->get_pointer(), aoccA * nvirA, iAR[0], 1, 0.0, xAR->get_pointer(), 1);
 
-    double energy = 2.0 * C_DDOT(aoccA * nvirA, xAR[0], 1, iAR[0], 1);
-
-    free_block(xAR);
-    free_block(tARAR);
+    double energy = 2.0 * C_DDOT(aoccA * nvirA, xAR->get_pointer(), 1, iAR[0], 1);
 
     if (debug_) {
         outfile->Printf("    Ind22_5             = %18.12lf [Eh]\n", energy);
@@ -344,45 +329,40 @@ double SAPT2::ind220_6(int intfile, const char *AAlabel, const char *ARlabel, co
     int aoccA = noccA - foccA;
 
     double **B_p_AR = get_DF_ints(intfile, ARlabel, foccA, noccA, 0, nvirA);
-    double **gARAR = block_matrix(aoccA * nvirA, aoccA * nvirA);
+    auto gARAR = std::make_shared<Matrix>("gARAR", aoccA * nvirA, aoccA * nvirA);
 
     C_DGEMM('N', 'T', aoccA * nvirA, aoccA * nvirA, ndf_ + 3, 2.0, B_p_AR[0], ndf_ + 3, B_p_AR[0], ndf_ + 3, 0.0,
-            gARAR[0], aoccA * nvirA);
+            gARAR->get_pointer(), aoccA * nvirA);
 
     free_block(B_p_AR);
 
     double **B_p_AA = get_DF_ints(intfile, AAlabel, foccA, noccA, foccA, noccA);
     double **B_p_RR = get_DF_ints(intfile, RRlabel, 0, nvirA, 0, nvirA);
+    double **gARARp = gARAR->pointer();
 
     for (int a = 0, ar = 0; a < aoccA; a++) {
         for (int r = 0; r < nvirA; r++, ar++) {
             C_DGEMM('N', 'T', aoccA, nvirA, ndf_ + 3, -1.0, B_p_AA[a * aoccA], ndf_ + 3, B_p_RR[r * nvirA], ndf_ + 3,
-                    1.0, gARAR[ar], nvirA);
+                    1.0, gARARp[ar], nvirA);
         }
     }
 
     free_block(B_p_AA);
     free_block(B_p_RR);
 
-    double **xAR = block_matrix(aoccA, nvirA);
-    double **yAR = block_matrix(aoccA, nvirA);
+    auto xAR = std::make_shared<Matrix>("xAR", aoccA, nvirA);
+    auto yAR = std::make_shared<Matrix>("yAR", aoccA, nvirA);
 
-    C_DGEMV('n', aoccA * nvirA, aoccA * nvirA, 1.0, gARAR[0], aoccA * nvirA, iAR[0], 1, 0.0, xAR[0], 1);
+    C_DGEMV('n', aoccA * nvirA, aoccA * nvirA, 1.0, gARAR->get_pointer(), aoccA * nvirA, iAR[0], 1, 0.0, xAR->get_pointer(), 1);
 
-    free_block(gARAR);
+    auto tARAR = std::make_shared<Matrix>("tARAR", aoccA * nvirA, aoccA * nvirA);
+    psio_->read_entry(ampfile, tlabel, (char *)tARAR->get_pointer(), sizeof(double) * aoccA * nvirA * aoccA * nvirA);
+    double **tARARp = tARAR->pointer();
+    antisym(tARARp, aoccA, nvirA);
 
-    double **tARAR = block_matrix(aoccA * nvirA, aoccA * nvirA);
-    psio_->read_entry(ampfile, tlabel, (char *)tARAR[0], sizeof(double) * aoccA * nvirA * aoccA * nvirA);
-    antisym(tARAR, aoccA, nvirA);
+    C_DGEMV('n', aoccA * nvirA, aoccA * nvirA, 1.0, tARAR->get_pointer(), aoccA * nvirA, iAR[0], 1, 0.0, yAR->get_pointer(), 1);
 
-    C_DGEMV('n', aoccA * nvirA, aoccA * nvirA, 1.0, tARAR[0], aoccA * nvirA, iAR[0], 1, 0.0, yAR[0], 1);
-
-    free_block(tARAR);
-
-    double energy = -4.0 * C_DDOT(aoccA * nvirA, xAR[0], 1, yAR[0], 1);
-
-    free_block(xAR);
-    free_block(yAR);
+    double energy = -4.0 * C_DDOT(aoccA * nvirA, xAR->get_pointer(), 1, yAR->get_pointer(), 1);
 
     if (debug_) {
         outfile->Printf("    Ind22_6             = %18.12lf [Eh]\n", energy);
@@ -397,13 +377,13 @@ double SAPT2::ind220_7(int AAfile, const char *AAlabel, const char *ARlabel, con
     size_t aoccA = noccA - foccA;
     size_t aoccB = noccB - foccB;
 
-    double **pAA = block_matrix(aoccA, aoccA);
-    double **tAR = block_matrix(aoccA, nvirA);
-    double **pRR = block_matrix(nvirA, nvirA);
+    auto pAA = std::make_shared<Matrix>("pAA", aoccA, aoccA);
+    auto tAR = std::make_shared<Matrix>("tAR", aoccA, nvirA);
+    auto pRR = std::make_shared<Matrix>("pRR", nvirA, nvirA);
 
-    psio_->read_entry(ampfile, pAAlabel, (char *)pAA[0], sizeof(double) * aoccA * aoccA);
-    psio_->read_entry(ampfile, tlabel, (char *)tAR[0], sizeof(double) * aoccA * nvirA);
-    psio_->read_entry(ampfile, pRRlabel, (char *)pRR[0], sizeof(double) * nvirA * nvirA);
+    psio_->read_entry(ampfile, pAAlabel, (char *)pAA->get_pointer(), sizeof(double) * aoccA * aoccA);
+    psio_->read_entry(ampfile, tlabel, (char *)tAR->get_pointer(), sizeof(double) * aoccA * nvirA);
+    psio_->read_entry(ampfile, pRRlabel, (char *)pRR->get_pointer(), sizeof(double) * nvirA * nvirA);
 
     double *W = init_array(ndf_ + 3);
     double *X = init_array(ndf_ + 3);
@@ -412,19 +392,19 @@ double SAPT2::ind220_7(int AAfile, const char *AAlabel, const char *ARlabel, con
 
     double **B_p_AA = get_DF_ints(AAfile, AAlabel, foccA, noccA, foccA, noccA);
 
-    C_DGEMV('t', aoccA * aoccA, ndf_ + 3, 1.0, B_p_AA[0], ndf_ + 3, pAA[0], 1, 0.0, W, 1);
+    C_DGEMV('t', aoccA * aoccA, ndf_ + 3, 1.0, B_p_AA[0], ndf_ + 3, pAA->get_pointer(), 1, 0.0, W, 1);
 
     free_block(B_p_AA);
 
     double **B_p_RR = get_DF_ints(AAfile, RRlabel, 0, nvirA, 0, nvirA);
 
-    C_DGEMV('t', nvirA * nvirA, ndf_ + 3, 1.0, B_p_RR[0], ndf_ + 3, pRR[0], 1, 0.0, X, 1);
+    C_DGEMV('t', nvirA * nvirA, ndf_ + 3, 1.0, B_p_RR[0], ndf_ + 3, pRR->get_pointer(), 1, 0.0, X, 1);
 
     free_block(B_p_RR);
 
     double **B_p_AR = get_DF_ints(AAfile, ARlabel, foccA, noccA, 0, nvirA);
 
-    C_DGEMV('t', aoccA * nvirA, ndf_ + 3, 1.0, B_p_AR[0], ndf_ + 3, tAR[0], 1, 0.0, Y, 1);
+    C_DGEMV('t', aoccA * nvirA, ndf_ + 3, 1.0, B_p_AR[0], ndf_ + 3, tAR->get_pointer(), 1, 0.0, Y, 1);
 
     free_block(B_p_AR);
 
@@ -444,9 +424,6 @@ double SAPT2::ind220_7(int AAfile, const char *AAlabel, const char *ARlabel, con
     free(X);
     free(Y);
     free(Z);
-    free_block(pAA);
-    free_block(pRR);
-    free_block(tAR);
 
     if (debug_) {
         outfile->Printf("    Ind22_7             = %18.12lf [Eh]\n", energy);
