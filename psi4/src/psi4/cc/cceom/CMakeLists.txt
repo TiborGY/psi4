@@ -25,6 +25,7 @@ target_sources(cc
     ${CMAKE_CURRENT_SOURCE_DIR}/dgeev_eom.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/diag.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/diagSS.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/eom_ortho_util.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/follow_root.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/form_diagonal.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/get_eom_params.cc
