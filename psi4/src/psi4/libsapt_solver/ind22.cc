@@ -57,89 +57,87 @@ void SAPT2::ind22() {
 }
 
 double SAPT2::ind220() {
-    double **iAR = block_matrix(aoccA_, nvirA_);
+    auto iAR = std::make_shared<Matrix>("iAR", aoccA_, nvirA_);
+    double **iARp = iAR->pointer();
 
     for (int a = 0; a < aoccA_; a++) {
         for (int r = 0; r < nvirA_; r++) {
-            iAR[a][r] = wBAR_[a + foccA_][r] / (evalsA_[a + foccA_] - evalsA_[r + noccA_]);
+            iARp[a][r] = wBAR_[a + foccA_][r] / (evalsA_[a + foccA_] - evalsA_[r + noccA_]);
         }
     }
 
-    double **iBS = block_matrix(aoccB_, nvirB_);
+    auto iBS = std::make_shared<Matrix>("iBS", aoccB_, nvirB_);
+    double **iBSp = iBS->pointer();
 
     for (int b = 0; b < aoccB_; b++) {
         for (int s = 0; s < nvirB_; s++) {
-            iBS[b][s] = wABS_[b + foccB_][s] / (evalsB_[b + foccB_] - evalsB_[s + noccB_]);
+            iBSp[b][s] = wABS_[b + foccB_][s] / (evalsB_[b + foccB_] - evalsB_[s + noccB_]);
         }
     }
 
     double energy = 0.0;
 
     energy += ind220_1(PSIF_SAPT_AA_DF_INTS, "AA RI Integrals", "AR RI Integrals", "RR RI Integrals", PSIF_SAPT_AMPS,
-                       "tARAR Amplitudes", iAR, wBAA_, wBRR_, foccA_, noccA_, nvirA_, evalsA_);
+                       "tARAR Amplitudes", iARp, wBAA_, wBRR_, foccA_, noccA_, nvirA_, evalsA_);
 
-    energy += ind220_2(PSIF_SAPT_AMPS, "T2 AR Amplitudes", iAR, wBAA_, wBRR_, foccA_, noccA_, nvirA_);
+    energy += ind220_2(PSIF_SAPT_AMPS, "T2 AR Amplitudes", iARp, wBAA_, wBRR_, foccA_, noccA_, nvirA_);
 
-    energy += ind220_3(PSIF_SAPT_AMPS, "pAA Density Matrix", "pRR Density Matrix", iAR, wBAR_, foccA_, noccA_, nvirA_);
+    energy += ind220_3(PSIF_SAPT_AMPS, "pAA Density Matrix", "pRR Density Matrix", iARp, wBAR_, foccA_, noccA_, nvirA_);
 
-    energy += ind220_4(PSIF_SAPT_AMPS, "Theta AR Intermediates", PSIF_SAPT_AA_DF_INTS, "AR RI Integrals", iAR, foccA_,
+    energy += ind220_4(PSIF_SAPT_AMPS, "Theta AR Intermediates", PSIF_SAPT_AA_DF_INTS, "AR RI Integrals", iARp, foccA_,
                        noccA_, nvirA_);
 
-    energy += ind220_5(PSIF_SAPT_AMPS, "t2ARAR Amplitudes", iAR, foccA_, noccA_, nvirA_, evalsA_);
+    energy += ind220_5(PSIF_SAPT_AMPS, "t2ARAR Amplitudes", iARp, foccA_, noccA_, nvirA_, evalsA_);
 
     energy += ind220_6(PSIF_SAPT_AA_DF_INTS, "AA RI Integrals", "AR RI Integrals", "RR RI Integrals", PSIF_SAPT_AMPS,
-                       "tARAR Amplitudes", iAR, foccA_, noccA_, nvirA_);
+                       "tARAR Amplitudes", iARp, foccA_, noccA_, nvirA_);
 
     energy += ind220_7(PSIF_SAPT_AA_DF_INTS, "AA RI Integrals", "AR RI Integrals", "RR RI Integrals",
                        PSIF_SAPT_BB_DF_INTS, "BS RI Integrals", PSIF_SAPT_AMPS, "T2 AR Amplitudes",
-                       "pAA Density Matrix", "pRR Density Matrix", iBS, foccA_, noccA_, nvirA_, foccB_, noccB_, nvirB_);
-
-    free_block(iAR);
-    free_block(iBS);
+                       "pAA Density Matrix", "pRR Density Matrix", iBSp, foccA_, noccA_, nvirA_, foccB_, noccB_, nvirB_);
 
     return (energy);
 }
 
 double SAPT2::ind202() {
-    double **iAR = block_matrix(aoccA_, nvirA_);
+    auto iAR = std::make_shared<Matrix>("iAR", aoccA_, nvirA_);
+    double **iARp = iAR->pointer();
 
     for (int a = 0; a < aoccA_; a++) {
         for (int r = 0; r < nvirA_; r++) {
-            iAR[a][r] = wBAR_[a + foccA_][r] / (evalsA_[a + foccA_] - evalsA_[r + noccA_]);
+            iARp[a][r] = wBAR_[a + foccA_][r] / (evalsA_[a + foccA_] - evalsA_[r + noccA_]);
         }
     }
 
-    double **iBS = block_matrix(aoccB_, nvirB_);
+    auto iBS = std::make_shared<Matrix>("iBS", aoccB_, nvirB_);
+    double **iBSp = iBS->pointer();
 
     for (int b = 0; b < aoccB_; b++) {
         for (int s = 0; s < nvirB_; s++) {
-            iBS[b][s] = wABS_[b + foccB_][s] / (evalsB_[b + foccB_] - evalsB_[s + noccB_]);
+            iBSp[b][s] = wABS_[b + foccB_][s] / (evalsB_[b + foccB_] - evalsB_[s + noccB_]);
         }
     }
 
     double energy = 0.0;
 
     energy += ind220_1(PSIF_SAPT_BB_DF_INTS, "BB RI Integrals", "BS RI Integrals", "SS RI Integrals", PSIF_SAPT_AMPS,
-                       "tBSBS Amplitudes", iBS, wABB_, wASS_, foccB_, noccB_, nvirB_, evalsB_);
+                       "tBSBS Amplitudes", iBSp, wABB_, wASS_, foccB_, noccB_, nvirB_, evalsB_);
 
-    energy += ind220_2(PSIF_SAPT_AMPS, "T2 BS Amplitudes", iBS, wABB_, wASS_, foccB_, noccB_, nvirB_);
+    energy += ind220_2(PSIF_SAPT_AMPS, "T2 BS Amplitudes", iBSp, wABB_, wASS_, foccB_, noccB_, nvirB_);
 
-    energy += ind220_3(PSIF_SAPT_AMPS, "pBB Density Matrix", "pSS Density Matrix", iBS, wABS_, foccB_, noccB_, nvirB_);
+    energy += ind220_3(PSIF_SAPT_AMPS, "pBB Density Matrix", "pSS Density Matrix", iBSp, wABS_, foccB_, noccB_, nvirB_);
 
-    energy += ind220_4(PSIF_SAPT_AMPS, "Theta BS Intermediates", PSIF_SAPT_BB_DF_INTS, "BS RI Integrals", iBS, foccB_,
+    energy += ind220_4(PSIF_SAPT_AMPS, "Theta BS Intermediates", PSIF_SAPT_BB_DF_INTS, "BS RI Integrals", iBSp, foccB_,
                        noccB_, nvirB_);
 
-    energy += ind220_5(PSIF_SAPT_AMPS, "t2BSBS Amplitudes", iBS, foccB_, noccB_, nvirB_, evalsB_);
+    energy += ind220_5(PSIF_SAPT_AMPS, "t2BSBS Amplitudes", iBSp, foccB_, noccB_, nvirB_, evalsB_);
 
     energy += ind220_6(PSIF_SAPT_BB_DF_INTS, "BB RI Integrals", "BS RI Integrals", "SS RI Integrals", PSIF_SAPT_AMPS,
-                       "tBSBS Amplitudes", iBS, foccB_, noccB_, nvirB_);
+                       "tBSBS Amplitudes", iBSp, foccB_, noccB_, nvirB_);
 
     energy += ind220_7(PSIF_SAPT_BB_DF_INTS, "BB RI Integrals", "BS RI Integrals", "SS RI Integrals",
                        PSIF_SAPT_AA_DF_INTS, "AR RI Integrals", PSIF_SAPT_AMPS, "T2 BS Amplitudes",
-                       "pBB Density Matrix", "pSS Density Matrix", iAR, foccB_, noccB_, nvirB_, foccA_, noccA_, nvirA_);
-
-    free_block(iAR);
-    free_block(iBS);
+                       "pBB Density Matrix", "pSS Density Matrix", iARp, foccB_, noccB_, nvirB_, foccA_, noccA_, nvirA_);
 
     return (energy);
 }
@@ -149,62 +147,59 @@ double SAPT2::ind220_1(int intfile, const char *AAlabel, const char *ARlabel, co
                        double *evalsA) {
     int aoccA = noccA - foccA;
 
-    double **C_p_AR = block_matrix(aoccA * nvirA, ndf_ + 3);
+    auto C_p_AR = std::make_shared<Matrix>("C_p_AR", aoccA * nvirA, ndf_ + 3);
     double **B_p_RR = get_DF_ints(intfile, RRlabel, 0, nvirA, 0, nvirA);
 
     C_DGEMM('N', 'N', aoccA, nvirA * (ndf_ + 3), nvirA, 1.0, iAR[0], nvirA, B_p_RR[0], nvirA * (ndf_ + 3), 0.0,
-            C_p_AR[0], nvirA * (ndf_ + 3));
+            C_p_AR->get_pointer(), nvirA * (ndf_ + 3));
 
     free_block(B_p_RR);
 
     double **B_p_AA = get_DF_ints(intfile, AAlabel, foccA, noccA, foccA, noccA);
+    double **C_p_ARp = C_p_AR->pointer();
 
     for (int a = 0; a < aoccA; a++) {
         C_DGEMM('T', 'N', nvirA, ndf_ + 3, aoccA, -1.0, iAR[0], nvirA, B_p_AA[a * aoccA], ndf_ + 3, 1.0,
-                C_p_AR[a * nvirA], ndf_ + 3);
+                C_p_ARp[a * nvirA], ndf_ + 3);
     }
 
     free_block(B_p_AA);
 
-    double **xARAR = block_matrix(aoccA * nvirA, aoccA * nvirA);
+    auto xARAR = std::make_shared<Matrix>("xARAR", aoccA * nvirA, aoccA * nvirA);
+    double **xARARp = xARAR->pointer();
     double **B_p_AR = get_DF_ints(intfile, ARlabel, foccA, noccA, 0, nvirA);
 
-    C_DGEMM('N', 'T', aoccA * nvirA, aoccA * nvirA, ndf_ + 3, 1.0, C_p_AR[0], ndf_ + 3, B_p_AR[0], ndf_ + 3, 0.0,
-            xARAR[0], aoccA * nvirA);
+    C_DGEMM('N', 'T', aoccA * nvirA, aoccA * nvirA, ndf_ + 3, 1.0, C_p_AR->get_pointer(), ndf_ + 3, B_p_AR[0], ndf_ + 3, 0.0,
+            xARAR->get_pointer(), aoccA * nvirA);
 
     free_block(B_p_AR);
-    free_block(C_p_AR);
 
-    double **tARAR = block_matrix(aoccA * nvirA, aoccA * nvirA);
-    psio_->read_entry(ampfile, tlabel, (char *)tARAR[0], sizeof(double) * aoccA * nvirA * aoccA * nvirA);
+    auto tARAR = std::make_shared<Matrix>("tARAR", aoccA * nvirA, aoccA * nvirA);
+    psio_->read_entry(ampfile, tlabel, (char *)tARAR->get_pointer(), sizeof(double) * aoccA * nvirA * aoccA * nvirA);
 
-    C_DGEMM('N', 'N', aoccA, nvirA * aoccA * nvirA, aoccA, -1.0, &(wBAA[foccA][foccA]), noccA, tARAR[0],
-            nvirA * aoccA * nvirA, 1.0, xARAR[0], nvirA * aoccA * nvirA);
+    C_DGEMM('N', 'N', aoccA, nvirA * aoccA * nvirA, aoccA, -1.0, &(wBAA[foccA][foccA]), noccA, tARAR->get_pointer(),
+            nvirA * aoccA * nvirA, 1.0, xARAR->get_pointer(), nvirA * aoccA * nvirA);
 
-    C_DGEMM('N', 'T', aoccA * nvirA * aoccA, nvirA, nvirA, 1.0, tARAR[0], nvirA, wBRR[0], nvirA, 1.0, xARAR[0], nvirA);
+    C_DGEMM('N', 'T', aoccA * nvirA * aoccA, nvirA, nvirA, 1.0, tARAR->get_pointer(), nvirA, wBRR[0], nvirA, 1.0, xARAR->get_pointer(), nvirA);
 
-    free_block(tARAR);
+    symmetrize(xARAR->get_pointer(), aoccA, nvirA);
 
-    symmetrize(xARAR[0], aoccA, nvirA);
-
-    double **yARAR = block_matrix(aoccA * nvirA, aoccA * nvirA);
-    C_DCOPY((long int)aoccA * nvirA * aoccA * nvirA, xARAR[0], 1, yARAR[0], 1);
-    antisym(yARAR, aoccA, nvirA);
+    auto yARAR = std::make_shared<Matrix>("yARAR", aoccA * nvirA, aoccA * nvirA);
+    double **yARARp = yARAR->pointer();
+    C_DCOPY((long int)aoccA * nvirA * aoccA * nvirA, xARAR->get_pointer(), 1, yARAR->get_pointer(), 1);
+    antisym(yARARp, aoccA, nvirA);
 
     for (int a = 0, ar = 0; a < aoccA; a++) {
         for (int r = 0; r < nvirA; r++, ar++) {
             for (int aa = 0, aarr = 0; aa < aoccA; aa++) {
                 for (int rr = 0; rr < nvirA; rr++, aarr++) {
-                    xARAR[ar][aarr] /= evalsA[a + foccA] + evalsA[aa + foccA] - evalsA[r + noccA] - evalsA[rr + noccA];
+                    xARARp[ar][aarr] /= evalsA[a + foccA] + evalsA[aa + foccA] - evalsA[r + noccA] - evalsA[rr + noccA];
                 }
             }
         }
     }
 
-    double energy = C_DDOT((long int)aoccA * nvirA * aoccA * nvirA, xARAR[0], 1, yARAR[0], 1);
-
-    free_block(xARAR);
-    free_block(yARAR);
+    double energy = C_DDOT((long int)aoccA * nvirA * aoccA * nvirA, xARAR->get_pointer(), 1, yARAR->get_pointer(), 1);
 
     if (debug_) {
         outfile->Printf("\n    Ind22_1             = %18.12lf [Eh]\n", energy);
