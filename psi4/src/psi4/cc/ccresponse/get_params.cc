@@ -51,6 +51,7 @@
 #include "MOInfo.h"
 #include "Params.h"
 #include "Local.h"
+#include "psi4/cc/common/CCParamsParser.h"
 #define EXTERN
 #include "globals.h"
 
@@ -58,50 +59,28 @@ namespace psi {
 namespace ccresponse {
 
 void get_params(std::shared_ptr<Wavefunction> wfn, Options &options) {
-    int i, errcod, ref, count, iconv, *tmpi;
+    int i, ref, count;
     std::string units;
-    std::string junk;
 
-    params.wfn = options.get_str("WFN");
+    // Parse common CC parameters using shared parser
+    psi::cc::common::parse_wfn(params.wfn, options);
+    psi::cc::common::parse_print(params.print, options);
+    psi::cc::common::parse_memory(params.memory);
+    psi::cc::common::parse_cachelev(params.cachelev, options);
+    params.cachelev = 0;  // Module-specific override
+    psi::cc::common::parse_dertype(params.dertype, options);
+
+    // Validate WFN (module-specific)
     if (params.wfn != "CCSD" && params.wfn != "CC2") {
         throw PsiException("Invalid value of input keyword WFN", __FILE__, __LINE__);
     }
 
-    params.print = options.get_int("PRINT");
-
-    params.memory = Process::environment.get_memory();
-
-    params.cachelev = options.get_int("CACHELEVEL");
-    params.cachelev = 0;
-
-    junk = options.get_str("REFERENCE");
-    /* if no reference is given, assume rhf */
-    if (junk == "RHF")
-        ref = 0;
-    else if (junk == "ROHF")
-        ref = 1;
-    else if (junk == "UHF")
-        ref = 2;
-    else {
-        throw PsiException("Invalid value of input keyword REFERENCE", __FILE__, __LINE__);
-    }
-
-    /* Make sure the value of ref matches that from CC_INFO */
+    // Parse REFERENCE and check against CC_INFO (module-specific logic)
+    psi::cc::common::parse_ref(ref, options);
     if (params.ref != ref) {
         outfile->Printf("Value of REFERENCE from input.dat (%1d) and CC_INFO (%1d) do not match!\n", ref, params.ref);
         outfile->Printf("Is this what you want to do?\n");
         params.ref = ref;
-    }
-
-    junk = options.get_str("DERTYPE");
-    if (junk == "NONE")
-        params.dertype = 0;
-    else if (junk == "FIRST")
-        params.dertype = 1;
-    else if (junk == "RESPONSE")
-        params.dertype = 3; /* linear response */
-    else {
-        throw PsiException("Invalid value of input keyword DERTYPE", __FILE__, __LINE__);
     }
 
     params.gauge = options.get_str("GAUGE");
@@ -154,24 +133,25 @@ void get_params(std::shared_ptr<Wavefunction> wfn, Options &options) {
     for (i = 0; i < 3; i++)
         moinfo.l_irreps[i] = moinfo.mu_irreps[(int)(i + 1) % 3] ^ moinfo.mu_irreps[(int)(i + 2) % 3];
 
-    params.maxiter = options.get_int("MAXITER");
-    params.convergence = options.get_double("R_CONVERGENCE");
-    params.diis = options.get_bool("DIIS");
+    // Parse common CC parameters using shared parser
+    psi::cc::common::parse_maxiter(params.maxiter, options);
+    psi::cc::common::parse_convergence(params.convergence, options);
+    psi::cc::common::parse_diis(params.diis, options);
+    psi::cc::common::parse_abcd(params.abcd, options);
+    psi::cc::common::parse_restart(params.restart, options);
+    psi::cc::common::parse_local(params.local, options);
 
+    // Module-specific: validate ABCD (ccresponse has specific valid values)
+    if (params.abcd != "NEW" && params.abcd != "OLD") {
+        throw PsiException("Invalid ABCD algorith", __FILE__, __LINE__);
+    }
+
+    // Module-specific: property selection
     params.prop = options.get_str("PROPERTY");
     if (params.prop != "POLARIZABILITY" && params.prop != "ROTATION" && params.prop != "ROA" &&
         params.prop != "ROA_TENSOR" && params.prop != "ALL") {
         throw PsiException("Invalid choice of resp. property", __FILE__, __LINE__);
     }
-
-    params.abcd = options.get_str("ABCD");
-    if (params.abcd != "NEW" && params.abcd != "OLD") {
-        throw PsiException("Invalid ABCD algorith", __FILE__, __LINE__);
-    }
-
-    params.restart = options.get_bool("RESTART");
-
-    params.local = options.get_bool("LOCAL");
     local.cutoff = options.get_double("LOCAL_CUTOFF");
 
     local.method = options.get_str("LOCAL_METHOD");
@@ -203,8 +183,9 @@ void get_params(std::shared_ptr<Wavefunction> wfn, Options &options) {
     else if (params.local)
         local.pairdef = strdup("BP");
 
+    // Module-specific parameters
     params.analyze = options.get_bool("ANALYZE");
-    params.num_amps = options.get_int("NUM_AMPS_PRINT");
+    psi::cc::common::parse_num_amps(params.num_amps, options);
     params.sekino = options.get_bool("SEKINO");
     params.linear = options.get_bool("LINEAR");
 
