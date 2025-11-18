@@ -223,6 +223,9 @@ class CPHF_FISAPT {
     // JK Object
     std::shared_ptr<JK> jk_;
 
+    // CPHF Hamiltonian for product computation
+    std::shared_ptr<class CPHFFISAPTHamiltonian> hamiltonian_;
+
     // => Monomer A Problem <= //
 
     // Perturbation applied to A
@@ -253,7 +256,7 @@ class CPHF_FISAPT {
     // Active vir orbital eigenvalues of B
     std::shared_ptr<Vector> eps_vir_B_;
 
-    // Form the s = Ab product for the provided vectors b (may or may not need more iterations)
+    // Form the s = Ab product for the provided vectors b (uses hamiltonian_)
     std::map<std::string, std::shared_ptr<Matrix> > product(std::map<std::string, std::shared_ptr<Matrix> > b);
     // Apply the denominator from r into z
     void preconditioner(std::shared_ptr<Matrix> r, std::shared_ptr<Matrix> z, std::shared_ptr<Vector> o,

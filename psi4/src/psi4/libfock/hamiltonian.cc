@@ -85,7 +85,8 @@ SharedMatrix RHamiltonian::explicit_hamiltonian() {
 CPHFRHamiltonian::CPHFRHamiltonian(std::shared_ptr<JK> jk, SharedMatrix Caocc, SharedMatrix Cavir,
                                    std::shared_ptr<Vector> eps_aocc, std::shared_ptr<Vector> eps_avir,
                                    std::shared_ptr<VBase> v)
-    : RHamiltonian(jk, v), Caocc_(Caocc), Cavir_(Cavir), eps_aocc_(eps_aocc), eps_avir_(eps_avir) {}
+    : RHamiltonian(jk, v), Caocc_(Caocc), Cavir_(Cavir), eps_aocc_(eps_aocc), eps_avir_(eps_avir),
+      j_scale_(4.0), k_scale_1_(1.0), k_scale_2_(1.0) {}
 CPHFRHamiltonian::~CPHFRHamiltonian() {}
 void CPHFRHamiltonian::print_header() const {
     if (print_) {
@@ -223,17 +224,17 @@ void CPHFRHamiltonian::product(const std::vector<std::shared_ptr<Vector> >& x,
                 double** Kp = K[N]->pointer(h);
                 double** K2p = K[N]->pointer(h ^ symm);
 
-                // 4(ia|jb)P_jb = C_im J_mn C_na
+                // j_scale*(ia|jb)P_jb = C_im J_mn C_na
                 C_DGEMM('T', 'N', nocc, nsovir, nsoocc, 1.0, Cop[0], nocc, Jp[0], nsovir, 0.0, Tp, nsovir);
-                C_DGEMM('N', 'N', nocc, nvir, nsovir, 4.0, Tp, nsovir, Cvp[0], nvir, 0.0, &bp[offset], nvir);
+                C_DGEMM('N', 'N', nocc, nvir, nsovir, j_scale_, Tp, nsovir, Cvp[0], nvir, 0.0, &bp[offset], nvir);
 
-                // -(ib|ja)P_jb = C_in K_nm C_ma
+                // -k_scale_2*(ib|ja)P_jb = C_in K_nm C_ma
                 C_DGEMM('T', 'T', nocc, nsovir, nsoocc, 1.0, Cop[0], nocc, K2p[0], nsoocc, 0.0, Tp, nsovir);
-                C_DGEMM('N', 'N', nocc, nvir, nsovir, -1.0, Tp, nsovir, Cvp[0], nvir, 1.0, &bp[offset], nvir);
+                C_DGEMM('N', 'N', nocc, nvir, nsovir, -k_scale_2_, Tp, nsovir, Cvp[0], nvir, 1.0, &bp[offset], nvir);
 
-                // -(ij|ab)P_jb = C_im K_mn C_ra
+                // -k_scale_1*(ij|ab)P_jb = C_im K_mn C_ra
                 C_DGEMM('T', 'N', nocc, nsovir, nsoocc, 1.0, Cop[0], nocc, Kp[0], nsovir, 0.0, Tp, nsovir);
-                C_DGEMM('N', 'N', nocc, nvir, nsovir, -1.0, Tp, nsovir, Cvp[0], nvir, 1.0, &bp[offset], nvir);
+                C_DGEMM('N', 'N', nocc, nvir, nsovir, -k_scale_1_, Tp, nsovir, Cvp[0], nvir, 1.0, &bp[offset], nvir);
 
                 for (int i = 0; i < nocc; ++i) {
                     for (int a = 0; a < nvir; ++a) {

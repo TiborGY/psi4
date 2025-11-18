@@ -146,6 +146,11 @@ class CPHFRHamiltonian : public RHamiltonian {
     std::shared_ptr<Vector> eps_aocc_;
     std::shared_ptr<Vector> eps_avir_;
 
+    /// JK scaling factors: product = j_scale*J - k_scale_1*K - k_scale_2*K^T
+    double j_scale_;
+    double k_scale_1_;
+    double k_scale_2_;
+
    public:
     CPHFRHamiltonian(std::shared_ptr<JK> jk, SharedMatrix Caocc, SharedMatrix Cavir, std::shared_ptr<Vector> eps_aocc,
                      std::shared_ptr<Vector> eps_avir, std::shared_ptr<VBase> v = std::shared_ptr<VBase>());
@@ -157,6 +162,13 @@ class CPHFRHamiltonian : public RHamiltonian {
 
     virtual std::map<std::string, SharedVector> pack(const std::map<std::string, std::shared_ptr<Matrix> >& b);
     virtual std::vector<SharedMatrix> unpack(const std::vector<SharedVector>& x);
+
+    /// Set custom JK scaling factors (default: 4.0, 1.0, 1.0 for RHF CPHF)
+    void set_jk_scales(double j_scale, double k_scale_1, double k_scale_2) {
+        j_scale_ = j_scale;
+        k_scale_1_ = k_scale_1;
+        k_scale_2_ = k_scale_2;
+    }
 };
 }
 #endif

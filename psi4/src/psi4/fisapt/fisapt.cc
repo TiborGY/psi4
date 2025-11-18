@@ -43,6 +43,7 @@
 #include "psi4/libcubeprop/csg.h"
 #include "psi4/libdiis/diismanager.h"
 #include "psi4/libfock/jk.h"
+#include "psi4/libfock/hamiltonian_fisapt.h"
 #include "psi4/libmints/basisset.h"
 #include "psi4/libmints/extern.h"
 #include "psi4/libmints/factory.h"
@@ -7864,6 +7865,11 @@ void FISAPTSCF::print_orbitals(const std::string& header, int start, std::shared
 CPHF_FISAPT::CPHF_FISAPT() {}
 CPHF_FISAPT::~CPHF_FISAPT() {}
 void CPHF_FISAPT::compute_cphf() {
+    // Initialize Hamiltonian for product computation
+    hamiltonian_ = std::make_shared<CPHFFISAPTHamiltonian>(
+        jk_, Cocc_A_, Cvir_A_, eps_occ_A_, eps_vir_A_,
+        Cocc_B_, Cvir_B_, eps_occ_B_, eps_vir_B_);
+
     // Allocate
     x_A_ = std::shared_ptr<Matrix>(w_A_->clone());
     x_B_ = std::shared_ptr<Matrix>(w_B_->clone());
@@ -8025,82 +8031,8 @@ void CPHF_FISAPT::preconditioner(std::shared_ptr<Matrix> r, std::shared_ptr<Matr
 
 std::map<std::string, std::shared_ptr<Matrix> > CPHF_FISAPT::product(
     std::map<std::string, std::shared_ptr<Matrix> > b) {
-    std::map<std::string, std::shared_ptr<Matrix> > s;
-
-    bool do_A = b.count("A");
-    bool do_B = b.count("B");
-
-    std::vector<SharedMatrix>& Cl = jk_->C_left();
-    std::vector<SharedMatrix>& Cr = jk_->C_right();
-    Cl.clear();
-    Cr.clear();
-
-    if (do_A) {
-        Cl.push_back(Cocc_A_);
-        auto T = linalg::doublet(Cvir_A_, b["A"], false, true);
-        Cr.push_back(T);
-    }
-
-    if (do_B) {
-        Cl.push_back(Cocc_B_);
-        auto T = linalg::doublet(Cvir_B_, b["B"], false, true);
-        Cr.push_back(T);
-    }
-
-    jk_->compute();
-
-    const std::vector<SharedMatrix>& J = jk_->J();
-    const std::vector<SharedMatrix>& K = jk_->K();
-
-    int indA = 0;
-    int indB = (do_A ? 1 : 0);
-
-    if (do_A) {
-        std::shared_ptr<Matrix> Jv = J[indA];
-        std::shared_ptr<Matrix> Kv = K[indA];
-        Jv->scale(4.0);
-        Jv->subtract(Kv);
-        Jv->subtract(Kv->transpose());
-
-        int no = b["A"]->nrow();
-        int nv = b["A"]->ncol();
-        int nso = Cvir_A_->nrow();
-        s["A"] = linalg::triplet(Cocc_A_, Jv, Cvir_A_, true, false, false);
-        auto Sp = s["A"]->pointer();
-
-        auto bp = b["A"]->pointer();
-        auto op = eps_occ_A_->pointer();
-        auto vp = eps_vir_A_->pointer();
-        for (int i = 0; i < no; i++) {
-            for (int a = 0; a < nv; a++) {
-                Sp[i][a] += bp[i][a] * (vp[a] - op[i]);
-            }
-        }
-    }
-
-    if (do_B) {
-        std::shared_ptr<Matrix> Jv = J[indB];
-        std::shared_ptr<Matrix> Kv = K[indB];
-        Jv->scale(4.0);
-        Jv->subtract(Kv);
-        Jv->subtract(Kv->transpose());
-
-        int no = b["B"]->nrow();
-        int nv = b["B"]->ncol();
-        s["B"] = linalg::triplet(Cocc_B_, Jv, Cvir_B_, true, false, false);
-        auto Sp = s["B"]->pointer();
-
-        auto bp = b["B"]->pointer();
-        auto op = eps_occ_B_->pointer();
-        auto vp = eps_vir_B_->pointer();
-        for (int i = 0; i < no; i++) {
-            for (int a = 0; a < nv; a++) {
-                Sp[i][a] += bp[i][a] * (vp[a] - op[i]);
-            }
-        }
-    }
-
-    return s;
+    // Delegate to the unified Hamiltonian implementation
+    return hamiltonian_->product_map(b);
 }
 
 }  // Namespace fisapt
