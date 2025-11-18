@@ -1,20 +1,20 @@
 Phase,Priority,Module,File,Line,Class,Params,Complexity,Estimated_Hours,Status,Assignee,Notes
-1,High,libfock,DirectJK.cc,109,DirectJK,1,Easy,0.25,Not Started,,Similar to LinK (completed)
-1,High,libfock,DiskJK.cc,58,DiskJK,1,Easy,0.25,Not Started,,Similar to LinK (completed)
-1,High,libfock,PKJK.cc,72,PKJK,1,Easy,0.25,Not Started,,Similar to LinK (completed)
-1,High,libfock,DirectDFJ.cc,79,DirectDFJ,1,Easy,0.25,Not Started,,Simple arrow style
-1,High,libfock,CDJK.cc,145,CDJK,3,Easy,0.33,Not Started,,3 parameters
-1,High,libfock,COSK.cc,314,COSK,5,Medium,0.5,Not Started,,5 parameters
-1,High,libfock,snLinK.cc,420,snLinK,2,Easy,0.33,Not Started,,Conditional compilation (USING_gauxc)
-1,High,libfock,v.cc,728,VBase,4,Easy,0.33,Not Started,,Base class pattern
-1,High,libfock,v.cc,1118,SAP,2,Easy,0.25,Not Started,,Extends VBase
-1,High,libfock,v.cc,1260,RV,0,Trivial,0.1,Not Started,,Delegates to VBase - may not need changes
-1,High,libfock,v.cc,2594,UV,0,Trivial,0.1,Not Started,,Delegates to VBase - may not need changes
-1,High,libfock,hamiltonian.cc,90,CPHFRHamiltonian,1,Trivial,0.25,Not Started,,Very simple (2 lines)
-1,High,libfock,solver.cc,110,CGRSolver,3,Easy,0.33,Not Started,,Simple solver
-1,High,libfock,apps.cc,144,RCPHF,Multiple,Medium,0.5,Not Started,,Needs investigation
-1,High,lib3index,dfhelper.cc,278,DFHelper,10,Medium,0.75,Not Started,,Configuration heavy - many parameters
-1,High,lib3index,dftensor.cc,123,DFTensor,8,Medium,0.75,Not Started,,Configuration heavy - many parameters
+1,High,libfock,DirectJK.cc,110,DirectJK,8,Easy,0.25,Completed,,✅ Phase 1 - Fixed conditional omega parameter
+1,High,libfock,DiskJK.cc,59,DiskJK,6,Easy,0.25,Completed,,✅ Phase 1 - Clean parameter handling
+1,High,libfock,PKJK.cc,73,PKJK,7,Easy,0.25,Completed,,✅ Phase 1 - FIXED BUG: title was "DiskJK" now "PKJK"
+1,High,libfock,DirectDFJ.cc,80,DirectDFJ,1,Easy,0.25,Completed,,✅ Phase 1 - 7→3 lines (57% reduction)
+1,High,libfock,CDJK.cc,146,CDJK,11,Easy,0.33,Completed,,✅ Phase 1 - 19→16 lines
+1,High,libfock,COSK.cc,315,COSK,4,Medium,0.5,Completed,,✅ Phase 1 - 9→5 lines (44% reduction)
+1,High,libfock,snLinK.cc,420,snLinK,2,Easy,0.33,Deferred,,⏸️ Conditional compilation - defer to follow-up
+1,High,libfock,v.cc,729,VBase,0,Easy,0.33,Completed,,✅ Phase 1 - External print() calls preserved
+1,High,libfock,v.cc,1120,SAP,0,Easy,0.25,Completed,,✅ Phase 1 - External print() calls preserved
+1,High,libfock,v.cc,1260,RV,0,Trivial,0.1,No Change,,✅ Already delegates to VBase - no changes needed
+1,High,libfock,v.cc,2594,UV,0,Trivial,0.1,No Change,,✅ Already delegates to VBase - no changes needed
+1,High,libfock,hamiltonian.cc,91,CPHFRHamiltonian,0,Trivial,0.25,Completed,,✅ Phase 1 - 4→2 lines (50% reduction)
+1,High,libfock,solver.cc,111,CGRSolver,4,Easy,0.33,Completed,,✅ Phase 1 - Cleaner with method chaining
+3,Low,libfock,apps.cc,144,RCPHF,Multiple,Hard,1.0,Deferred,,⏸️ Complex - moved to Phase 3
+1,High,lib3index,dfhelper.cc,279,DFHelper,13,Medium,0.75,Completed,,✅ Phase 1 - 18→15 lines with 13 parameters
+1,High,lib3index,dftensor.cc,124,DFTensor,0,Medium,0.75,Completed,,✅ Phase 1 - 7→5 lines
 0,Completed,libfock,LinK.cc,86,LinK,1,Easy,0.25,Completed,,✅ Example implementation
 0,Completed,libfock,MemDFJK.cc,113,MemDFJK,9,Medium,0.5,Completed,,✅ Example with conditional params
 0,Completed,dfmp2,mp2.cc,796,RDFMP2,Complex,Medium,0.75,Completed,,✅ Example BOX style with authors
