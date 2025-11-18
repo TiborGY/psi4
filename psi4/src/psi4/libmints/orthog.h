@@ -36,7 +36,50 @@ namespace psi {
 
 /*! \ingroup MINTS
  *  \class BasisSetOrthogonalization
- *  \brief Implements methods for orthogonalizing basis sets.
+ *  \brief Implements methods for orthogonalizing basis sets via overlap matrix transformation.
+ *
+ *  This class handles orthogonalization of atomic orbital (AO) basis sets for SCF and
+ *  electronic structure calculations. It constructs transformation matrices that convert
+ *  non-orthogonal AO basis functions to orthogonal molecular orbital (MO) basis functions.
+ *
+ *  \par Mathematical Approach
+ *
+ *  Given an overlap matrix S, this class computes transformation matrices X and X^{-1} such that:
+ *  \f[
+ *      X^T S X = I
+ *  \f]
+ *
+ *  Three methods are available:
+ *  - **Symmetric**: \f$ X = U s^{-1/2} U^T \f$ where \f$ S = U s U^T \f$ (eigendecomposition)
+ *  - **Canonical**: \f$ X = U_{independent} s^{-1/2} \f$ (removes linearly dependent functions)
+ *  - **Partial Cholesky**: Pivoted Cholesky to select most important basis functions
+ *
+ *  \par Usage Context
+ *
+ *  This is a **one-time basis set transformation** performed during SCF initialization to
+ *  convert from non-orthogonal atomic orbitals to orthogonal molecular orbitals. The
+ *  transformation matrices are computed once and applied throughout the calculation.
+ *
+ *  \par Distinction from Vector Orthogonalization
+ *
+ *  This class is **distinct** from vector orthogonalization utilities used in iterative
+ *  subspace methods. Key differences:
+ *
+ *  - **BasisSetOrthogonalization** (this class):
+ *    - Purpose: Transform AO basis to MO basis via \f$ S^{-1/2} \f$
+ *    - Frequency: One-time per calculation
+ *    - Data: SharedMatrix objects (high-level abstractions)
+ *    - Context: SCF, basis set setup
+ *
+ *  - **OrthoUtil** (psi4::OrthoUtil):
+ *    - Purpose: Orthogonalize vectors via Gram-Schmidt
+ *    - Frequency: Thousands of times per calculation
+ *    - Data: Raw double** arrays (performance-critical)
+ *    - Context: Davidson/Olsen iterators, CI/CC subspace expansion
+ *
+ *  \see psi4::OrthoUtil for vector-level Gram-Schmidt orthogonalization used in iterative
+ *       solvers (psi4/libqt/ortho_util.h)
+ *  \see psi4/libqt/ORTHO_UTIL_README.md for comprehensive orthogonalization documentation
  */
 class PSI_API BasisSetOrthogonalization {
    public:

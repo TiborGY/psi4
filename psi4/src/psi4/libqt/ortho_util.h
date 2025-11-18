@@ -28,17 +28,74 @@
 
 /*!
 ** \file ortho_util.h
-** \brief Common orthogonalization utility library for Psi4
+** \brief Common orthogonalization utility library for iterative subspace methods
 ** \ingroup QT
 **
-** This library provides a unified interface for various orthogonalization
-** algorithms used throughout Psi4, including:
+** This library provides a unified interface for vector orthogonalization algorithms
+** used in iterative subspace expansion methods throughout Psi4, including:
 ** - Classical Gram-Schmidt orthogonalization
 ** - Modified Gram-Schmidt orthogonalization
-** - Schmidt orthogonalization with vector lists
+** - Schmidt orthogonalization with vector lists and threshold-based addition
 **
 ** The utilities support both matrix-based and vector-based orthogonalization,
-** making them suitable for use in CC, EOM, DETCI, and other modules.
+** making them suitable for use in CC, EOM, DETCI, and other iterative solver modules.
+**
+** \section ortho_util_purpose Purpose and Context
+**
+** OrthoUtil provides **low-level vector orthogonalization** for performance-critical
+** iterative algorithms such as Davidson/Olsen eigensolvers, CI subspace expansion,
+** and coupled-cluster equation solvers. These methods repeatedly orthogonalize new
+** vectors against growing basis sets during iterative convergence.
+**
+** \par Mathematical Operations
+**
+** Given a set of orthonormal vectors {v₁, v₂, ..., vₖ} and a new vector u,
+** compute u' orthogonal to all vᵢ:
+**
+** Modified Gram-Schmidt:
+** \code
+** for i = 1 to k:
+**     u = u - <vᵢ|u> vᵢ
+** \endcode
+**
+** Then normalize: u = u / ||u||
+**
+** If ||u|| < threshold, reject u as linearly dependent.
+**
+** \section ortho_util_vs_basisset Distinction from Basis Set Orthogonalization
+**
+** OrthoUtil is **distinct** from basis set orthogonalization used in SCF calculations.
+** Key differences:
+**
+** - **OrthoUtil** (this library):
+**   - Purpose: Orthogonalize vectors via Gram-Schmidt
+**   - Frequency: Thousands of times per calculation (performance-critical)
+**   - Data: Raw double** arrays for minimal overhead
+**   - Context: Davidson/Olsen iterators, CI/CC subspace expansion
+**   - Algorithm: Incremental vector orthogonalization
+**
+** - **BasisSetOrthogonalization** (psi4::BasisSetOrthogonalization):
+**   - Purpose: Transform AO basis to MO basis via overlap matrix
+**   - Frequency: One-time per calculation
+**   - Data: SharedMatrix objects (high-level abstractions)
+**   - Context: SCF initialization, basis set setup
+**   - Algorithm: Eigendecomposition of overlap matrix
+**
+** While both involve "orthogonalization", they solve fundamentally different problems
+** at different abstraction levels in the quantum chemistry workflow.
+**
+** \section ortho_util_modules Module Integration
+**
+** This library consolidates orthogonalization code previously scattered across modules:
+** - **cceom**: EOM-CC subspace expansion (via DPD wrappers in eom_ortho_util.h)
+** - **cclambda**: Lambda equation biorthogonalization (documented reference)
+** - **dfocc**: Orbital-optimized methods (direct calls to OrthoUtil)
+** - **detci**: CI vector orthogonalization (documented reference, buffer-based I/O)
+**
+** \see psi4::BasisSetOrthogonalization for basis set orthogonalization via overlap
+**      matrix transformation (psi4/libmints/orthog.h)
+** \see psi4/libqt/ORTHO_UTIL_README.md for comprehensive documentation and examples
+** \see psi4/cc/cceom/eom_ortho_util.h for DPD-aware wrappers
 */
 
 #pragma once

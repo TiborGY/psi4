@@ -4,6 +4,44 @@
 
 The orthogonalization utility library (`ortho_util.h/cc`) provides a unified interface for various orthogonalization algorithms used throughout Psi4. This library consolidates orthogonalization functionality previously scattered across multiple modules (CC, EOM, DETCI, DFOCC) into a single, reusable API.
 
+## Scope and Distinction from Basis Set Orthogonalization
+
+**Important:** This library provides **vector orthogonalization for iterative subspace methods**. It is distinct from basis set orthogonalization used in SCF calculations.
+
+### OrthoUtil (This Library)
+- **Purpose:** Orthogonalize vectors using Gram-Schmidt algorithms
+- **Use Case:** Davidson/Olsen eigensolvers, CI subspace expansion, CC equation solvers
+- **Frequency:** Called thousands of times per calculation (performance-critical)
+- **Data Structure:** Raw `double**` arrays for minimal overhead
+- **Algorithm:** Incremental vector orthogonalization against growing basis sets
+- **Example:** Orthogonalize new trial vector against existing Krylov subspace
+
+### BasisSetOrthogonalization (psi4/libmints/orthog.h)
+- **Purpose:** Transform atomic orbital basis to orthogonal molecular orbital basis
+- **Use Case:** SCF initialization, basis set setup
+- **Frequency:** Called once per calculation
+- **Data Structure:** `SharedMatrix` objects (high-level Psi4 abstractions)
+- **Algorithm:** Eigendecomposition of overlap matrix S, compute X = S^{-1/2}
+- **Example:** Convert non-orthogonal AO basis to orthogonal MO basis for SCF
+
+### Why Are They Separate?
+
+While both involve "orthogonalization", they solve fundamentally different mathematical problems:
+
+1. **Different Operations:**
+   - OrthoUtil: v' = v - Σᵢ⟨vᵢ|v⟩vᵢ (Gram-Schmidt projection)
+   - BasisSetOrthogonalization: X = U s^{-1/2} U^T where S = U s U^T (overlap matrix transformation)
+
+2. **Different Abstraction Levels:**
+   - OrthoUtil: Low-level numerical library (libqt)
+   - BasisSetOrthogonalization: High-level quantum chemistry library (libmints)
+
+3. **Different Performance Profiles:**
+   - OrthoUtil: Hot path in iterative loops (must be highly optimized)
+   - BasisSetOrthogonalization: One-time initialization (optimization less critical)
+
+**For SCF and basis set work, use BasisSetOrthogonalization. For iterative solvers and subspace methods, use OrthoUtil.**
+
 ## Features
 
 - **Classical Gram-Schmidt Orthogonalization**: Standard Gram-Schmidt process for orthogonalizing vectors
