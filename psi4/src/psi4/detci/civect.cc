@@ -44,6 +44,67 @@
 ** Modification: actually, don't store redundant _buffers_, but store
 ** redundant blocks if needed.
 **
+** \section detci_orthogonalization Schmidt Orthogonalization for CI Vectors
+**
+** This file implements Modified Gram-Schmidt orthogonalization for CI vectors
+** stored using buffered disk I/O. The algorithm follows the same mathematical
+** pattern as the general OrthoUtil library (psi4/libqt/ortho_util.h) but is
+** specifically adapted for the unique buffer-based data structures used in
+** DETCI calculations.
+**
+** \subsection detci_ortho_algorithm Modified Gram-Schmidt Algorithm
+**
+** The Modified Gram-Schmidt (MGS) algorithm orthogonalizes a new vector v
+** against a set of orthonormal basis vectors {u_1, u_2, ..., u_L}:
+**
+** For each basis vector u_i:
+**   1. Compute overlap: overlap_i = <v|u_i>
+**   2. Orthogonalize: v' = v - overlap_i * u_i
+**
+** Then normalize: v_normalized = v' / ||v'||
+**
+** If ||v'|| < threshold, the vector is considered linearly dependent and
+** is not added to the basis.
+**
+** This implementation differs from standard array-based approaches in that
+** CI vectors are stored on disk in buffer chunks that must be read/written
+** sequentially. Each orthogonalization step processes all buffers for the
+** entire vector.
+**
+** \subsection detci_ortho_architecture Buffer-Based Architecture
+**
+** Key architectural differences from OrthoUtil (psi4/libqt/ortho_util.h):
+**
+** 1. **Buffered I/O**: Vectors stored on disk, processed in chunks
+**    - OrthoUtil operates on contiguous in-memory double* arrays
+**    - CIvect reads/writes disk buffers sequentially
+**
+** 2. **Ms=0 Symmetry Handling**: Off-diagonal buffers counted with 2x weight
+**    - if (buf_offdiag_[buf]) overlap *= 2.0;
+**    - Exploits time-reversal symmetry in closed-shell calculations
+**
+** 3. **Block-Structured Vectors**: Data organized by irrep blocks
+**    - Custom encoding schemes for alpha/beta string pairs
+**    - Block-specific addressing and memory layout
+**
+** 4. **Multiple Threshold Values**:
+**    - SA_NORM_TOL: Standard Davidson/Olsen algorithm threshold
+**    - MPn_NORM_TOL: Specialized threshold for MPn calculations
+**
+** \subsection detci_ortho_methods Orthogonalization Methods
+**
+** - CIvect::schmidt_add() - Basic Schmidt orthogonalization and vector addition
+** - CIvect::schmidt_add2() - Extended version with fine-grained control
+**
+** Both methods implement the same Modified Gram-Schmidt algorithm but with
+** different interfaces for various use cases in CI calculations.
+**
+** \subsection detci_ortho_seealso See Also
+**
+** For general orthogonalization operations on in-memory arrays, see:
+** - psi4/libqt/ortho_util.h - Common orthogonalization utility library
+** - psi4/libqt/ORTHO_UTIL_README.md - Comprehensive documentation and examples
+**
 */
 
 #include <cstdio>
@@ -1851,20 +1912,74 @@ int CIvect::write(int ivect, int ibuf) {
     return (1);
 }
 
-/*
-** CIvect::schmidt_add()
+/*!
+** \brief Schmidt orthogonalization and vector addition for CI vectors
 **
-** This function Gram-Schmidt orthogonalizes a new vector d and adds it to
-** the list of vectors in the CIvector c, which must contain room
-** for the new vector (i.e. after the new vector is added, nvect <= maxvect).
-** Don't add orthogonalized d' if norm(d') < SA_NORM_TOL.
+** This function implements Modified Gram-Schmidt orthogonalization for
+** buffer-based CI vectors. It orthogonalizes the current vector (this)
+** against a set of L orthonormal basis vectors stored in CIvect c, then
+** adds the normalized result to c if it is sufficiently independent.
 **
-** Parameters:
-**    L   = number of vectors in CIvect to consider
+** \par Modified Gram-Schmidt Algorithm (Buffer-Based Implementation)
 **
-** Returns: 1 if a vector is added, 0 otherwise
+** The algorithm proceeds in two phases, both operating buffer-by-buffer:
 **
-** Notes: Assumes vectors c,d are same size.  Should account for Ms0 now.
+** **Phase 1: Compute overlaps**
+** \code
+** for each buffer in vector:
+**     for each basis vector i in c:
+**         overlap[i] += <this_buffer | c[i]_buffer>
+**         if (Ms=0 off-diagonal): overlap[i] *= 2
+** \endcode
+**
+** **Phase 2: Orthogonalize and compute norm**
+** \code
+** for each buffer in vector:
+**     for each basis vector i in c:
+**         this_buffer -= overlap[i] * c[i]_buffer
+**     norm += <this_buffer | this_buffer>
+**     if (Ms=0 off-diagonal): norm *= 2
+** \endcode
+**
+** **Phase 3: Normalize and add to basis**
+** \code
+** norm = sqrt(norm)
+** if (norm >= SA_NORM_TOL):
+**     for each buffer in vector:
+**         c[nvect]_buffer = this_buffer / norm
+**     c.nvect++
+**     return 1
+** else:
+**     return 0  // Vector linearly dependent, not added
+** \endcode
+**
+** \par Threshold Behavior
+**
+** The threshold SA_NORM_TOL (typically ~1e-5) determines linear dependence.
+** Vectors with post-orthogonalization norm below this threshold are rejected
+** to maintain numerical stability of the basis.
+**
+** \par Ms=0 Symmetry Treatment
+**
+** For closed-shell (Ms=0) calculations, time-reversal symmetry means some
+** buffers represent both <alpha,beta| and <beta,alpha| contributions.
+** These "off-diagonal" buffers contribute 2x to overlaps and norms.
+**
+** \param c CIvect containing orthonormal basis vectors; new vector added here if accepted
+** \param L Number of basis vectors in c to orthogonalize against (typically c.nvect_)
+**
+** \return 1 if vector successfully added to c, 0 if rejected due to linear dependence
+**
+** \note This implementation uses buffered I/O and cannot directly call OrthoUtil
+**       methods which expect contiguous in-memory arrays. See file header for
+**       comparison with psi4/libqt/ortho_util.h implementation.
+**
+** \note Requires c.nvect_ < c.maxvect_ (room for new vector)
+** \note Assumes current vector (this) and c have identical buffer structure
+** \note Vector c must contain an orthonormal set on entry
+**
+** \see CIvect::schmidt_add2() for extended version with fine-grained control
+** \see psi4/libqt/ortho_util.h for in-memory array-based orthogonalization
 */
 int CIvect::schmidt_add(CIvect &c, int L) {
     double tval, norm, *dotval;
@@ -1923,30 +2038,89 @@ int CIvect::schmidt_add(CIvect &c, int L) {
     }
 }
 
-/*
-** CIvect::schmidt_add2()
+/*!
+** \brief Extended Schmidt orthogonalization with fine-grained control
 **
-** This function Gram-Schmidt orthogonalizes a new vector d and adds it to
-** the list of vectors in the CIvector c, which must contain room
-** for the new vector (i.e. after the new vector is added, nvect <= maxvect).
-** Don't add orthogonalized d' if norm(d') < SA_NORM_TOL.  This version
-** differs from CIvect::schmidt_add() to allow the user somewhat finer
-** control over the numbering of vectors, etc, and allows the return of
-** dot products and the normalization factor.
+** This function provides an extended interface to Modified Gram-Schmidt
+** orthogonalization for CI vectors, offering fine-grained control over
+** vector numbering, orthogonalization range, and diagnostic outputs.
 **
-** Parameters:
-**    L          = number of vectors in CIvect to consider
-**    first_vec  = first vec num in C to orthogonalize new vector against
-**    last_vec   = last vec num in C to orthogonalize new vector against
-**    source_vec = vector number in D file to read
-**    target_vec = vector number to write new vector to
-**    dotval     = array of dot products of new vector with old vectors
-**    nrm        = normalization constant of new vector after orthogonalization
-**    ovlpmax    = maximum overlap of current SO vectors to previous vectors
+** This method extends CIvect::schmidt_add() by:
+** - Allowing specification of source and target vector indices
+** - Orthogonalizing against a specified range [first_vec, last_vec]
+** - Returning overlap values, normalization constant, and maximum overlap
+** - Supporting specialized MPn calculation thresholds
 **
-** Returns: 1 if a vector is added, 0 otherwise
+** \par Modified Gram-Schmidt Algorithm (Extended Buffer-Based Implementation)
 **
-** Notes: Assumes vectors c,d are same size.  Should account for Ms0 now.
+** **Phase 1: Compute overlaps with specified vector range**
+** \code
+** for each buffer in source_vec:
+**     for i = first_vec to last_vec:
+**         dotval[i] += <source_buffer | c[i]_buffer>
+**         if (Ms=0 off-diagonal): dotval[i] *= 2
+**
+** ovlpmax = max(|dotval[first_vec]|, ..., |dotval[last_vec]|)
+** \endcode
+**
+** **Phase 2: Orthogonalize current vector**
+** \code
+** for each buffer in current vector:
+**     for i = first_vec to last_vec:
+**         this_buffer -= dotval[i] * c[i]_buffer
+**     norm += <this_buffer | this_buffer>
+**     if (Ms=0 off-diagonal): norm *= 2
+** \endcode
+**
+** **Phase 3: Normalize and store at target_vec**
+** \code
+** norm = sqrt(norm)
+** if (norm >= threshold):  // threshold depends on calculation type
+**     nrm = 1.0 / norm
+**     for each buffer:
+**         c[target_vec]_buffer = this_buffer * nrm
+**     return 1
+** else:
+**     return 0  // Vector rejected
+** \endcode
+**
+** \par Threshold Selection
+**
+** The acceptance threshold depends on the calculation type:
+** - **Standard CI** (CI_Params_->mpn_schmidt == false): SA_NORM_TOL (~1e-5)
+** - **MPn calculations** (CI_Params_->mpn_schmidt == true): MPn_NORM_TOL (stricter)
+**
+** The MPn threshold is typically stricter to ensure accurate perturbation
+** theory corrections.
+**
+** \par Use Cases
+**
+** This extended interface is particularly useful for:
+** - Subspace expansion algorithms (Davidson, Olsen)
+** - Selective orthogonalization against vector subsets
+** - Inserting vectors at specific positions in basis
+** - Diagnostic monitoring (overlap tracking, norm analysis)
+** - MPn perturbation theory corrections
+**
+** \param c CIvect containing basis vectors; target location for new vector
+** \param first_vec Index of first basis vector to orthogonalize against
+** \param last_vec Index of last basis vector to orthogonalize against (inclusive)
+** \param source_vec Vector index in this CIvect to read as source vector
+** \param target_vec Vector index in c to write orthogonalized result
+** \param[out] dotval Array of overlap integrals <source|c[i]> for i in [first_vec, last_vec]
+** \param[out] nrm Normalization constant applied (1/||v'|| after orthogonalization)
+** \param[out] ovlpmax Maximum absolute overlap: max_i |dotval[i]|
+**
+** \return 1 if vector successfully added, 0 if rejected due to insufficient norm
+**
+** \note For MPn calculations, checks both MPn_NORM_TOL and SA_NORM_TOL
+** \note dotval array must be pre-allocated with sufficient size (at least last_vec+1)
+** \note Does not increment c.nvect_ unless target_vec > c.nvect_
+** \note Overlaps in dotval reflect pre-orthogonalization values
+**
+** \see CIvect::schmidt_add() for simpler interface with automatic vector numbering
+** \see psi4/libqt/ortho_util.h for comparison with in-memory implementations
+** \see psi4/detci/ci_tol.h for threshold definitions (SA_NORM_TOL, MPn_NORM_TOL)
 */
 int CIvect::schmidt_add2(CIvect &c, int first_vec, int last_vec, int source_vec, int target_vec, double *dotval,
                          double *nrm, double *ovlpmax) {
