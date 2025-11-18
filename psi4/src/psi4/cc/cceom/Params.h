@@ -28,33 +28,35 @@
 
 /*! \file
     \ingroup CCEOM
-    \brief Enter brief description of file here
+    \brief Parameters for cceom module
 */
 
 #ifndef _psi_src_bin_cceom_params_h
 #define _psi_src_bin_cceom_params_h
 
 #include <string>
+#include "psi4/cc/common/CCParams.h"
 
 namespace psi {
 namespace cceom {
 
-/* Input parameters for ccenergy */
-struct Params {
-    long int memory;
-    int cachelev;
-    int cachetype;
-    int ref;
-    int eom_ref;
-    int local;
-    std::string wfn;
-    int semicanonical;
-    int full_matrix; /* include reference rows/cols in diagonalization */
-    std::string abcd;
-    int t3_Ws_incore;
-    int nthreads;
-    int newtrips;
-    int overlap;  // check for overlaps between current wfn set and older set stored on disk
+/*! \brief Parameters for cceom module
+ *
+ * Extends common CC parameters with cceom-specific parameters.
+ */
+struct Params : public psi::cc::common::CCParams {
+    // Module-specific parameters
+    int cachetype;       // DPD cache type
+    int eom_ref;         // EOM reference type (can differ from ref for RHF references)
+    int semicanonical;   // Use semicanonical orbitals
+    int full_matrix;     // Include reference rows/cols in diagonalization
+    int t3_Ws_incore;    // Keep T3 W intermediates in core
+    int nthreads;        // Number of threads for parallel execution
+    int newtrips;        // Use new triples algorithm
+    int overlap;         // Check for overlaps between current wfn set and older set on disk
+
+    Params() : CCParams(), cachetype(1), eom_ref(0), semicanonical(0), full_matrix(0),
+               t3_Ws_incore(0), nthreads(1), newtrips(0), overlap(0) {}
 };
 
 struct Eom_params {

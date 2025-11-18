@@ -42,6 +42,7 @@
 #include "MOInfo.h"
 #include "Params.h"
 #include "Local.h"
+#include "psi4/cc/common/CCParamsParser.h"
 #define EXTERN
 #include "globals.h"
 
@@ -49,9 +50,14 @@ namespace psi {
 namespace cceom {
 
 void get_params(Options &options) {
-    params.memory = Process::environment.get_memory();
+    // Parse common CC parameters using shared parser
+    psi::cc::common::parse_memory(params.memory);
+    psi::cc::common::parse_wfn(params.wfn, options);
+    psi::cc::common::parse_cachelev(params.cachelev, options);
+    psi::cc::common::parse_abcd(params.abcd, options);
+    psi::cc::common::parse_local(params.local, options);
 
-    params.wfn = options.get_str("WFN");
+    // Module-specific: Read CC energy from PSIF_CC_INFO
     if (params.wfn == "EOM_CC2") {
         psio_read_entry(PSIF_CC_INFO, "CC2 Energy", (char *)&(moinfo.ecc), sizeof(double));
         outfile->Printf("\tCC2 energy          (file100) = %20.15f\n", moinfo.ecc);
@@ -63,6 +69,7 @@ void get_params(Options &options) {
         outfile->Printf("\tCC3 energy          (file100) = %20.15f\n", moinfo.ecc);
     }
 
+    // Parse REFERENCE with module-specific semicanonical logic
     params.semicanonical = 0;
     std::string read_ref = options.get_str("REFERENCE");
     if (read_ref == "RHF")
@@ -95,8 +102,8 @@ void get_params(Options &options) {
     } else
         params.eom_ref = 2; /* run in UHF mode - ignore EOM_REFERENCE */
 
+    // Module-specific parameters
     params.full_matrix = options["FULL_MATRIX"].to_integer();
-    params.cachelev = options.get_int("CACHELEVEL");
 
     std::string cachetype = options.get_str("CACHETYPE");
     if (cachetype == "LOW")
@@ -110,9 +117,7 @@ void get_params(Options &options) {
     if (options["CC_NUM_THREADS"].has_changed()) {
         params.nthreads = options.get_int("CC_NUM_THREADS");
     }
-    params.abcd = options.get_str("ABCD");
     params.t3_Ws_incore = options["T3_WS_INCORE"].to_integer();
-    params.local = options["LOCAL"].to_integer();
     if (params.local) {
         local.cutoff = options.get_double("LOCAL_CUTOFF");
         local.method = options.get_str("LOCAL_METHOD");
