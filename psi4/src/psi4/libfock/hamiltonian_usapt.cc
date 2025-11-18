@@ -26,6 +26,33 @@
  * @END LICENSE
  */
 
+/**
+ * @file hamiltonian_usapt.cc
+ * @brief Unrestricted CPKS Hamiltonian for USAPT0 calculations
+ *
+ * This file implements the CPKSUSAPTHamiltonian class, which provides
+ * Hamiltonian-vector products for unrestricted SAPT0 coupled response calculations.
+ * The implementation consolidates product logic previously duplicated in
+ * CPKS_USAPT0::product() (libsapt_solver/usapt0.cc).
+ *
+ * Key features:
+ * - Spin-unrestricted two-monomer problem (4 response vectors: Aa, Ab, Ba, Bb)
+ * - Map-based interface for flexible perturbation handling
+ * - Product formula: (2J_total - K - K^T + diagonal) where J_total = J_alpha + J_beta
+ * - Handles systems with no alpha/beta electrons gracefully
+ * - Static preconditioner helper for Jacobi preconditioning
+ *
+ * The key difference from restricted CPHF is the 2J scaling (vs 4J) which arises
+ * from the unrestricted formalism where alpha and beta densities are treated
+ * independently but couple through the total Coulomb potential.
+ *
+ * This class is used internally by CPKS_USAPT0 for backwards compatibility
+ * while providing a clean, reusable implementation of the product logic.
+ *
+ * @see libfock/CPHF_ARCHITECTURE.md for architecture documentation
+ * @see hamiltonian_usapt.h for class interface
+ */
+
 #include "hamiltonian_usapt.h"
 #include "jk.h"
 

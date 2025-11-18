@@ -26,6 +26,28 @@
  * @END LICENSE
  */
 
+/**
+ * @file hamiltonian_fisapt.cc
+ * @brief CPHF Hamiltonian for F-SAPT two-monomer calculations
+ *
+ * This file implements the CPHFFISAPTHamiltonian class, which provides
+ * Hamiltonian-vector products for F-SAPT coupled response calculations.
+ * The implementation consolidates product logic previously duplicated in
+ * CPHF_FISAPT::product() (fisapt/fisapt.cc).
+ *
+ * Key features:
+ * - Two-monomer problem structure (monomers A and B)
+ * - Map-based interface for flexible perturbation handling
+ * - Product formula: (4J - K - K^T + diagonal)
+ * - Static preconditioner helper for Jacobi preconditioning
+ *
+ * This class is used internally by CPHF_FISAPT for backwards compatibility
+ * while providing a clean, reusable implementation of the product logic.
+ *
+ * @see libfock/CPHF_ARCHITECTURE.md for architecture documentation
+ * @see hamiltonian_fisapt.h for class interface
+ */
+
 #include "hamiltonian_fisapt.h"
 #include "jk.h"
 

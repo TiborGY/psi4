@@ -139,14 +139,40 @@ class RHamiltonian : public Hamiltonian {
 
 // => APPLIED CLASSES <= //
 
+/**
+ * CPHF Hamiltonian for restricted response theory.
+ *
+ * Implements the standard CPHF Hamiltonian with configurable JK scaling:
+ *   H·x = j_scale*J(x) - k_scale_1*K(x) - k_scale_2*K^T(x) + diag(eps)·x
+ *
+ * Default scaling (4.0, 1.0, 1.0) corresponds to RHF CPHF.
+ * Can be customized via set_jk_scales() for other formalisms.
+ *
+ * This class serves as the base for specialized CPHF implementations and
+ * demonstrates the standard pattern for Hamiltonian-vector products.
+ *
+ * Example usage:
+ * @code
+ *   auto H = std::make_shared<CPHFRHamiltonian>(jk, Cocc, Cvir, eps_occ, eps_vir);
+ *   H->set_jk_scales(2.0, 1.0, 1.0);  // Customize for UHF-like scaling
+ *   auto solver = CGRSolver::build_solver(options, H);
+ * @endcode
+ *
+ * @see libfock/CPHF_ARCHITECTURE.md for detailed documentation
+ */
 class CPHFRHamiltonian : public RHamiltonian {
    protected:
+    /// Active occupied orbital coefficients
     SharedMatrix Caocc_;
+    /// Active virtual orbital coefficients
     SharedMatrix Cavir_;
+    /// Active occupied orbital eigenvalues
     std::shared_ptr<Vector> eps_aocc_;
+    /// Active virtual orbital eigenvalues
     std::shared_ptr<Vector> eps_avir_;
 
     /// JK scaling factors: product = j_scale*J - k_scale_1*K - k_scale_2*K^T
+    /// Default: (4.0, 1.0, 1.0) for RHF CPHF
     double j_scale_;
     double k_scale_1_;
     double k_scale_2_;
