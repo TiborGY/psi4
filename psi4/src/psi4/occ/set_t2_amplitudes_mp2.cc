@@ -197,16 +197,14 @@ void OCCWave::set_t2_amplitudes_mp2() {
             // T_IJ^AB => T(IA,JB)
             global_dpd_->buf4_init(&T, PSIF_OCC_DPD, 0, ID("[O,O]"), ID("[V,V]"), ID("[O,O]"), ID("[V,V]"), 0,
                                    taa_name.c_str());
-            libtrans::IntegralPermutations::chemist_to_physicist(&T, PSIF_OCC_DPD, ID("[O,V]"), ID("[O,V]"),
+            libtrans::IntegralPermutations::chemist_to_physicist_and_close(&T, PSIF_OCC_DPD, ID("[O,V]"), ID("[O,V]"),
                                                                   taa_c1);
-            global_dpd_->buf4_close(&T);
 
             // T_ij^ab => T(ia,jb)
             global_dpd_->buf4_init(&T, PSIF_OCC_DPD, 0, ID("[o,o]"), ID("[v,v]"), ID("[o,o]"), ID("[v,v]"), 0,
                                    tbb_name.c_str());
-            libtrans::IntegralPermutations::chemist_to_physicist(&T, PSIF_OCC_DPD, ID("[o,v]"), ID("[o,v]"),
+            libtrans::IntegralPermutations::chemist_to_physicist_and_close(&T, PSIF_OCC_DPD, ID("[o,v]"), ID("[o,v]"),
                                                                   tbb_c1);
-            global_dpd_->buf4_close(&T);
 
             // T_Ij^Ab => T(IA,jb), T(jA,Ib)
             global_dpd_->buf4_init(&T, PSIF_OCC_DPD, 0, ID("[O,o]"), ID("[V,v]"), ID("[O,o]"), ID("[V,v]"), 0,

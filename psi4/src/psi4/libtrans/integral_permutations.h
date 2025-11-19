@@ -84,6 +84,23 @@ public:
     );
 
     /**
+     * @brief Transform (OV|OV) → <OO|VV> and close input buffer
+     *
+     * Convenience function that performs the transformation and automatically
+     * closes the input buffer, following the common pattern of immediate closure
+     * after transformation.
+     *
+     * @param InBuf Input (OV|OV) buffer (will be closed after transformation)
+     * @param outfilenum Output file number
+     * @param label Optional custom label (auto-generated if empty)
+     */
+    static void ovov_to_oovv_and_close(
+        dpdbuf4 *InBuf,
+        int outfilenum,
+        const std::string &label = ""
+    );
+
+    /**
      * @brief Transform (VV|OO) → <OV|OV>
      *
      * Creates <OV|OV> integrals from (VV|OO) chemist's notation.
@@ -94,6 +111,19 @@ public:
      * @param label Optional custom label (default: "MO Ints <OV|OV>")
      */
     static void vvoo_to_ovov(
+        dpdbuf4 *InBuf,
+        int outfilenum,
+        const std::string &label = ""
+    );
+
+    /**
+     * @brief Transform (VV|OO) → <OV|OV> and close input buffer
+     *
+     * @param InBuf Input (VV|OO) buffer (will be closed after transformation)
+     * @param outfilenum Output file
+     * @param label Optional custom label
+     */
+    static void vvoo_to_ovov_and_close(
         dpdbuf4 *InBuf,
         int outfilenum,
         const std::string &label = ""
@@ -163,6 +193,19 @@ public:
         const std::string &label = ""
     );
 
+    /**
+     * @brief Transform (OV|VV) → <OV|VV> and close input buffer
+     *
+     * @param InBuf Input (OV|VV) buffer (will be closed after transformation)
+     * @param outfilenum Output file
+     * @param label Optional custom label
+     */
+    static void ovvv_to_ovvv_and_close(
+        dpdbuf4 *InBuf,
+        int outfilenum,
+        const std::string &label = ""
+    );
+
     //===========================================
     // Notation Conversions (General)
     //===========================================
@@ -183,6 +226,26 @@ public:
      * @param label String label for output buffer
      */
     static void chemist_to_physicist(
+        dpdbuf4 *InBuf,
+        int outfilenum,
+        int pq_indices,
+        int rs_indices,
+        const std::string &label
+    );
+
+    /**
+     * @brief Convert chemist's notation to physicist's notation and close input buffer
+     *
+     * Convenience function that performs the transformation and automatically
+     * closes the input buffer.
+     *
+     * @param InBuf Input buffer in chemist's notation (will be closed after transformation)
+     * @param outfilenum PSI file number for output
+     * @param pq_indices DPD indices for bra (pr)
+     * @param rs_indices DPD indices for ket (qs)
+     * @param label String label for output buffer
+     */
+    static void chemist_to_physicist_and_close(
         dpdbuf4 *InBuf,
         int outfilenum,
         int pq_indices,

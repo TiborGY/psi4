@@ -73,8 +73,7 @@ void OCCWave::t2_2nd_sc() {
         global_dpd_->buf4_close(&Tp);
 
         // T(IA,JB) => T_IJ^AB(2)
-        libtrans::IntegralPermutations::chemist_to_physicist(&T, PSIF_OCC_DPD, ID("[O,O]"), ID("[V,V]"), "T2_2 <IJ|AB>");
-        global_dpd_->buf4_close(&T);
+        libtrans::IntegralPermutations::chemist_to_physicist_and_close(&T, PSIF_OCC_DPD, ID("[O,O]"), ID("[V,V]"), "T2_2 <IJ|AB>");
 
         // Build T(JA,IB)
         // T_IJ^AB(2) = -\sum_{M,E} T_MJ^AE(1) W_MBIE(1) => T(JA,IB)(2) = -\sum_{M,E} T"(JA,ME) <ME|IB>
@@ -253,8 +252,7 @@ void OCCWave::t2_2nd_sc() {
         global_dpd_->buf4_close(&Tp);
 
         // T(IA,JB) => T_IJ^AB(2)
-        libtrans::IntegralPermutations::chemist_to_physicist(&T, PSIF_OCC_DPD, ID("[O,O]"), ID("[V,V]"), "T2_2 <IJ|AB>");
-        global_dpd_->buf4_close(&T);
+        libtrans::IntegralPermutations::chemist_to_physicist_and_close(&T, PSIF_OCC_DPD, ID("[O,O]"), ID("[V,V]"), "T2_2 <IJ|AB>");
 
         // Build T(JA,IB)
         // T_IJ^AB(2) = -\sum_{M,E} T_JM^AE(1) W_MBEI(1) => T(JA,IB)(2) = -\sum_{M,E} T(JA,ME) W(ME,IB)

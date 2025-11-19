@@ -170,6 +170,15 @@ void IntegralPermutations::ovov_to_oovv(
     global_dpd_->buf4_sort(InBuf, outfilenum, prqs, oo_indices, vv_indices, final_label);
 }
 
+void IntegralPermutations::ovov_to_oovv_and_close(
+    dpdbuf4 *InBuf,
+    int outfilenum,
+    const std::string &label)
+{
+    ovov_to_oovv(InBuf, outfilenum, label);
+    global_dpd_->buf4_close(InBuf);
+}
+
 void IntegralPermutations::vvoo_to_ovov(
     dpdbuf4 *InBuf,
     int outfilenum,
@@ -203,6 +212,15 @@ void IntegralPermutations::vvoo_to_ovov(
 
     // Apply prqs permutation: (VV|OO) → (VO|OV) = <OV|OV>
     global_dpd_->buf4_sort(InBuf, outfilenum, prqs, ov_indices, ov_indices, final_label);
+}
+
+void IntegralPermutations::vvoo_to_ovov_and_close(
+    dpdbuf4 *InBuf,
+    int outfilenum,
+    const std::string &label)
+{
+    vvoo_to_ovov(InBuf, outfilenum, label);
+    global_dpd_->buf4_close(InBuf);
 }
 
 void IntegralPermutations::transpose_oovv(
@@ -347,6 +365,15 @@ void IntegralPermutations::ovvv_to_ovvv(
     global_dpd_->buf4_sort(InBuf, outfilenum, prqs, ov_indices, vv_indices, final_label);
 }
 
+void IntegralPermutations::ovvv_to_ovvv_and_close(
+    dpdbuf4 *InBuf,
+    int outfilenum,
+    const std::string &label)
+{
+    ovvv_to_ovvv(InBuf, outfilenum, label);
+    global_dpd_->buf4_close(InBuf);
+}
+
 void IntegralPermutations::chemist_to_physicist(
     dpdbuf4 *InBuf,
     int outfilenum,
@@ -362,6 +389,17 @@ void IntegralPermutations::chemist_to_physicist(
     // Perform transformation using DPD library
     // (pq|rs) → (pr|qs) using prqs permutation
     global_dpd_->buf4_sort(InBuf, outfilenum, prqs, pq_indices, rs_indices, label);
+}
+
+void IntegralPermutations::chemist_to_physicist_and_close(
+    dpdbuf4 *InBuf,
+    int outfilenum,
+    int pq_indices,
+    int rs_indices,
+    const std::string &label)
+{
+    chemist_to_physicist(InBuf, outfilenum, pq_indices, rs_indices, label);
+    global_dpd_->buf4_close(InBuf);
 }
 
 void IntegralPermutations::standard_ovov_transformations(
