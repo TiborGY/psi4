@@ -29,6 +29,7 @@
 /* This code includes correlation TPDMs. */
 
 #include "psi4/libtrans/integraltransform.h"
+#include "psi4/libtrans/integral_permutations.h"
 #include "psi4/libpsio/psio.hpp"
 #include "occwave.h"
 #include "defines.h"
@@ -272,6 +273,8 @@ void OCCWave::tpdm_oooo() {
 /*  omp3_tpdm_vvvv()     */
 /*=======================*/
 void OCCWave::omp3_tpdm_vvvv() {
+    using libtrans;
+
     // NOTE: contract444 can handle only TN and NT type contractions, which means (0,0) and (1,1) type target indices,
     //  with out-of-core algorithm!!!!
     dpdbuf4 T, L, G, V;
@@ -322,7 +325,7 @@ void OCCWave::omp3_tpdm_vvvv() {
             global_dpd_->buf4_close(&G);
             global_dpd_->buf4_init(&G, PSIF_OCC_DENSITY, 0, ID("[V,V]"), ID("[V,V]"), ID("[V,V]"), ID("[V,V]"), 0,
                                    "TPDM <AC|BD>");
-            global_dpd_->buf4_sort(&G, PSIF_OCC_DENSITY, prqs, ID("[V,V]"), ID("[V,V]"), "TPDM <VV|VV>");
+            chemist_to_physicist(&G, PSIF_OCC_DENSITY, ID("[V,V]"), ID("[V,V]"), "TPDM <VV|VV>");
             global_dpd_->buf4_close(&G);
             global_dpd_->buf4_init(&G, PSIF_OCC_DENSITY, 0, ID("[V,V]"), ID("[V,V]"), ID("[V,V]"), ID("[V,V]"), 0,
                                    "TPDM <VV|VV>");
@@ -485,7 +488,7 @@ void OCCWave::ocepa_tpdm_vvvv() {
             global_dpd_->buf4_close(&G);
             global_dpd_->buf4_init(&G, PSIF_OCC_DENSITY, 0, ID("[V,V]"), ID("[V,V]"), ID("[V,V]"), ID("[V,V]"), 0,
                                    "TPDM <AC|BD>");
-            global_dpd_->buf4_sort(&G, PSIF_OCC_DENSITY, prqs, ID("[V,V]"), ID("[V,V]"), "TPDM <VV|VV>");
+            chemist_to_physicist(&G, PSIF_OCC_DENSITY, ID("[V,V]"), ID("[V,V]"), "TPDM <VV|VV>");
             global_dpd_->buf4_close(&G);
             global_dpd_->buf4_init(&G, PSIF_OCC_DENSITY, 0, ID("[V,V]"), ID("[V,V]"), ID("[V,V]"), ID("[V,V]"), 0,
                                    "TPDM <VV|VV>");

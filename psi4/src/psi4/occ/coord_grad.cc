@@ -27,6 +27,7 @@
  */
 
 #include "psi4/libtrans/integraltransform.h"
+#include "psi4/libtrans/integral_permutations.h"
 #include "psi4/libmints/matrix.h"
 #include "psi4/libmints/oeprop.h"
 #include "psi4/libpsio/psio.hpp"
@@ -37,6 +38,8 @@ namespace psi {
 namespace occwave {
 
 void OCCWave::coord_grad() {
+    using libtrans;
+
     if (wfn_type_ == "OMP3" || wfn_type_ == "OMP2.5") {
         outfile->Printf("\tComputing G_abcd...\n");
 
@@ -360,7 +363,7 @@ void OCCWave::dump_pdms() {
             // VVVV: Alpha-Beta spin-case
             global_dpd_->buf4_init(&G, PSIF_OCC_DENSITY, 0, ID("[V,v]"), ID("[V,v]"), ID("[V,v]"), ID("[V,v]"), 0,
                                    "TPDM <Vv|Vv>");
-            global_dpd_->buf4_sort(&G, PSIF_OCC_DENSITY, prqs, ID("[V,V]"), ID("[v,v]"), "TPDM (VV|vv)");
+            chemist_to_physicist(&G, PSIF_OCC_DENSITY, ID("[V,V]"), ID("[v,v]"), "TPDM (VV|vv)");
             global_dpd_->buf4_close(&G);
             global_dpd_->buf4_init(&G, PSIF_OCC_DENSITY, 0, ID("[V,V]"), ID("[v,v]"), ID("[V,V]"), ID("[v,v]"), 0,
                                    "TPDM (VV|vv)");

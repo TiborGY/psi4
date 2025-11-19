@@ -28,6 +28,7 @@
 
 #include "psi4/libiwl/iwl.hpp"
 #include "psi4/libtrans/integraltransform.h"
+#include "psi4/libtrans/integral_permutations.h"
 #include "psi4/libmints/matrix.h"
 #include "occwave.h"
 #include "defines.h"
@@ -39,6 +40,8 @@ namespace psi {
 namespace occwave {
 
 void OCCWave::gfock_ea() {
+    using libtrans;
+
     // outfile->Printf("\n gfock_ea is starting... \n");
     //===========================================================================================
     //========================= RHF =============================================================
@@ -492,7 +495,7 @@ void OCCWave::gfock_ea() {
         // FIJ += \sum{M,N} (IJ||MN) * G_MN
         global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,O]"), ID("[O,O]"), ID("[O,O]"), ID("[O,O]"), 0,
                                "MO Ints <OO||OO>");
-        global_dpd_->buf4_sort(&K, PSIF_LIBTRANS_DPD, prqs, ID("[O,O]"), ID("[O,O]"), "MO Ints (OO||OO)");
+        chemist_to_physicist(&K, PSIF_LIBTRANS_DPD, ID("[O,O]"), ID("[O,O]"), "MO Ints (OO||OO)");
         global_dpd_->buf4_close(&K);
         global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,O]"), ID("[O,O]"), ID("[O,O]"), ID("[O,O]"), 0,
                                "MO Ints (OO||OO)");
@@ -504,7 +507,7 @@ void OCCWave::gfock_ea() {
         // FIJ += \sum{M,E} (IJ||ME) * G_ME
         global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,O]"), ID("[O,V]"), ID("[O,O]"), ID("[O,V]"), 0,
                                "MO Ints <OO||OV>");
-        global_dpd_->buf4_sort(&K, PSIF_LIBTRANS_DPD, prqs, ID("[O,O]"), ID("[O,V]"), "MO Ints (OO||OV)");
+        chemist_to_physicist(&K, PSIF_LIBTRANS_DPD, ID("[O,O]"), ID("[O,V]"), "MO Ints (OO||OV)");
         global_dpd_->buf4_close(&K);
         global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,O]"), ID("[O,V]"), ID("[O,O]"), ID("[O,V]"), 0,
                                "MO Ints (OO||OV)");
@@ -528,7 +531,7 @@ void OCCWave::gfock_ea() {
         // FIJ += \sum{E,F} (IJ||EF) * G_EF
         global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), 0,
                                "MO Ints <OV||OV>");
-        global_dpd_->buf4_sort(&K, PSIF_LIBTRANS_DPD, prqs, ID("[O,O]"), ID("[V,V]"), "MO Ints (OO||VV)");
+        chemist_to_physicist(&K, PSIF_LIBTRANS_DPD, ID("[O,O]"), ID("[V,V]"), "MO Ints (OO||VV)");
         global_dpd_->buf4_close(&K);
         global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,O]"), ID("[V,V]"), ID("[O,O]"), ID("[V,V]"), 0,
                                "MO Ints (OO||VV)");
@@ -573,7 +576,7 @@ void OCCWave::gfock_ea() {
         // Fij += \sum{m,n} (ij||mn) * G_mn
         global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[o,o]"), ID("[o,o]"), ID("[o,o]"), ID("[o,o]"), 0,
                                "MO Ints <oo||oo>");
-        global_dpd_->buf4_sort(&K, PSIF_LIBTRANS_DPD, prqs, ID("[o,o]"), ID("[o,o]"), "MO Ints (oo||oo)");
+        chemist_to_physicist(&K, PSIF_LIBTRANS_DPD, ID("[o,o]"), ID("[o,o]"), "MO Ints (oo||oo)");
         global_dpd_->buf4_close(&K);
         global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[o,o]"), ID("[o,o]"), ID("[o,o]"), ID("[o,o]"), 0,
                                "MO Ints (oo||oo)");
@@ -585,7 +588,7 @@ void OCCWave::gfock_ea() {
         // Fij += \sum{m,e} (ij||me) * G_me
         global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[o,o]"), ID("[o,v]"), ID("[o,o]"), ID("[o,v]"), 0,
                                "MO Ints <oo||ov>");
-        global_dpd_->buf4_sort(&K, PSIF_LIBTRANS_DPD, prqs, ID("[o,o]"), ID("[o,v]"), "MO Ints (oo||ov)");
+        chemist_to_physicist(&K, PSIF_LIBTRANS_DPD, ID("[o,o]"), ID("[o,v]"), "MO Ints (oo||ov)");
         global_dpd_->buf4_close(&K);
         global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[o,o]"), ID("[o,v]"), ID("[o,o]"), ID("[o,v]"), 0,
                                "MO Ints (oo||ov)");
@@ -609,7 +612,7 @@ void OCCWave::gfock_ea() {
         // Fij += \sum{e,f} (ij||ef) * G_ef
         global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[o,v]"), ID("[o,v]"), ID("[o,v]"), ID("[o,v]"), 0,
                                "MO Ints <ov||ov>");
-        global_dpd_->buf4_sort(&K, PSIF_LIBTRANS_DPD, prqs, ID("[o,o]"), ID("[v,v]"), "MO Ints (oo||vv)");
+        chemist_to_physicist(&K, PSIF_LIBTRANS_DPD, ID("[o,o]"), ID("[v,v]"), "MO Ints (oo||vv)");
         global_dpd_->buf4_close(&K);
         global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[o,o]"), ID("[v,v]"), ID("[o,o]"), ID("[v,v]"), 0,
                                "MO Ints (oo||vv)");
@@ -679,7 +682,7 @@ void OCCWave::gfock_ea() {
         // FIA += \sum{M,E} (IA||ME) * G_ME
         global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,O]"), ID("[V,V]"), ID("[O,O]"), ID("[V,V]"), 0,
                                "MO Ints <OO||VV>");
-        global_dpd_->buf4_sort(&K, PSIF_LIBTRANS_DPD, prqs, ID("[O,V]"), ID("[O,V]"), "MO Ints (OV||OV)");
+        chemist_to_physicist(&K, PSIF_LIBTRANS_DPD, ID("[O,V]"), ID("[O,V]"), "MO Ints (OV||OV)");
         global_dpd_->buf4_close(&K);
         global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), 0,
                                "MO Ints (OV||OV)");
@@ -761,7 +764,7 @@ void OCCWave::gfock_ea() {
         // Fia += \sum{m,e} (ia||me) * G_me
         global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[o,o]"), ID("[v,v]"), ID("[o,o]"), ID("[v,v]"), 0,
                                "MO Ints <oo||vv>");
-        global_dpd_->buf4_sort(&K, PSIF_LIBTRANS_DPD, prqs, ID("[o,v]"), ID("[o,v]"), "MO Ints (ov||ov)");
+        chemist_to_physicist(&K, PSIF_LIBTRANS_DPD, ID("[o,v]"), ID("[o,v]"), "MO Ints (ov||ov)");
         global_dpd_->buf4_close(&K);
         global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[o,v]"), ID("[o,v]"), ID("[o,v]"), ID("[o,v]"), 0,
                                "MO Ints (ov||ov)");
