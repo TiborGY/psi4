@@ -40,6 +40,8 @@ namespace psi {
 namespace occwave {
 
 void OCCWave::cepa_iterations() {
+    using libtrans;
+
     outfile->Printf("\n  \n");
     outfile->Printf(" ============================================================================== \n");
     outfile->Printf(" ================ Performing LCCD iterations... =============================== \n");
@@ -307,7 +309,7 @@ void OCCWave::cepa_chemist() {
         // T_IJ^AB => T'(IA,JB), T"(JA,IB)
         global_dpd_->buf4_init(&T, PSIF_OCC_DPD, 0, ID("[O,O]"), ID("[V,V]"), ID("[O,O]"), ID("[V,V]"), 0,
                                "T2 <OO|VV>");
-        libtrans::IntegralPermutations::chemist_to_physicist(&T, PSIF_OCC_DPD, ID("[O,V]"), ID("[O,V]"),
+        chemist_to_physicist(&T, PSIF_OCC_DPD, ID("[O,V]"), ID("[O,V]"),
                                                               "T2 (OV|OV)");
         global_dpd_->buf4_sort(&T, PSIF_OCC_DPD, qrps, ID("[O,V]"), ID("[O,V]"), "T2pp (OV|OV)");
         global_dpd_->buf4_close(&T);
@@ -315,7 +317,7 @@ void OCCWave::cepa_chemist() {
         // Tau(IJ,AB) => Tau'(IA,JB), Tau"(JA,IB)
         global_dpd_->buf4_init(&T, PSIF_OCC_DPD, 0, ID("[O,O]"), ID("[V,V]"), ID("[O,O]"), ID("[V,V]"), 0,
                                "Tau <OO|VV>");
-        libtrans::IntegralPermutations::chemist_to_physicist(&T, PSIF_OCC_DPD, ID("[O,V]"), ID("[O,V]"),
+        chemist_to_physicist(&T, PSIF_OCC_DPD, ID("[O,V]"), ID("[O,V]"),
                                                               "Tau (OV|OV)");
         global_dpd_->buf4_sort(&T, PSIF_OCC_DPD, qrps, ID("[O,V]"), ID("[O,V]"), "Taupp (OV|OV)");
         global_dpd_->buf4_close(&T);
@@ -324,19 +326,19 @@ void OCCWave::cepa_chemist() {
         // T_IJ^AB => T(IA,JB)
         global_dpd_->buf4_init(&T, PSIF_OCC_DPD, 0, ID("[O,O]"), ID("[V,V]"), ID("[O,O]"), ID("[V,V]"), 0,
                                "T2 <OO|VV>");
-        libtrans::IntegralPermutations::chemist_to_physicist_and_close(&T, PSIF_OCC_DPD, ID("[O,V]"), ID("[O,V]"),
+        chemist_to_physicist_and_close(&T, PSIF_OCC_DPD, ID("[O,V]"), ID("[O,V]"),
                                                               "T2 (OV|OV)");
 
         // T_ij^ab => T(ia,jb)
         global_dpd_->buf4_init(&T, PSIF_OCC_DPD, 0, ID("[o,o]"), ID("[v,v]"), ID("[o,o]"), ID("[v,v]"), 0,
                                "T2 <oo|vv>");
-        libtrans::IntegralPermutations::chemist_to_physicist_and_close(&T, PSIF_OCC_DPD, ID("[o,v]"), ID("[o,v]"),
+        chemist_to_physicist_and_close(&T, PSIF_OCC_DPD, ID("[o,v]"), ID("[o,v]"),
                                                               "T2 (ov|ov)");
 
         // T_Ij^Ab => T(IA,jb), T(jA,Ib)
         global_dpd_->buf4_init(&T, PSIF_OCC_DPD, 0, ID("[O,o]"), ID("[V,v]"), ID("[O,o]"), ID("[V,v]"), 0,
                                "T2 <Oo|Vv>");
-        libtrans::IntegralPermutations::chemist_to_physicist(&T, PSIF_OCC_DPD, ID("[O,V]"), ID("[o,v]"),
+        chemist_to_physicist(&T, PSIF_OCC_DPD, ID("[O,V]"), ID("[o,v]"),
                                                               "T2 (OV|ov)");
         global_dpd_->buf4_sort(&T, PSIF_OCC_DPD, qrps, ID("[o,V]"), ID("[O,v]"), "T2 (oV|Ov)");
         global_dpd_->buf4_close(&T);

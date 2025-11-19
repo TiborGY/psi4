@@ -39,6 +39,8 @@ namespace psi {
 namespace occwave {
 
 void OCCWave::trans_ints_ump2() {
+    using libtrans;
+
     // outfile->Printf("\n trans_ints is starting... \n");
     /********************************************************************************************/
     /************************** Transform 2-electron int. to MO space ***************************/
@@ -65,17 +67,17 @@ void OCCWave::trans_ints_ump2() {
     timer_on("Sort (OV|OV) -> <OO|VV>");
     global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), 0,
                            "MO Ints (OV|OV)");
-    libtrans::IntegralPermutations::ovov_to_oovv_and_close(&K, PSIF_LIBTRANS_DPD);
+    ovov_to_oovv_and_close(&K, PSIF_LIBTRANS_DPD);
 
     // (ov|ov) -> <oo|vv>
     global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[o,v]"), ID("[o,v]"), ID("[o,v]"), ID("[o,v]"), 0,
                            "MO Ints (ov|ov)");
-    libtrans::IntegralPermutations::ovov_to_oovv_and_close(&K, PSIF_LIBTRANS_DPD);
+    ovov_to_oovv_and_close(&K, PSIF_LIBTRANS_DPD);
 
     // (OV|ov) -> <Oo|Vv>
     global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[o,v]"), ID("[O,V]"), ID("[o,v]"), 0,
                            "MO Ints (OV|ov)");
-    libtrans::IntegralPermutations::ovov_to_oovv_and_close(&K, PSIF_LIBTRANS_DPD);
+    ovov_to_oovv_and_close(&K, PSIF_LIBTRANS_DPD);
 
     // (OV|ov) -> <Ov|Vo>: <Ia||Bj> = <Ia|Bj> = (IB|ja)
     global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[o,v]"), ID("[O,V]"), ID("[o,v]"), 0,

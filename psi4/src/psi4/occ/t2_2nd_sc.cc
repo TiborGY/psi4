@@ -37,6 +37,8 @@ namespace psi {
 namespace occwave {
 
 void OCCWave::t2_2nd_sc() {
+    using libtrans;
+
     double omp2p5_factor = (wfn_type_ == "OMP2.5" ? 0.5 : 1);
 
     //===========================================================================================
@@ -73,7 +75,7 @@ void OCCWave::t2_2nd_sc() {
         global_dpd_->buf4_close(&Tp);
 
         // T(IA,JB) => T_IJ^AB(2)
-        libtrans::IntegralPermutations::chemist_to_physicist_and_close(&T, PSIF_OCC_DPD, ID("[O,O]"), ID("[V,V]"), "T2_2 <IJ|AB>");
+        chemist_to_physicist_and_close(&T, PSIF_OCC_DPD, ID("[O,O]"), ID("[V,V]"), "T2_2 <IJ|AB>");
 
         // Build T(JA,IB)
         // T_IJ^AB(2) = -\sum_{M,E} T_MJ^AE(1) W_MBIE(1) => T(JA,IB)(2) = -\sum_{M,E} T"(JA,ME) <ME|IB>
@@ -252,7 +254,7 @@ void OCCWave::t2_2nd_sc() {
         global_dpd_->buf4_close(&Tp);
 
         // T(IA,JB) => T_IJ^AB(2)
-        libtrans::IntegralPermutations::chemist_to_physicist_and_close(&T, PSIF_OCC_DPD, ID("[O,O]"), ID("[V,V]"), "T2_2 <IJ|AB>");
+        chemist_to_physicist_and_close(&T, PSIF_OCC_DPD, ID("[O,O]"), ID("[V,V]"), "T2_2 <IJ|AB>");
 
         // Build T(JA,IB)
         // T_IJ^AB(2) = -\sum_{M,E} T_JM^AE(1) W_MBEI(1) => T(JA,IB)(2) = -\sum_{M,E} T(JA,ME) W(ME,IB)
@@ -391,7 +393,7 @@ void OCCWave::t2_2nd_sc() {
         global_dpd_->buf4_close(&Tp);
 
         // T(ia,jb) => T_ij^ab(2)
-        libtrans::IntegralPermutations::chemist_to_physicist(&T, PSIF_OCC_DPD, ID("[o,o]"), ID("[v,v]"), "T2_2 <ij|ab>");
+        chemist_to_physicist(&T, PSIF_OCC_DPD, ID("[o,o]"), ID("[v,v]"), "T2_2 <ij|ab>");
         global_dpd_->buf4_close(&T);
 
         // Build T(ja,ib)
@@ -550,7 +552,7 @@ void OCCWave::t2_2nd_sc() {
         global_dpd_->buf4_close(&Tp);
 
         // T(IA,jb) => T_Ij^Ab(2)
-        libtrans::IntegralPermutations::chemist_to_physicist(&T, PSIF_OCC_DPD, ID("[O,o]"), ID("[V,v]"), "T2_2 <Ij|Ab>");
+        chemist_to_physicist(&T, PSIF_OCC_DPD, ID("[O,o]"), ID("[V,v]"), "T2_2 <Ij|Ab>");
         global_dpd_->buf4_close(&T);
 
         // Build T(jA,Ib)

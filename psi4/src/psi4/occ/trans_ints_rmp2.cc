@@ -39,6 +39,8 @@ namespace psi {
 namespace occwave {
 
 void OCCWave::trans_ints_rmp2() {
+    using libtrans;
+
     // outfile->Printf("\n trans_ints is starting... \n");
     /********************************************************************************************/
     /************************** Transform 2-electron int. to MO space ***************************/
@@ -65,7 +67,7 @@ void OCCWave::trans_ints_rmp2() {
     // (OV|OV) -> <OO|VV>
     global_dpd_->buf4_init(&K, PSIF_LIBTRANS_DPD, 0, ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), ID("[O,V]"), 0,
                            "MO Ints (OV|OV)");
-    libtrans::IntegralPermutations::ovov_to_oovv_and_close(&K, PSIF_LIBTRANS_DPD);
+    ovov_to_oovv_and_close(&K, PSIF_LIBTRANS_DPD);
     timer_off("Sort (OV|OV) -> <OO|VV>");
     timer_off("Sort chem -> phys");
 

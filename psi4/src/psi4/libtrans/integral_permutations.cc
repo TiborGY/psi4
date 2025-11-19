@@ -40,9 +40,9 @@ namespace libtrans {
 // Internal Helper Implementations
 //===========================================
 
-std::string IntegralPermutations::detect_spin_case(dpdbuf4 *InBuf) {
+std::string detect_spin_case(dpdbuf4 *InBuf) {
     if (InBuf == nullptr) {
-        throw std::runtime_error("IntegralPermutations::detect_spin_case: null input buffer");
+        throw std::runtime_error("libtrans::detect_spin_case: null input buffer");
     }
 
     // Get the DPD parameter indices for bra and ket
@@ -79,9 +79,9 @@ std::string IntegralPermutations::detect_spin_case(dpdbuf4 *InBuf) {
     }
 }
 
-std::string IntegralPermutations::derive_oo_indices(dpdbuf4 *InBuf) {
+std::string derive_oo_indices(dpdbuf4 *InBuf) {
     if (InBuf == nullptr) {
-        throw std::runtime_error("IntegralPermutations::derive_oo_indices: null input buffer");
+        throw std::runtime_error("libtrans::derive_oo_indices: null input buffer");
     }
 
     // Detect spin case from input buffer
@@ -99,9 +99,9 @@ std::string IntegralPermutations::derive_oo_indices(dpdbuf4 *InBuf) {
     }
 }
 
-std::string IntegralPermutations::derive_vv_indices(dpdbuf4 *InBuf) {
+std::string derive_vv_indices(dpdbuf4 *InBuf) {
     if (InBuf == nullptr) {
-        throw std::runtime_error("IntegralPermutations::derive_vv_indices: null input buffer");
+        throw std::runtime_error("libtrans::derive_vv_indices: null input buffer");
     }
 
     // Detect spin case from input buffer
@@ -119,7 +119,7 @@ std::string IntegralPermutations::derive_vv_indices(dpdbuf4 *InBuf) {
     }
 }
 
-std::string IntegralPermutations::generate_standard_label(
+std::string generate_standard_label(
     const std::string &bra_space,
     const std::string &ket_space)
 {
@@ -132,14 +132,14 @@ std::string IntegralPermutations::generate_standard_label(
 // Public API Implementations
 //===========================================
 
-void IntegralPermutations::ovov_to_oovv(
+void ovov_to_oovv(
     dpdbuf4 *InBuf,
     int outfilenum,
     const std::string &label)
 {
     // Validate input
     if (InBuf == nullptr) {
-        throw std::runtime_error("IntegralPermutations::ovov_to_oovv: null input buffer");
+        throw std::runtime_error("libtrans::ovov_to_oovv: null input buffer");
     }
 
     // Auto-detect output indices
@@ -170,7 +170,7 @@ void IntegralPermutations::ovov_to_oovv(
     global_dpd_->buf4_sort(InBuf, outfilenum, prqs, oo_indices, vv_indices, final_label);
 }
 
-void IntegralPermutations::ovov_to_oovv_and_close(
+void ovov_to_oovv_and_close(
     dpdbuf4 *InBuf,
     int outfilenum,
     const std::string &label)
@@ -179,14 +179,14 @@ void IntegralPermutations::ovov_to_oovv_and_close(
     global_dpd_->buf4_close(InBuf);
 }
 
-void IntegralPermutations::vvoo_to_ovov(
+void vvoo_to_ovov(
     dpdbuf4 *InBuf,
     int outfilenum,
     const std::string &label)
 {
     // Validate input
     if (InBuf == nullptr) {
-        throw std::runtime_error("IntegralPermutations::vvoo_to_ovov: null input buffer");
+        throw std::runtime_error("libtrans::vvoo_to_ovov: null input buffer");
     }
 
     // For (VV|OO) → <OV|OV>, we need OV indices
@@ -214,7 +214,7 @@ void IntegralPermutations::vvoo_to_ovov(
     global_dpd_->buf4_sort(InBuf, outfilenum, prqs, ov_indices, ov_indices, final_label);
 }
 
-void IntegralPermutations::vvoo_to_ovov_and_close(
+void vvoo_to_ovov_and_close(
     dpdbuf4 *InBuf,
     int outfilenum,
     const std::string &label)
@@ -223,14 +223,14 @@ void IntegralPermutations::vvoo_to_ovov_and_close(
     global_dpd_->buf4_close(InBuf);
 }
 
-void IntegralPermutations::transpose_oovv(
+void transpose_oovv(
     dpdbuf4 *InBuf,
     int outfilenum,
     const std::string &label)
 {
     // Validate input
     if (InBuf == nullptr) {
-        throw std::runtime_error("IntegralPermutations::transpose_oovv: null input buffer");
+        throw std::runtime_error("libtrans::transpose_oovv: null input buffer");
     }
 
     // Swap OO and VV to get <VV|OO>
@@ -264,14 +264,14 @@ void IntegralPermutations::transpose_oovv(
     global_dpd_->buf4_sort(InBuf, outfilenum, rspq, vv_indices, oo_indices, final_label);
 }
 
-void IntegralPermutations::transpose_bra_ket(
+void transpose_bra_ket(
     dpdbuf4 *InBuf,
     int outfilenum,
     const std::string &label)
 {
     // Generic transpose for any integral type
     if (InBuf == nullptr) {
-        throw std::runtime_error("IntegralPermutations::transpose_bra_ket: null input buffer");
+        throw std::runtime_error("libtrans::transpose_bra_ket: null input buffer");
     }
 
     int pq_indices = InBuf->params->pqnum;
@@ -288,14 +288,14 @@ void IntegralPermutations::transpose_bra_ket(
     global_dpd_->buf4_sort(InBuf, outfilenum, rspq, rs_indices, pq_indices, final_label);
 }
 
-void IntegralPermutations::vooo_to_ovoo(
+void vooo_to_ovoo(
     dpdbuf4 *InBuf,
     int outfilenum,
     const std::string &label)
 {
     // Validate input
     if (InBuf == nullptr) {
-        throw std::runtime_error("IntegralPermutations::vooo_to_ovoo: null input buffer");
+        throw std::runtime_error("libtrans::vooo_to_ovoo: null input buffer");
     }
 
     // For (VO|OO) → <OV|OO>, we swap within bra using qprs
@@ -326,14 +326,14 @@ void IntegralPermutations::vooo_to_ovoo(
     global_dpd_->buf4_sort(InBuf, outfilenum, qprs, ov_indices, oo_indices, final_label);
 }
 
-void IntegralPermutations::ovvv_to_ovvv(
+void ovvv_to_ovvv(
     dpdbuf4 *InBuf,
     int outfilenum,
     const std::string &label)
 {
     // Validate input
     if (InBuf == nullptr) {
-        throw std::runtime_error("IntegralPermutations::ovvv_to_ovvv: null input buffer");
+        throw std::runtime_error("libtrans::ovvv_to_ovvv: null input buffer");
     }
 
     // For (OV|VV) → <OV|VV>, this is typically a chemist to physicist conversion
@@ -365,7 +365,7 @@ void IntegralPermutations::ovvv_to_ovvv(
     global_dpd_->buf4_sort(InBuf, outfilenum, prqs, ov_indices, vv_indices, final_label);
 }
 
-void IntegralPermutations::ovvv_to_ovvv_and_close(
+void ovvv_to_ovvv_and_close(
     dpdbuf4 *InBuf,
     int outfilenum,
     const std::string &label)
@@ -374,7 +374,7 @@ void IntegralPermutations::ovvv_to_ovvv_and_close(
     global_dpd_->buf4_close(InBuf);
 }
 
-void IntegralPermutations::chemist_to_physicist(
+void chemist_to_physicist(
     dpdbuf4 *InBuf,
     int outfilenum,
     int pq_indices,
@@ -383,7 +383,7 @@ void IntegralPermutations::chemist_to_physicist(
 {
     // Low-level interface - requires explicit indices
     if (InBuf == nullptr) {
-        throw std::runtime_error("IntegralPermutations::chemist_to_physicist: null input buffer");
+        throw std::runtime_error("libtrans::chemist_to_physicist: null input buffer");
     }
 
     // Perform transformation using DPD library
@@ -391,7 +391,7 @@ void IntegralPermutations::chemist_to_physicist(
     global_dpd_->buf4_sort(InBuf, outfilenum, prqs, pq_indices, rs_indices, label);
 }
 
-void IntegralPermutations::chemist_to_physicist_and_close(
+void chemist_to_physicist_and_close(
     dpdbuf4 *InBuf,
     int outfilenum,
     int pq_indices,
@@ -402,14 +402,14 @@ void IntegralPermutations::chemist_to_physicist_and_close(
     global_dpd_->buf4_close(InBuf);
 }
 
-void IntegralPermutations::standard_ovov_transformations(
+void standard_ovov_transformations(
     dpdbuf4 *InBuf,
     int outfilenum,
     bool generate_transpose)
 {
     // Validate input
     if (InBuf == nullptr) {
-        throw std::runtime_error("IntegralPermutations::standard_ovov_transformations: null input buffer");
+        throw std::runtime_error("libtrans::standard_ovov_transformations: null input buffer");
     }
 
     // Transform (OV|OV) → <OO|VV>
@@ -447,7 +447,7 @@ void IntegralPermutations::standard_ovov_transformations(
     }
 }
 
-void IntegralPermutations::apply_permutation(
+void apply_permutation(
     dpdbuf4 *InBuf,
     int outfilenum,
     indices permutation,
@@ -457,7 +457,7 @@ void IntegralPermutations::apply_permutation(
 {
     // Direct wrapper for advanced use
     if (InBuf == nullptr) {
-        throw std::runtime_error("IntegralPermutations::apply_permutation: null input buffer");
+        throw std::runtime_error("libtrans::apply_permutation: null input buffer");
     }
 
     global_dpd_->buf4_sort(InBuf, outfilenum, permutation, pq_indices, rs_indices, label);
@@ -467,7 +467,7 @@ void IntegralPermutations::apply_permutation(
 // Utility Functions
 //===========================================
 
-std::string IntegralPermutations::get_permutation_name(indices permutation) {
+std::string get_permutation_name(indices permutation) {
     switch(permutation) {
         case prqs: return "Chemist to Physicist notation (prqs)";
         case rspq: return "Transpose bra and ket (rspq)";
@@ -479,7 +479,7 @@ std::string IntegralPermutations::get_permutation_name(indices permutation) {
     }
 }
 
-bool IntegralPermutations::is_permutation_supported(indices permutation) {
+bool is_permutation_supported(indices permutation) {
     // List of tested and supported permutations
     switch(permutation) {
         case prqs:
