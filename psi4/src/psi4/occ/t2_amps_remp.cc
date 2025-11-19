@@ -28,6 +28,7 @@
 
 #include "psi4/libqt/qt.h"
 #include "psi4/libtrans/integraltransform.h"
+#include "psi4/libtrans/integral_permutations.h"
 #include "psi4/libpsio/psio.hpp"
 #include "defines.h"
 #include "occwave.h"
@@ -77,7 +78,7 @@ void OCCWave::t2_amps_remp() {
         global_dpd_->buf4_close(&Tp);
 
         // T(IA,JB) => T_IJ^AB(2)
-        global_dpd_->buf4_sort(&T, PSIF_OCC_DPD, prqs, ID("[O,O]"), ID("[V,V]"), "T2 <IJ|AB>");
+        libtrans::IntegralPermutations::chemist_to_physicist(&T, PSIF_OCC_DPD, ID("[O,O]"), ID("[V,V]"), "T2 <IJ|AB>");
         global_dpd_->buf4_close(&T);
 
         // Build T(JA,IB)
@@ -250,7 +251,7 @@ void OCCWave::t2_amps_remp() {
         global_dpd_->buf4_close(&Tp);
 
         // T(IA,JB) => T_IJ^AB(2)
-        global_dpd_->buf4_sort(&T, PSIF_OCC_DPD, prqs, ID("[O,O]"), ID("[V,V]"), "T2 <IJ|AB>");
+        libtrans::IntegralPermutations::chemist_to_physicist(&T, PSIF_OCC_DPD, ID("[O,O]"), ID("[V,V]"), "T2 <IJ|AB>");
         global_dpd_->buf4_close(&T);
 
         // Build T(JA,IB)
@@ -383,7 +384,7 @@ void OCCWave::t2_amps_remp() {
         global_dpd_->buf4_close(&Tp);
 
         // T(ia,jb) => T_ij^ab(2)
-        global_dpd_->buf4_sort(&T, PSIF_OCC_DPD, prqs, ID("[o,o]"), ID("[v,v]"), "T2 <ij|ab>");
+        libtrans::IntegralPermutations::chemist_to_physicist(&T, PSIF_OCC_DPD, ID("[o,o]"), ID("[v,v]"), "T2 <ij|ab>");
         global_dpd_->buf4_close(&T);
 
         // Build T(ja,ib)
@@ -525,7 +526,7 @@ void OCCWave::t2_amps_remp() {
         global_dpd_->buf4_close(&Tp);
 
         // T(IA,jb) => T_Ij^Ab(2)
-        global_dpd_->buf4_sort(&T, PSIF_OCC_DPD, prqs, ID("[O,o]"), ID("[V,v]"), "T2 <Ij|Ab>");
+        libtrans::IntegralPermutations::chemist_to_physicist(&T, PSIF_OCC_DPD, ID("[O,o]"), ID("[V,v]"), "T2 <Ij|Ab>");
         global_dpd_->buf4_close(&T);
 
         // Build T(jA,Ib)
