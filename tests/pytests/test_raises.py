@@ -59,10 +59,14 @@ def test_casscf_invalid_active_irrep():
     """Test that CASSCF raises a clear error when ACTIVE array requests orbitals
     in an irrep with no available molecular orbitals.
 
-    This is a regression test for issue #3096. Before the fix, this input would
-    cause a cryptic "DSYEV diagonalizer failed" error deep in the DETCI code.
-    After the fix, it raises an InputException with a clear message about which
-    irrep has insufficient orbitals.
+    Before validation was added to ras_set3(), invalid active space specifications
+    could cause cryptic errors deep in the CI code. Now they are caught early with
+    a clear InputException message.
+
+    For H2/cc-pVDZ in D2h, the orbital distribution is:
+        Ag(0): 3, B1g(1): 0, B2g(2): 1, B3g(3): 1,
+        Au(4): 0, B1u(5): 3, B2u(6): 1, B3u(7): 1
+    We request an orbital in Au (index 4) which has 0 available orbitals.
     """
     psi4.geometry("""
     0 1
@@ -75,17 +79,16 @@ def test_casscf_invalid_active_irrep():
         "basis": "cc-pVDZ",
         "reference": "rhf",
         "docc": [1, 0, 0, 0, 0, 0, 0, 0],
-        # Invalid: irrep 5 (B2u in D2h) has 0 orbitals for H2/cc-pVDZ,
+        # Invalid: Au (index 4) has 0 orbitals for H2/cc-pVDZ,
         # but we request 1 active orbital there
-        "active": [1, 0, 0, 0, 0, 1, 0, 0],
+        "active": [1, 0, 0, 0, 1, 0, 0, 0],
     })
 
     with pytest.raises(RuntimeError) as e:
         psi4.energy("casscf")
 
     # Verify the error message mentions the problematic irrep and that it
-    # exceeds available orbitals (the specific irrep number may vary based on
-    # how D2h irreps are ordered, but the message pattern should match)
+    # exceeds available orbitals
     assert "exceeds available orbitals" in str(e.value)
     assert "ACTIVE" in str(e.value)
 
@@ -95,6 +98,11 @@ def test_casscf_valid_active_succeeds():
 
     This complements test_casscf_invalid_active_irrep by verifying that a
     correctly specified active space works as expected.
+
+    For H2 in D2h with STO-3G, we have 1 orbital in Ag and 1 in B1u.
+    The (2e, 2o) active space with 1 orbital in each of Ag and B1u represents
+    the bonding sigma_g and antibonding sigma_u* orbitals - the minimal CASSCF
+    active space for proper H2 dissociation.
     """
     psi4.geometry("""
     0 1
@@ -107,9 +115,9 @@ def test_casscf_valid_active_succeeds():
         "basis": "sto-3g",  # Smaller basis for faster test
         "reference": "rhf",
         "docc": [1, 0, 0, 0, 0, 0, 0, 0],
-        # Valid: only request active orbitals in irreps that have orbitals
-        # For H2 in D2h with STO-3G: Ag has 1 orbital, B1u has 1 orbital
-        "active": [1, 0, 0, 0, 0, 0, 0, 1],
+        # Valid (2e, 2o) active space: 1 orbital in Ag (sigma_g bonding)
+        # and 1 orbital in B1u (sigma_u* antibonding)
+        "active": [1, 0, 0, 0, 0, 1, 0, 0],
     })
 
     # This should complete without raising an exception
