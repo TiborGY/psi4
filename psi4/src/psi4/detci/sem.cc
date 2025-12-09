@@ -295,8 +295,23 @@ void CIWavefunction::sem_iter(CIvect &Hd, struct stringwr **alplist, struct stri
         }
 
         /* solve the L x L eigenvalue problem G a = lambda a for M roots */
-        if (DSYEV_ascending(L, G, lambda[iter2], alpha[iter2]) != 0){
-            throw PSIEXCEPTION("DSYEV diagonalizer failed in DETCI SEM!");
+        {
+            int dsyev_info = DSYEV_ascending(L, G, lambda[iter2], alpha[iter2]);
+            if (dsyev_info != 0){
+                // Print diagnostic information to help debug DSYEV failures
+                outfile->Printf("\n*** DSYEV diagonalizer failed in DETCI SEM (restart) ***\n");
+                outfile->Printf("    DSYEV INFO code: %d\n", dsyev_info);
+                if (dsyev_info < 0) {
+                    outfile->Printf("    (INFO < 0 means argument %d had an illegal value)\n", -dsyev_info);
+                } else {
+                    outfile->Printf("    (INFO > 0 means the algorithm failed to converge)\n");
+                }
+                outfile->Printf("    Matrix size L = %d\n", L);
+                outfile->Printf("    Iteration = %d\n", iter);
+                outfile->Printf("\nG matrix at time of failure:\n");
+                print_mat(G, L, L, "outfile");
+                throw PSIEXCEPTION("DSYEV diagonalizer failed in DETCI SEM!");
+            }
         }
         if (print_ > 4) {
             outfile->Printf("\n     G eigenvectors and eigenvalues:\n");
@@ -557,8 +572,31 @@ void CIWavefunction::sem_iter(CIvect &Hd, struct stringwr **alplist, struct stri
         Llast = L;
 
         /* solve the L x L eigenvalue problem G a = lambda a for M roots */
-        if (DSYEV_ascending(L, G, lambda[iter2], alpha[iter2]) != 0){
-            throw PSIEXCEPTION("DSYEV diagonalizer failed in DETCI SEM!");
+        {
+            int dsyev_info = DSYEV_ascending(L, G, lambda[iter2], alpha[iter2]);
+            if (dsyev_info != 0){
+                // Print diagnostic information to help debug DSYEV failures
+                outfile->Printf("\n*** DSYEV diagonalizer failed in DETCI SEM ***\n");
+                outfile->Printf("    DSYEV INFO code: %d\n", dsyev_info);
+                if (dsyev_info < 0) {
+                    outfile->Printf("    (INFO < 0 means argument %d had an illegal value)\n", -dsyev_info);
+                } else {
+                    outfile->Printf("    (INFO > 0 means the algorithm failed to converge)\n");
+                }
+                outfile->Printf("    Matrix size L = %d\n", L);
+                outfile->Printf("    Iteration = %d\n", iter);
+                outfile->Printf("\nG matrix at time of failure:\n");
+                print_mat(G, L, L, "outfile");
+                // Check for NaN or Inf values in G matrix
+                for (int ii = 0; ii < L; ii++) {
+                    for (int jj = 0; jj < L; jj++) {
+                        if (std::isnan(G[ii][jj]) || std::isinf(G[ii][jj])) {
+                            outfile->Printf("    WARNING: G[%d][%d] = %g (NaN or Inf detected!)\n", ii, jj, G[ii][jj]);
+                        }
+                    }
+                }
+                throw PSIEXCEPTION("DSYEV diagonalizer failed in DETCI SEM!");
+            }
         }
 
         if (print_ > 4) {
@@ -627,7 +665,12 @@ void CIWavefunction::sem_iter(CIvect &Hd, struct stringwr **alplist, struct stri
 
             /* solve the L x L eigenvalue problem M a = lambda a for M roots */
             for (k = 0; k < nroots; k++) {
-                if (DSYEV_ascending(L, M[k], m_lambda[iter2][k], m_alpha[iter2][k]) != 0){
+                int dsyev_info = DSYEV_ascending(L, M[k], m_lambda[iter2][k], m_alpha[iter2][k]);
+                if (dsyev_info != 0){
+                    outfile->Printf("\n*** DSYEV diagonalizer failed in DETCI SEM (M matrix, root %d) ***\n", k);
+                    outfile->Printf("    DSYEV INFO code: %d, Matrix size L = %d, Iteration = %d\n", dsyev_info, L, iter);
+                    outfile->Printf("\nM matrix at time of failure:\n");
+                    print_mat(M[k], L, L, "outfile");
                     throw PSIEXCEPTION("DSYEV diagonalizer failed in DETCI SEM!");
                 }
                 if (print_ > 2) {
@@ -683,8 +726,15 @@ void CIWavefunction::sem_iter(CIvect &Hd, struct stringwr **alplist, struct stri
             }
 
             /* solve the L x L eigenvalue problem M a = lambda a for M roots */
-            if (DSYEV_ascending(L, M[0], m_lambda[0][0], m_alpha[0][0]) != 0){
-                throw PSIEXCEPTION("DSYEV diagonalizer failed in DETCI SEM!");
+            {
+                int dsyev_info = DSYEV_ascending(L, M[0], m_lambda[0][0], m_alpha[0][0]);
+                if (dsyev_info != 0){
+                    outfile->Printf("\n*** DSYEV diagonalizer failed in DETCI SEM (sigma overlap) ***\n");
+                    outfile->Printf("    DSYEV INFO code: %d, Matrix size L = %d, Iteration = %d\n", dsyev_info, L, iter);
+                    outfile->Printf("\nM[0] matrix at time of failure:\n");
+                    print_mat(M[0], L, L, "outfile");
+                    throw PSIEXCEPTION("DSYEV diagonalizer failed in DETCI SEM!");
+                }
             }
             for (i = 0; i < L; i++) {
                 m_lambda[0][0][i] = -1.0 * sqrt(m_lambda[0][0][i]) + CalcInfo_->enuc + CalcInfo_->edrc;
@@ -913,8 +963,15 @@ void CIWavefunction::sem_iter(CIvect &Hd, struct stringwr **alplist, struct stri
             }
 
             /* solve the L x L eigenvalue problem G a = lambda a for M roots */
-            if (DSYEV_ascending(L, G, lambda[iter2], alpha[iter2]) != 0){
-                throw PSIEXCEPTION("DSYEV diagonalizer failed in DETCI SEM!");
+            {
+                int dsyev_info = DSYEV_ascending(L, G, lambda[iter2], alpha[iter2]);
+                if (dsyev_info != 0){
+                    outfile->Printf("\n*** DSYEV diagonalizer failed in DETCI SEM (after collapse) ***\n");
+                    outfile->Printf("    DSYEV INFO code: %d, Matrix size L = %d, Iteration = %d\n", dsyev_info, L, iter);
+                    outfile->Printf("\nG matrix at time of failure:\n");
+                    print_mat(G, L, L, "outfile");
+                    throw PSIEXCEPTION("DSYEV diagonalizer failed in DETCI SEM!");
+                }
             }
 
             if (print_ > 4) {

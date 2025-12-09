@@ -698,8 +698,21 @@ void CIWavefunction::H0block_fill() {
             size);
     }
 
-    if (DSYEV_ascending(size, H0block_->H0b, H0block_->H0b_eigvals, H0block_->H0b_diag) != 0){
-        throw PSIEXCEPTION("DSYEV diagonalizer failed in DETCI H0block_fill!");
+    {
+        int dsyev_info = DSYEV_ascending(size, H0block_->H0b, H0block_->H0b_eigvals, H0block_->H0b_diag);
+        if (dsyev_info != 0){
+            outfile->Printf("\n*** DSYEV diagonalizer failed in DETCI H0block_fill ***\n");
+            outfile->Printf("    DSYEV INFO code: %d\n", dsyev_info);
+            if (dsyev_info < 0) {
+                outfile->Printf("    (INFO < 0 means argument %d had an illegal value)\n", -dsyev_info);
+            } else {
+                outfile->Printf("    (INFO > 0 means the algorithm failed to converge)\n");
+            }
+            outfile->Printf("    H0block size = %d\n", size);
+            outfile->Printf("\nH0b matrix at time of failure:\n");
+            print_mat(H0block_->H0b, size, size, "outfile");
+            throw PSIEXCEPTION("DSYEV diagonalizer failed in DETCI H0block_fill!");
+        }
     }
 
     if (print_) {

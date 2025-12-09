@@ -102,9 +102,38 @@ Test cases added to `tests/pytests/test_raises.py`:
 1. `test_casscf_invalid_active_irrep()` - Verifies that invalid ACTIVE specifications raise clear errors
 2. `test_casscf_valid_active_succeeds()` - Verifies that valid CASSCF calculations still work
 
+## Diagnostic Improvements
+
+In addition to the input validation, this branch adds improved error diagnostics for DSYEV failures in the DETCI code. When DSYEV fails, the following information is now printed:
+
+- The DSYEV INFO return code (and what it means)
+- The matrix size at failure
+- The iteration number (if applicable)
+- The full matrix contents at the time of failure
+- Warnings about any NaN or Inf values detected
+
+This helps diagnose the actual cause when DSYEV failures occur.
+
+### Files Modified for Diagnostics
+- [psi4/src/psi4/detci/sem.cc](psi4/src/psi4/detci/sem.cc) - Davidson/SEM iteration
+- [psi4/src/psi4/detci/h0block.cc](psi4/src/psi4/detci/h0block.cc) - H0 block setup
+
+### DSYEV Return Codes
+- INFO = 0: Success
+- INFO < 0: Argument -INFO had an illegal value (programming error)
+- INFO > 0: The algorithm failed to converge (numerical issue)
+
 ## Future Work
 
-The underlying cause of the DSYEV failure in issue #3096 (with valid input) remains to be investigated. Possible areas to explore:
+The underlying cause of the DSYEV failure in issue #3096 (with valid input) remains to be investigated. With the new diagnostic output, the next step is to reproduce the failure and examine:
+
+1. **The G matrix contents** - Are there NaN, Inf, or pathologically large/small values?
+2. **The iteration context** - Does the failure occur at a specific iteration?
+3. **The active space size** - Is the CI space very small (e.g., only 2 determinants)?
+
+Possible root causes to explore:
 - Numerical issues in CI matrix construction for small active spaces
-- Edge cases in the Davidson/SEM algorithm
-- Symmetry-specific orbital handling
+- Edge cases in the Davidson/SEM algorithm for minimal CI spaces
+- Linear dependence in the trial vectors
+- Symmetry-specific orbital handling issues
+- Integral transformation issues for specific geometries
