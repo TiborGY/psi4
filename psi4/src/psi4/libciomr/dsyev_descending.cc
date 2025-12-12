@@ -28,11 +28,11 @@
 
 /*!
 ** \file
-** \brief Diagnoalize a symmetrix square matrix
+** \brief Diagonalize a symmetric square matrix
 ** \ingroup CIOMR
 */
 
-#include "psi4/libqt/qt.h"
+#include <algorithm> // for std::swap
 #include "libciomr.h"
 
 namespace psi {
@@ -50,15 +50,17 @@ namespace psi {
 */
 [[nodiscard]] int DSYEV_descending(const int N, const double* const* const array, double* e_vals,
                                    double* const* const e_vecs /* = nullptr*/) {
-    const auto info = DSYEV_ascending(N, array, e_vals, e_vecs);
+    const int info = DSYEV_ascending(N, array, e_vals, e_vecs);
     // Reverse the order of eigenvalues
-    for (int64_t i = 0; i < N / 2; i++) {
+    for (size_t i = 0; i < N / 2; i++) {
         std::swap(e_vals[i], e_vals[N - i - 1]);
     }
     // Reverse the order of columns of the row-major 2D eigenvector array
-    for (int64_t i = 0; i < N; i++) {
-        for (int64_t j = 0; j < N / 2; j++) {
-            std::swap(e_vecs[i][j], e_vecs[i][N - j - 1]);
+    if (e_vecs != nullptr){
+        for (size_t i = 0; i < N; i++) {
+            for (size_t j = 0; j < N / 2; j++) {
+                std::swap(e_vecs[i][j], e_vecs[i][N - j - 1]);
+            }
         }
     }
     return info;

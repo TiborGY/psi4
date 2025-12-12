@@ -28,11 +28,12 @@
 
 /*!
 ** \file
-** \brief Diagnoalize a symmetrix square matrix
+** \brief Diagonalize a symmetric square matrix
 ** \ingroup CIOMR
 */
 
 #include "psi4/libqt/qt.h"
+#include "psi4/libpsi4util/PsiOutStream.h"
 #include "libciomr.h"
 #include <vector>
 
@@ -73,6 +74,7 @@ namespace psi {
             }
         }
     }
+    if (info !=0) outfile->Printf("DSYEV failed, INFO code: %d, Matrix size:%d\n", info, N);
     return info;
 }
 }  // namespace psi
