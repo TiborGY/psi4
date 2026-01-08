@@ -1,0 +1,134 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches:
+      - master
+      - '1.*.*'
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+
+  analyze-python:
+    name: Analyze Python
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: python
+        # Paths excluded in original .lgtm.yml
+        config: |
+          paths-ignore:
+            - psi4/versioner.py
+            - samples
+            - conda
+            - devtools
+            - external
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:python"
+
+  analyze-cpp:
+    name: Analyze C++
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install system packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gfortran gcc g++
+
+    - name: Write Conda environment file
+      run: |
+        pip install PyYAML
+        conda/psi4-path-advisor.py \
+          env \
+          --name p4codeql \
+          --python 3.11 \
+          --disable docs addons \
+          --offline-conda
+        echo "::group::View Env Spec File"
+        cat env_p4codeql.yaml
+        echo "::endgroup::"
+
+    - name: Setup Conda
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        activate-environment: p4codeql
+        environment-file: env_p4codeql.yaml
+        show-channel-urls: true
+        python-version: "3.11"
+        auto-activate-base: false
+        add-pip-as-python-dependency: true
+        channels: conda-forge
+        conda-remove-defaults: true
+
+    - name: Conda environment info
+      run: |
+        conda info
+        conda list
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: cpp
+        # Paths excluded in original .lgtm.yml
+        config: |
+          paths-ignore:
+            - samples
+            - conda
+            - devtools
+            - external
+
+    - name: Generate CMake cache
+      run: |
+        conda/psi4-path-advisor.py \
+          cache \
+          --objdir objdir \
+          --insist
+        echo "::group::View Cache File"
+        cat cache_p4codeql@objdir.cmake
+        echo "::endgroup::"
+
+    - name: Configure with CMake
+      run: |
+        cmake \
+          -S. \
+          -B objdir \
+          -G Ninja \
+          -C ${{ github.workspace }}/cache_p4codeql@objdir.cmake \
+          -D CMAKE_BUILD_TYPE=Debug \
+          -D CMAKE_CXX_FLAGS="-O0" \
+          -D CMAKE_INSTALL_PREFIX=./install
+
+    # CodeQL observes the build to understand the C++ code
+    - name: Build Psi4
+      run: cmake --build objdir --target psi4-core -j2
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:cpp"
