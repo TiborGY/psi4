@@ -25,7 +25,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
+      uses: github/codeql-action/init@v4
       with:
         languages: python
         # Paths excluded in original .lgtm.yml
@@ -38,7 +38,7 @@ jobs:
             - external
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      uses: github/codeql-action/analyze@v4
       with:
         category: "/language:python"
 
@@ -75,7 +75,7 @@ jobs:
         echo "::endgroup::"
 
     - name: Setup Conda
-      uses: conda-incubator/setup-miniconda@v3
+      uses: conda-incubator/setup-miniconda@v4
       with:
         activate-environment: p4codeql
         environment-file: env_p4codeql.yaml
@@ -92,8 +92,9 @@ jobs:
         conda list
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
+      uses: github/codeql-action/init@v4
       with:
+        debug: true
         languages: cpp
         # Paths excluded in original .lgtm.yml
         config: |
@@ -129,6 +130,6 @@ jobs:
       run: cmake --build objdir --target psi4-core -j2
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      uses: github/codeql-action/analyze@v4
       with:
         category: "/language:cpp"
