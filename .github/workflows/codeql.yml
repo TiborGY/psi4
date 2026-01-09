@@ -127,7 +127,15 @@ jobs:
 
     # CodeQL observes the build to understand the C++ code
     - name: Build Psi4
-      run: cmake --build objdir --target psi4-core -j2
+      run: |
+        free -h
+        cmake --build objdir --target psi4-core -j1 &
+        BUILD_PID=$!
+        while kill -0 $BUILD_PID 2>/dev/null; do
+          free -h | grep Mem
+          sleep 30
+        done
+        wait $BUILD_PID
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v4
