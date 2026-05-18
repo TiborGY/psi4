@@ -33,7 +33,6 @@
 #include <cstdio>
 #include "MOInfo.h"
 #include "Params.h"
-#define EXTERN
 #include "globals.h"
 #include "psi4/libpsi4util/PsiOutStream.h"
 
@@ -48,10 +47,10 @@ void count_ijk() {
     int Ga, Gb, Gc;
     int a, b, c;
     int A, B, C;
-    int *occpi, *aoccpi, *boccpi;
-    int *virtpi, *avirtpi, *bvirtpi;
-    int *occ_off, *aocc_off, *bocc_off;
-    int *vir_off, *avir_off, *bvir_off;
+    Dimension occpi, aoccpi, boccpi;
+    Dimension virtpi, avirtpi, bvirtpi;
+    const int *occ_off, *aocc_off, *bocc_off;
+    const int *vir_off, *avir_off, *bvir_off;
     int nijk;
     int nabc;
 

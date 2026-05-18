@@ -37,7 +37,6 @@
 #include "MOInfo.h"
 #include "Params.h"
 #include "Frozen.h"
-#define EXTERN
 #include "globals.h"
 
 namespace psi {
@@ -58,12 +57,11 @@ void build_Z_ROHF() {
     dpdfile2 X1, D;
     double **X, **T, **Y, **Z;
     int num_ai, h, nirreps, a, i, count, lastcol, rank, ai;
-    int *virtpi, *occpi, *openpi;
 
     nirreps = moinfo.nirreps;
-    occpi = moinfo.occpi;
-    openpi = moinfo.openpi;
-    virtpi = moinfo.virtpi;
+    const auto& occpi = moinfo.occpi;
+    const auto& openpi = moinfo.openpi;
+    const auto& virtpi = moinfo.virtpi;
 
     /*** Construct the ai transformation matrix which places all singly
          occupied orbital combinations at the end of the vector ***/

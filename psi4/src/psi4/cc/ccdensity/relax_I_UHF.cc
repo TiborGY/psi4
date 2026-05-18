@@ -34,7 +34,6 @@
 #include "MOInfo.h"
 #include "Params.h"
 #include "Frozen.h"
-#define EXTERN
 #include "globals.h"
 
 namespace psi {
@@ -49,14 +48,12 @@ void relax_I_UHF() {
     dpdfile2 I, D, f;
     dpdbuf4 E;
     int h, nirreps, i, a;
-    int *aoccpi, *avirtpi;
-    int *boccpi, *bvirtpi;
 
     nirreps = moinfo.nirreps;
-    aoccpi = moinfo.aoccpi;
-    avirtpi = moinfo.avirtpi;
-    boccpi = moinfo.boccpi;
-    bvirtpi = moinfo.bvirtpi;
+    const auto& aoccpi = moinfo.aoccpi;
+    const auto& avirtpi = moinfo.avirtpi;
+    const auto& boccpi = moinfo.boccpi;
+    const auto& bvirtpi = moinfo.bvirtpi;
 
     /*** occupied-virtual relaxation terms */
 

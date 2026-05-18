@@ -34,7 +34,6 @@
 #include "MOInfo.h"
 #include "Params.h"
 #include "Frozen.h"
-#define EXTERN
 #include "globals.h"
 
 namespace psi {
@@ -49,12 +48,12 @@ namespace ccdensity {
 void relax_I_ROHF() {
     dpdfile2 I, D, f;
     dpdbuf4 E;
-    int h, nirreps, i, j, e, *occpi, *virtpi, *openpi;
+    int h, nirreps, i, j, e;
 
     nirreps = moinfo.nirreps;
-    occpi = moinfo.occpi;
-    virtpi = moinfo.virtpi;
-    openpi = moinfo.openpi;
+    const auto& occpi = moinfo.occpi;
+    const auto& virtpi = moinfo.virtpi;
+    const auto& openpi = moinfo.openpi;
 
     /*** occupied-virtual relaxation terms */
 
