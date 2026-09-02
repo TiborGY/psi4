@@ -104,6 +104,63 @@ An example input file for a DLPNO-CCSD(T) computation is::
    
    energy('dlpno-ccsd(t)') # dlpno-ccsd(t0) for the semicanonical (T0) computation
 
+.. _`sec:dlpnocc_mp2_step`:
+
+The Embedded DLPNO-MP2 Step
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Every DLPNO coupled-cluster calculation begins with a local MP2 computation. Its pair
+energies drive the strong/weak pair classification, and its amplitudes are used to build
+and truncate the PNO space that the coupled-cluster equations are then solved in. When
+that step finishes, |PSIfour| prints an ``@Total DLPNO-MP2 Energy`` block and sets
+:psivar:`MP2 TOTAL ENERGY` and :psivar:`MP2 CORRELATION ENERGY`, so every DLPNO-CC job
+also yields a DLPNO-MP2 energy at no extra cost.
+
+.. caution:: The DLPNO-MP2 energy reported by a DLPNO coupled-cluster calculation does
+  **not** come from the same code as ``energy('dlpno-mp2')``, and the two will not agree.
+  The standalone :ref:`DLPNO-MP2 <sec:dlpnomp2>` module screens pairs only with the dipole
+  approximation and truncates PNOs with |dlpno__t_cut_pno| alone. The local MP2 embedded in
+  the coupled-cluster driver adds a two-stage semicanonical prescreening
+  (|dlpno__t_cut_pairs_mp2|, then |dlpno__t_cut_pairs|) and truncates with the separate,
+  roughly order-of-magnitude tighter |dlpno__t_cut_pno_mp2|, together with the
+  |dlpno__t_cut_trace_mp2| and |dlpno__t_cut_energy_mp2| criteria that the standalone code
+  does not apply at all. The tighter thresholds are chosen so that the PNO space is an
+  adequate starting point for coupled cluster, not to reproduce the standalone result. Pick
+  one route and use it consistently; do not combine the two numbers in a single relative
+  energy or extrapolation. Note also that spin-component-scaled results and the
+  same-spin/opposite-spin decomposition (:psivar:`SCS-MP2 TOTAL ENERGY`,
+  :psivar:`MP2 SAME-SPIN CORRELATION ENERGY`, and friends) are produced only by the
+  standalone module.
+
+The two routes are compared in Table :ref:`DLPNO-MP2 Implementations
+<table:dlpnomp2impl>`.
+
+.. _`table:dlpnomp2impl`:
+
+.. table:: The two DLPNO-MP2 implementations in |PSIfour|
+
+   +--------------------+--------------------------------+-----------------------+-------------------------------------+-------------------------------------------------+------------------+-------+
+   | Route              | Request                        | Source                | Pair screening                      | PNO truncation                                  | Storage          | SCS   |
+   +====================+================================+=======================+=====================================+=================================================+==================+=======+
+   | Standalone         | ``energy('dlpno-mp2')``        | ``dlpno/mp2.cc``      | dipole approximation only           | |dlpno__t_cut_pno|                              | in core only     | yes   |
+   +--------------------+--------------------------------+-----------------------+-------------------------------------+-------------------------------------------------+------------------+-------+
+   | Embedded in DLPNO  | ``energy('dlpno-ccsd')`` and   | ``dlpno/ccsd.cc``     | dipole approximation, then          | |dlpno__t_cut_pno_mp2|,                         | core or disk     | no    |
+   | coupled cluster    | every higher DLPNO-CC method   |                       | semicanonical prescreening with     | |dlpno__t_cut_trace_mp2|,                       | (automatic)      |       |
+   |                    |                                |                       | |dlpno__t_cut_pairs_mp2| and        | |dlpno__t_cut_energy_mp2|                       |                  |       |
+   |                    |                                |                       | |dlpno__t_cut_pairs|                |                                                 |                  |       |
+   +--------------------+--------------------------------+-----------------------+-------------------------------------+-------------------------------------------------+------------------+-------+
+
+The correlation energy reported in the ``@Total DLPNO-MP2 Energy`` block of a
+coupled-cluster run is the sum of the converged local MP2 energy and the corrections
+recorded in the following PSI variables:
+
+* :psivar:`DLPNO SC-LMP2 PAIR ENERGY` --- semicanonical MP2 energy of the pairs eliminated
+  during the crude prescreening pass.
+* :psivar:`DLPNO LMP2 WEAK PAIR ENERGY` --- MP2 energy of the pairs classified as weak,
+  which are not correlated at the coupled-cluster level.
+* :psivar:`DLPNO DIPOLE ENERGY` --- dipole-approximation estimate for distant pairs.
+* :psivar:`DLPNO PNO TRUNCATION ERROR` --- correction for the truncation of the PNO space.
+
 Higher-Order DLPNO Methods
 --------------------------
 
@@ -596,9 +653,15 @@ settings are similar to what is found in ORCA, with two added parameters (|dlpno
 increase the robustness of the PNO space. These added parameters truncate by percent recovery of the total occupation number,
 as well as the percentage energy recovery of the PNOs compared to the non-truncated basis.
 
+The values below govern the coupled-cluster stage. The local MP2 step that precedes it
+(see :ref:`sec:dlpnocc_mp2_step`) is controlled by a separate set of thresholds, tabulated
+in :ref:`table:pno_convergence_mp2`, and the standalone :ref:`DLPNO-MP2 <sec:dlpnomp2>`
+method uses a third set again (:ref:`table:pno_convergence_dlpnomp2`) --- the same
+|dlpno__pno_convergence| level means different numbers in each case.
+
 .. _`table:pno_convergence`:
 
-.. table:: PNO convergence levels given in |Psifour|
+.. table:: PNO convergence levels for the DLPNO coupled-cluster stage
 
    +--------------------------+------------+-------------+--------------+----------+-----------+-------------+---------------------------+
    | |dlpno__pno_convergence| | T_CUT_PNO  | T_CUT_TRACE | T_CUT_ENERGY | T_CUT_DO | T_CUT_MKN | T_CUT_PAIRS | Recommended Applications  |
@@ -611,6 +674,30 @@ as well as the percentage energy recovery of the PNOs compared to the non-trunca
    +--------------------------+------------+-------------+--------------+----------+-----------+-------------+---------------------------+
    | Very_Tight               | 1.0e-8     | 0.999       | 0.997        | 5e-3     | 1e-4      | 1e-6        | Benchmarking, Focal Point |
    +--------------------------+------------+-------------+--------------+----------+-----------+-------------+---------------------------+
+
+The embedded local MP2 step is truncated more tightly than the coupled-cluster stage, since
+its amplitudes determine the PNO space that coupled cluster is subsequently solved in.
+
+.. _`table:pno_convergence_mp2`:
+
+.. table:: Thresholds for the local MP2 step embedded in DLPNO coupled cluster
+
+   +--------------------------+---------------+-----------------+------------------+---------------------+
+   | |dlpno__pno_convergence| | T_CUT_PNO_MP2 | T_CUT_TRACE_MP2 | T_CUT_ENERGY_MP2 | T_CUT_PAIRS_MP2     |
+   +==========================+===============+=================+==================+=====================+
+   | Loose                    | 1.0e-8        | 0.99            | 0.99             | 1e-6                |
+   +--------------------------+---------------+-----------------+------------------+---------------------+
+   | Normal                   | 3.33e-9       | 0.999           | 0.997            | 1e-6                |
+   +--------------------------+---------------+-----------------+------------------+---------------------+
+   | Tight                    | 1.0e-9        | 0.9999          | 0.999            | 1e-6                |
+   +--------------------------+---------------+-----------------+------------------+---------------------+
+   | Very_Tight               | 1.0e-10       | 0.9999          | 0.999            | 1e-7                |
+   +--------------------------+---------------+-----------------+------------------+---------------------+
+
+|dlpno__t_cut_pairs_mp2| is not a preset in its own right: unless it is set explicitly it is
+derived as ``min(1.0e-6, 0.1 * T_CUT_PAIRS)``, which gives the values above. For DLPNO-CCSDT
+and higher it is instead set equal to |dlpno__t_cut_pairs| (default ``1.0e-8``), removing the
+weak-pair category entirely, as described in the note under `Higher-Order DLPNO Methods`_.
 
 Practical Advice
 ----------------

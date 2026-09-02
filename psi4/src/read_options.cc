@@ -2700,7 +2700,9 @@ int read_options(const std::string &name, Options &options, bool suppress_printi
 
         /*- SUBSECTION DLPNO-CCSD Specific Options -*/
 
-        /*- The tolerance to decide between "Weak Pairs" and "Strong Pairs" after the initial pair prescreening -*/
+        /*- The tolerance to decide between "Weak Pairs" and "Strong Pairs" after the initial pair prescreening.
+            Applies to the DLPNO coupled-cluster methods only; the standalone DLPNO-MP2 method
+            performs no strong/weak pair classification and ignores this keyword. -*/
         options.add_double("T_CUT_PAIRS", 1e-5);
         /*- How much to scale T_CUT_PNO by for diagonal PNOs !expert */
         options.add_double("T_CUT_PNO_DIAG_SCALE", 3e-2);
@@ -2711,14 +2713,19 @@ int read_options(const std::string &name, Options &options, bool suppress_printi
         /*- MP2 pair energy tolerance for removing PNOs !expert -*/
         options.add_double("T_CUT_ENERGY", 0.997);
         /*- The tolerance to decide between "Weak Pairs" and "SC-MP2 Pairs" after dipole screening.
-            For DLPNO-CCSDT and higher methods, this value is overridden by T_CUT_PAIRS so that
-            no separate weak-pair interval remains. !expert -*/
+            Applies to the local MP2 step embedded in a DLPNO coupled-cluster calculation; it has
+            no effect on an energy('dlpno-mp2') call. For DLPNO-CCSDT and higher methods, this
+            value is overridden by T_CUT_PAIRS so that no separate weak-pair interval remains. !expert -*/
         options.add_double("T_CUT_PAIRS_MP2", 1e-6);
-        /*- Occupation number threshold for removing PNOs (for preceding DLPNO-MP2 computation) !expert -*/
+        /*- Occupation number threshold for removing PNOs in the local MP2 step embedded in a DLPNO
+            coupled-cluster calculation. Despite the name, this keyword has no effect on a standalone
+            energy('dlpno-mp2') call, which truncates PNOs with T_CUT_PNO. !expert -*/
         options.add_double("T_CUT_PNO_MP2", 1e-10);
-        /*- Occupation trace sum threshold for removing PNOs (for preceding DLPNO-MP2 computation) !expert -*/
+        /*- Occupation trace sum threshold for removing PNOs in the local MP2 step embedded in a DLPNO
+            coupled-cluster calculation. Has no effect on a standalone energy('dlpno-mp2') call. !expert -*/
         options.add_double("T_CUT_TRACE_MP2", 0.9999);
-        /*- Pair energy tolerance for removing PNOs (for preceding DLPNO-MP2 computation) !expert -*/
+        /*- Pair energy tolerance for removing PNOs in the local MP2 step embedded in a DLPNO
+            coupled-cluster calculation. Has no effect on a standalone energy('dlpno-mp2') call. !expert -*/
         options.add_double("T_CUT_ENERGY_MP2", 0.999);
 
 

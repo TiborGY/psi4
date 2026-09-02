@@ -93,8 +93,38 @@ keyword, which determines the accuracy of the local approximations underlying
 the DLPNO-MP2 method. Note that the water molecule in this example is not large
 enough for DLPNO-MP2 to be of any benefit relative to DF-MP2.
 
+The |dlpno__pno_convergence| levels select the following thresholds for this module.
+
+.. _`table:pno_convergence_dlpnomp2`:
+
+.. table:: PNO convergence levels for the standalone DLPNO-MP2 module
+
+   +--------------------------+-----------+----------+-----------+
+   | |dlpno__pno_convergence| | T_CUT_PNO | T_CUT_DO | T_CUT_MKN |
+   +==========================+===========+==========+===========+
+   | Loose                    | 1.0e-7    | 2e-2     | 1e-3      |
+   +--------------------------+-----------+----------+-----------+
+   | Normal                   | 1.0e-8    | 1e-2     | 1e-3      |
+   +--------------------------+-----------+----------+-----------+
+   | Tight                    | 1.0e-9    | 5e-3     | 1e-3      |
+   +--------------------------+-----------+----------+-----------+
+   | Very_Tight               | 1.0e-10   | 5e-3     | 1e-4      |
+   +--------------------------+-----------+----------+-----------+
+
+|dlpno__t_cut_trace|, |dlpno__t_cut_energy|, and |dlpno__t_cut_pairs| are not used by this
+module, and neither are the ``*_MP2``-suffixed keywords, whose names notwithstanding apply
+only to the DLPNO coupled-cluster methods.
+
+.. note:: |PSIfour| contains two separate DLPNO-MP2 implementations. This page documents the
+   standalone module reached by ``energy('dlpno-mp2')``. The
+   :ref:`DLPNO coupled-cluster methods <sec:dlpnocc>` run their own local MP2 as a first
+   step and report it through the same :psivar:`MP2 TOTAL ENERGY` and
+   :psivar:`MP2 CORRELATION ENERGY` variables, but that is a different code with different
+   screening and tighter PNO thresholds, and its value will not match this one. See
+   :ref:`sec:dlpnocc_mp2_step` for the comparison.
+
 The theory of the DLPNO-MP2 method and practical recommendations for using the
-code are presented below. 
+code are presented below.
 
 .. index::
    pair: DLPNO-MP2; theory
@@ -216,9 +246,10 @@ Some practical notes on running the code:
   Diffuse functions increase the size of the pair domains and therefore lead to 
   longer calculations.
 
-* All aspects of DLPNO-MP2 run in core; no disk is required. As a result, the
+* All aspects of this module run in core; no disk is required. As a result, the
   code exhibits very good intra-node parallelism, and benefits from many threads.
-  The amount of memory needed scales linearly with system size.
+  The amount of memory needed scales linearly with system size. (The local MP2 step
+  inside a DLPNO coupled-cluster calculation is a different code and may use disk.)
 
 * DLPNO-MP2 is not symmetry aware. This should not be a concern for large systems in
   which symmetry is seldom present.
@@ -229,3 +260,11 @@ Some practical notes on running the code:
   greater errors relative to valence excitations.
 
 * At the moment, the DLPNO-MP2 code is only compatible with with RHF references.
+
+* Do not mix energies from this module with the DLPNO-MP2 energy reported by a
+  :ref:`DLPNO coupled-cluster <sec:dlpnocc>` calculation in a single relative energy or
+  basis-set extrapolation. The two come from separate implementations and differ by more
+  than their respective truncation errors; see :ref:`sec:dlpnocc_mp2_step`. This applies to
+  composite schemes in particular, where naming a ``dlpno-mp2`` stage under a
+  ``dlpno-ccsd(t)`` (or higher) target takes the coupled-cluster module's value, not this
+  module's.

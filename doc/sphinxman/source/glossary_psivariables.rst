@@ -925,7 +925,15 @@ PSI Variables by Alpha
    DLPNO DIPOLE ENERGY
    DLPNO PNO TRUNCATION ERROR
 
-   Various corrections in the overall DLPNO-CCSD correlation energy
+   Corrections [E_h] to the correlation energy from the local MP2 step that precedes the
+   coupled-cluster iterations in a DLPNO-CC calculation (see :ref:`sec:dlpnocc_mp2_step`).
+   ``DLPNO SC-LMP2 PAIR ENERGY`` is the semicanonical MP2 energy of the pairs eliminated
+   during the crude prescreening pass; ``DLPNO LMP2 WEAK PAIR ENERGY`` is the MP2 energy of
+   the pairs classified as weak, which are not correlated at the coupled-cluster level;
+   ``DLPNO DIPOLE ENERGY`` is the dipole-approximation estimate for distant pairs; and
+   ``DLPNO PNO TRUNCATION ERROR`` corrects for truncation of the PNO space. Together with
+   the converged local MP2 energy they sum to the :psivar:`MP2 CORRELATION ENERGY` reported
+   by a DLPNO-CC calculation.
 
 .. psivar:: DLPNO SEMICANONICAL (T0) ENERGY
    DLPNO SCREENED TRIPLETS ENERGY
@@ -1162,7 +1170,10 @@ PSI Variables by Alpha
    MP2 CORRELATION ENERGY
 
    The total electronic energy [E_h] and correlation energy component [E_h]
-   for the MP2 level of theory.
+   for the MP2 level of theory. Note that within the DLPNO module these variables are set
+   by two different implementations --- the standalone :ref:`DLPNO-MP2 <sec:dlpnomp2>`
+   method, and the local MP2 step embedded in every
+   :ref:`DLPNO coupled-cluster <sec:dlpnocc_mp2_step>` calculation --- whose values differ.
 
 .. psivar:: MP2 TOTAL GRADIENT
    The total electronic gradient [E_h/a0] of the MP2 level of theory, ({nat}, 3).
