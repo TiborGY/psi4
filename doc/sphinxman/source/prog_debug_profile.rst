@@ -55,6 +55,33 @@ Also see :ref:`more debugger directions <faq:gdblldb>`
 and a `[presentation] <https://github.com/psi4/PsiCon2020/blob/master/PsiCon2017/Turney-C%2B%2B.pdf>`_ .
 If building using ``psi4-path-advisor cmake``, one should run it straight, not within ``eval $(...)``, note the usage command it outputs, then edit the cache file it has produced to change ``CMAKE_BUILD_TYPE`` to ``Debug`` and ``CMAKE_CXX_FLAGS`` to ``-O0``, then execute the noted ``cmake ... -C cache`` command to configure. 
 
+Debug-only code
+^^^^^^^^^^^^^^^
+
+To compile C++ that only runs when the build carries debug symbols, branch on the
+``psi::have_debug_symbols`` constant from :source:`psi4/include/psi4/pragma.h`. It is ``true`` for
+the ``Debug`` and ``RelWithDebInfo`` configurations and ``false`` otherwise.
+
+.. code-block:: cpp
+
+   #include "psi4/pragma.h"
+
+   if constexpr (psi::have_debug_symbols) {
+       outfile->Printf("expensive consistency check said %d\n", check());
+   }
+
+Prefer ``if constexpr`` over the preprocessor. The discarded branch is still parsed and
+type-checked, so the debug code cannot quietly rot as the codebase moves under it, but it is
+dropped before code generation and so costs an optimized build nothing. Where the code genuinely
+cannot compile in a release configuration, such as an extra data member or an extra include, use
+the ``#if PSI4_HAVE_DEBUG_SYMBOLS`` macro instead.
+
+Note this is deliberately not the same test as ``NDEBUG``, which CMake also defines for
+``RelWithDebInfo`` even though that configuration does carry symbols. Plain ``assert()``, which
+keys off ``NDEBUG``, is therefore inactive in ``RelWithDebInfo``. Out-of-tree consumers such as
+plugins are configured separately and build without ``-g`` by default, so the constant is ``false``
+there.
+
 VSCode
 ^^^^^^
 

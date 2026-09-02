@@ -163,4 +163,29 @@
 // The implementation uses the standard attribute available in C++14
 #define PSI_DEPRECATED(msg) [[deprecated(msg)]]
 
+// Whether this build carries debug symbols (-g, /Zi).
+//
+// PSI4_DEBUG_SYMBOLS is set by the build system for the Debug and RelWithDebInfo configurations;
+// see the add_compile_definitions() call in psi4/src/CMakeLists.txt . It is deliberately not tied
+// to NDEBUG, which CMake also defines for RelWithDebInfo even though that configuration does carry
+// symbols. It is absent for Release and MinSizeRel, where core is stripped anyway, and for
+// separately configured out-of-tree consumers such as plugins, which build without -g by default.
+#ifdef PSI4_DEBUG_SYMBOLS
+#define PSI4_HAVE_DEBUG_SYMBOLS 1
+#else
+#define PSI4_HAVE_DEBUG_SYMBOLS 0
+#endif
+
+#ifdef __cplusplus
+namespace psi {
+/*! Guard debug-only code with `if constexpr (psi::have_debug_symbols) { ... }`. The discarded
+ *  branch is still parsed and type-checked, so such code cannot silently rot, but it is dropped
+ *  before code generation and costs an optimized build nothing. Reach for the
+ *  `#if PSI4_HAVE_DEBUG_SYMBOLS` macro instead only when the code genuinely cannot compile in a
+ *  release configuration, such as an extra data member or an extra include.
+ */
+inline constexpr bool have_debug_symbols = static_cast<bool>(PSI4_HAVE_DEBUG_SYMBOLS);
+}  // namespace psi
+#endif
+
 #endif

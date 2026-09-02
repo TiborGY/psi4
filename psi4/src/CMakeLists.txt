@@ -4,6 +4,11 @@ set_property(GLOBAL PROPERTY JOB_POOLS one_job=1 two_jobs=2 four_jobs=4)
 add_compile_definitions(
     psi4_SHGSHELL_ORDERING=${psi4_SHGSHELL_ORDERING}
     restrict=${RESTRICT_KEYWORD}
+    # Debug symbols (-g, /Zi) are only emitted for these two configurations, and core is
+    # stripped below for all the others, so this is the honest test for "symbols available".
+    # Note it is deliberately *not* NDEBUG, which CMake also defines for RelWithDebInfo.
+    # Consumed as psi::have_debug_symbols; see psi4/include/psi4/pragma.h .
+    $<$<CONFIG:Debug,RelWithDebInfo>:PSI4_DEBUG_SYMBOLS>
 )
 
 ### >> Create core target, so we may link modules to it directly <<
