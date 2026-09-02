@@ -2704,9 +2704,9 @@ int read_options(const std::string &name, Options &options, bool suppress_printi
             Applies to the DLPNO coupled-cluster methods only; the standalone DLPNO-MP2 method
             performs no strong/weak pair classification and ignores this keyword. -*/
         options.add_double("T_CUT_PAIRS", 1e-5);
-        /*- How much to scale T_CUT_PNO by for diagonal PNOs !expert */
+        /*- How much to scale T_CUT_PNO by for diagonal PNOs !expert -*/
         options.add_double("T_CUT_PNO_DIAG_SCALE", 3e-2);
-        /*- How much to scale T_CUT_PNO for core pairs !expert */
+        /*- How much to scale T_CUT_PNO for core pairs !expert -*/
         options.add_double("T_CUT_PNO_CORE_SCALE", 1e-2);
         /*- Occupation trace sum threshold for removing PNOs !expert -*/
         options.add_double("T_CUT_TRACE", 0.999);
