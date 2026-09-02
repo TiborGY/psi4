@@ -458,6 +458,11 @@ def return_energy_components():
                             'mp2': 'MP2 TOTAL ENERGY',
                        'fno-ccsd': 'CCSD TOTAL ENERGY',
                     'fno-ccsd(t)': 'CCSD(T) TOTAL ENERGY'}
+    # NOTE: the 'dlpno-mp2' stage of every DLPNO-CC family below resolves to MP2 TOTAL ENERGY as
+    # set by the local MP2 step inside the coupled-cluster module, NOT by a standalone
+    # energy('dlpno-mp2') call. Those are separate implementations with different screening and
+    # PNO thresholds and they do not agree. See the "Embedded DLPNO-MP2 Step" section of the
+    # DLPNO coupled-cluster documentation.
     VARH['dlpno-ccsd'] = {
                              'hf': 'HF TOTAL ENERGY',
                       'dlpno-mp2': 'MP2 TOTAL ENERGY',
