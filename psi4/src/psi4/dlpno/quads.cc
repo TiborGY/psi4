@@ -2554,12 +2554,21 @@ double DLPNOCCSDT_Q::compute_energy() {
     const std::string quadruples_energy_label = q0_only ? "CCSDT(Q0)" : "CCSDT(Q)";
     const std::string quadruples_correction_label = q0_only ? "(Q0)" : "(Q)";
 
-    set_scalar_variable(quadruples_energy_label + " CORRELATION ENERGY", e_ccsdt_q_corr);
+    // The autodoc scraper reads literal names off these lines, so the composed labels are
+    // skipped and the names they can take are declared for it below.
+    set_scalar_variable(quadruples_energy_label + " CORRELATION ENERGY", e_ccsdt_q_corr);  // no-autodoc
     set_scalar_variable("CURRENT CORRELATION ENERGY", e_ccsdt_q_corr);
-    set_scalar_variable(quadruples_energy_label + " TOTAL ENERGY", e_ccsdt_q_total);
+    set_scalar_variable(quadruples_energy_label + " TOTAL ENERGY", e_ccsdt_q_total);  // no-autodoc
     set_scalar_variable("CURRENT ENERGY", e_ccsdt_q_total);
-    set_scalar_variable(quadruples_correction_label + " CORRECTION ENERGY",
+    set_scalar_variable(quadruples_correction_label + " CORRECTION ENERGY",  // no-autodoc
                         e_ccsdt_q_total - variables_["CCSDT TOTAL ENERGY"]);
+
+    /*- set_scalar_variable("CCSDT(Q0) CORRELATION ENERGY") -*/
+    /*- set_scalar_variable("CCSDT(Q0) TOTAL ENERGY") -*/
+    /*- set_scalar_variable("CCSDT(Q) CORRELATION ENERGY") -*/
+    /*- set_scalar_variable("CCSDT(Q) TOTAL ENERGY") -*/
+    /*- set_scalar_variable("(Q0) CORRECTION ENERGY") -*/
+    /*- set_scalar_variable("(Q) CORRECTION ENERGY") -*/
 
     print_results();
 

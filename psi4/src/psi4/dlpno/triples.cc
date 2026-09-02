@@ -1535,13 +1535,19 @@ double DLPNOCCSD_T::compute_energy() {
     const std::string triples_energy_label = t0_only ? "CCSD(T0)" : "CCSD(T)";
     const std::string triples_correction_label = t0_only ? "(T0)" : "(T)";
 
-    set_scalar_variable(triples_energy_label + " CORRELATION ENERGY", e_ccsd_t_corr);
+    // The autodoc scraper reads literal names off these lines, so the composed labels are
+    // skipped and the names they can take are declared for it below.
+    set_scalar_variable(triples_energy_label + " CORRELATION ENERGY", e_ccsd_t_corr);  // no-autodoc
     set_scalar_variable("CURRENT CORRELATION ENERGY", e_ccsd_t_corr);
-    set_scalar_variable(triples_energy_label + " TOTAL ENERGY", e_ccsd_t_total);
+    set_scalar_variable(triples_energy_label + " TOTAL ENERGY", e_ccsd_t_total);  // no-autodoc
     set_scalar_variable("CURRENT ENERGY", e_ccsd_t_total);
 
     // psivars for the selected perturbative-triples energy components
-    set_scalar_variable(triples_correction_label + " CORRECTION ENERGY", e_lccsd_t_ - e_lccsd_);
+    set_scalar_variable(triples_correction_label + " CORRECTION ENERGY", e_lccsd_t_ - e_lccsd_);  // no-autodoc
+
+    /*- set_scalar_variable("CCSD(T0) CORRELATION ENERGY") -*/
+    /*- set_scalar_variable("CCSD(T0) TOTAL ENERGY") -*/
+    /*- set_scalar_variable("(T0) CORRECTION ENERGY") -*/
     if (t0_only) {
         // Preserve the long-standing generic aliases used by CBS assembly,
         // scripts, and external harvesters while also publishing T0-specific
