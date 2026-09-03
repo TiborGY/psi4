@@ -1233,13 +1233,19 @@ double DLPNOCCSDT_Q::compute_gamma_ijkl(bool store_amplitudes) {
 
             auto q_vv_tmp = std::make_shared<Matrix>(npao_ijkl, npao_ijkl);
 
+            // (Q|uv) = (Q|vu), and riatom_to_pao_pairs_dense_ is built symmetric in (u, v)
+            // (dlpno.cc, where [u][v] and [v][u] are set to the same packed index), so look up
+            // one triangle and mirror it rather than resolving every pair twice. The packed
+            // lookups dominate this build, so halving them is worth the extra strided store.
+            const std::vector<int> &paos_ijkl = lmoquadruplet_to_paos_[ijkl];
             for (int u_ijkl = 0; u_ijkl < npao_ijkl; ++u_ijkl) {
-                int u = lmoquadruplet_to_paos_[ijkl][u_ijkl];
-                for (int v_ijkl = 0; v_ijkl < npao_ijkl; ++v_ijkl) {
-                    int v = lmoquadruplet_to_paos_[ijkl][v_ijkl];
-                    int uv_idx = riatom_to_pao_pairs_dense_[centerq][u][v];
+                const std::vector<int> &pair_row = riatom_to_pao_pairs_dense_[centerq][paos_ijkl[u_ijkl]];
+                for (int v_ijkl = u_ijkl; v_ijkl < npao_ijkl; ++v_ijkl) {
+                    int uv_idx = pair_row[paos_ijkl[v_ijkl]];
                     if (uv_idx == -1) continue;
-                    (*q_vv_tmp)(u_ijkl, v_ijkl) = (*qab_[q])(uv_idx, 0);
+                    const double q_uv = (*qab_[q])(uv_idx, 0);
+                    (*q_vv_tmp)(u_ijkl, v_ijkl) = q_uv;
+                    (*q_vv_tmp)(v_ijkl, u_ijkl) = q_uv;
                 } // end v_ijk
             } // end u_ijk
             q_vv_tmp = linalg::triplet(X_qno_[ijkl], q_vv_tmp, X_qno_[ijkl], true, false, false);
