@@ -773,20 +773,24 @@ double DLPNOCCSD_T::compute_lccsd_t0(bool save_memory) {
         q_jv = linalg::doublet(q_jv, X_tno_[ijk]); // (Q_{ijk} | j u_{ijk}) -> (Q_{ijk} | j a_{ijk})
         q_kv = linalg::doublet(q_kv, X_tno_[ijk]); // (Q_{ijk} | k u_{ijk}) -> (Q_{ijk} | k a_{ijk})
         
-        auto q_iv_clone = q_iv->clone();
-        auto q_jv_clone = q_jv->clone();
-        auto q_kv_clone = q_kv->clone();
-
         auto A_solve = submatrix_rows_and_cols(*full_metric_, lmotriplet_to_ribfs_[ijk], lmotriplet_to_ribfs_[ijk]);
+        A_solve->power(-0.5, 1.0e-14);
 
-        /* These are cloned and inverted by the full coulomb metric (not to the half power)
-            to make formation of (i a | b c)-type integrals more efficient later */
+        q_iv = linalg::doublet(A_solve, q_iv);
+        q_jv = linalg::doublet(A_solve, q_jv);
+        q_kv = linalg::doublet(A_solve, q_kv);
+        q_io = linalg::doublet(A_solve, q_io);
+        q_jo = linalg::doublet(A_solve, q_jo);
+        q_ko = linalg::doublet(A_solve, q_ko);
 
-        C_DGESV_shared_factorization(A_solve->clone(), {q_iv_clone, q_jv_clone, q_kv_clone});
-        
-        A_solve->power(0.5, 1.0e-14);
+        /* These are multiplied by the full coulomb metric inverse (not to the half power)
+            to make formation of (i a | b c)-type integrals more efficient later.
+            (P|Q)^{-1} = (P|Q)^{-1/2} (P|Q)^{-1/2}, so applying A_solve a second time to the
+            half-transformed integrals gives them. */
 
-        C_DGESV_shared_factorization(A_solve->clone(), {q_iv, q_jv, q_kv, q_io, q_jo, q_ko});
+        auto q_iv_clone = linalg::doublet(A_solve, q_iv);
+        auto q_jv_clone = linalg::doublet(A_solve, q_jv);
+        auto q_kv_clone = linalg::doublet(A_solve, q_kv);
 
         if (thread == 0) timer_off("LCCSD(T0): Setup Integrals");
 
@@ -2102,10 +2106,16 @@ void DLPNOCCSDT::compute_integrals() {
 
         // Multiply by (P|Q)^{-1/2}
         auto A_solve = submatrix_rows_and_cols(*full_metric_, lmotriplet_to_ribfs_[ijk], lmotriplet_to_ribfs_[ijk]);
-        A_solve->power(0.5, 1.0e-14);
+        A_solve->power(-0.5, 1.0e-14);
 
-        C_DGESV_shared_factorization(A_solve->clone(),
-                                     {q_io, q_jo, q_ko, q_iv, q_jv, q_kv, q_ov, q_vv});
+        q_io = linalg::doublet(A_solve, q_io);
+        q_jo = linalg::doublet(A_solve, q_jo);
+        q_ko = linalg::doublet(A_solve, q_ko);
+        q_iv = linalg::doublet(A_solve, q_iv);
+        q_jv = linalg::doublet(A_solve, q_jv);
+        q_kv = linalg::doublet(A_solve, q_kv);
+        q_ov = linalg::doublet(A_solve, q_ov);
+        q_vv = linalg::doublet(A_solve, q_vv);
 
         q_io_[ijk] = Tensor<double, 2>("(Q_ijk | m i)", naux_ijk, nlmo_ijk);
         q_jo_[ijk] = Tensor<double, 2>("(Q_ijk | m j)", naux_ijk, nlmo_ijk);
