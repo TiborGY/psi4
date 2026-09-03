@@ -1180,17 +1180,19 @@ double DLPNOCCSDT_Q::compute_gamma_ijkl(bool store_amplitudes) {
 
         /// => Necessary integrals <= ///
 
-        // (Q_ijkl | i m_ijkl), Eq. (47)
-        auto q_io = std::make_shared<Matrix>(naux_ijkl, nlmo_ijkl);
-        auto q_jo = std::make_shared<Matrix>(naux_ijkl, nlmo_ijkl);
-        auto q_ko = std::make_shared<Matrix>(naux_ijkl, nlmo_ijkl);
-        auto q_lo = std::make_shared<Matrix>(naux_ijkl, nlmo_ijkl);
+        // The four occupied positions carry the same integral with a different LMO in the
+        // bra, so they are held as one matrix indexed by position rather than as four
+        // separate blocks: the fitting metric is then applied to all of them in one GEMM.
+        constexpr int n_occupied_positions = 4;
+        std::vector<int> ijkl_list = {i, j, k, l};
 
-        // (Q_ijkl | i a_ijkl), Eq. (48)
-        auto q_iv = std::make_shared<Matrix>(naux_ijkl, npao_ijkl);
-        auto q_jv = std::make_shared<Matrix>(naux_ijkl, npao_ijkl);
-        auto q_kv = std::make_shared<Matrix>(naux_ijkl, npao_ijkl);
-        auto q_lv = std::make_shared<Matrix>(naux_ijkl, npao_ijkl);
+        // (Q_ijkl | i m_ijkl), Eq. (47)
+        auto q_o = std::make_shared<Matrix>("(Q_ijkl | m x)", naux_ijkl, n_occupied_positions * nlmo_ijkl);
+
+        // (Q_ijkl | i a_ijkl), Eq. (48). Held per position while the virtual index is still
+        // a PAO, since each position is transformed into the QNO basis separately.
+        std::vector<SharedMatrix> q_v_pao(n_occupied_positions);
+        for (auto &q_x : q_v_pao) q_x = std::make_shared<Matrix>(naux_ijkl, npao_ijkl);
 
         // (Q_ijkl | m_ijkl e_ijkl) and (Q_ijkl | a_ijkl b_ijkl), Eqs. (49)-(50)
         auto q_ov = std::make_shared<Matrix>(naux_ijkl, nlmo_ijkl * nqno_ijkl);
@@ -1200,20 +1202,20 @@ double DLPNOCCSDT_Q::compute_gamma_ijkl(bool store_amplitudes) {
             const int q = lmoquadruplet_to_ribfs_[ijkl][q_ijkl];
             const int centerq = ribasis_->function_to_center(q);
 
-            for (int m_ijkl = 0; m_ijkl < nlmo_ijkl; ++m_ijkl) {
-                int m = lmoquadruplet_to_lmos_[ijkl][m_ijkl];
-                (*q_io)(q_ijkl, m_ijkl) = (*qij_[q])(riatom_to_lmos_ext_dense_[centerq][i], riatom_to_lmos_ext_dense_[centerq][m]);
-                (*q_jo)(q_ijkl, m_ijkl) = (*qij_[q])(riatom_to_lmos_ext_dense_[centerq][j], riatom_to_lmos_ext_dense_[centerq][m]);
-                (*q_ko)(q_ijkl, m_ijkl) = (*qij_[q])(riatom_to_lmos_ext_dense_[centerq][k], riatom_to_lmos_ext_dense_[centerq][m]);
-                (*q_lo)(q_ijkl, m_ijkl) = (*qij_[q])(riatom_to_lmos_ext_dense_[centerq][l], riatom_to_lmos_ext_dense_[centerq][m]);
-            }
+            for (int pos = 0; pos < n_occupied_positions; ++pos) {
+                const int x_sparse = riatom_to_lmos_ext_dense_[centerq][ijkl_list[pos]];
 
-            for (int u_ijkl = 0; u_ijkl < npao_ijkl; ++u_ijkl) {
-                int u = lmoquadruplet_to_paos_[ijkl][u_ijkl];
-                (*q_iv)(q_ijkl, u_ijkl) = (*qia_[q])(riatom_to_lmos_ext_dense_[centerq][i], riatom_to_paos_ext_dense_[centerq][u]);
-                (*q_jv)(q_ijkl, u_ijkl) = (*qia_[q])(riatom_to_lmos_ext_dense_[centerq][j], riatom_to_paos_ext_dense_[centerq][u]);
-                (*q_kv)(q_ijkl, u_ijkl) = (*qia_[q])(riatom_to_lmos_ext_dense_[centerq][k], riatom_to_paos_ext_dense_[centerq][u]);
-                (*q_lv)(q_ijkl, u_ijkl) = (*qia_[q])(riatom_to_lmos_ext_dense_[centerq][l], riatom_to_paos_ext_dense_[centerq][u]);
+                for (int m_ijkl = 0; m_ijkl < nlmo_ijkl; ++m_ijkl) {
+                    int m = lmoquadruplet_to_lmos_[ijkl][m_ijkl];
+                    (*q_o)(q_ijkl, pos * nlmo_ijkl + m_ijkl) =
+                        (*qij_[q])(x_sparse, riatom_to_lmos_ext_dense_[centerq][m]);
+                }
+
+                for (int u_ijkl = 0; u_ijkl < npao_ijkl; ++u_ijkl) {
+                    int u = lmoquadruplet_to_paos_[ijkl][u_ijkl];
+                    (*q_v_pao[pos])(q_ijkl, u_ijkl) =
+                        (*qia_[q])(x_sparse, riatom_to_paos_ext_dense_[centerq][u]);
+                }
             }
 
             // More expensive integrals
@@ -1250,51 +1252,44 @@ double DLPNOCCSDT_Q::compute_gamma_ijkl(bool store_amplitudes) {
         auto A_solve = submatrix_rows_and_cols(*full_metric_, lmoquadruplet_to_ribfs_[ijkl], lmoquadruplet_to_ribfs_[ijkl]);
         A_solve->power(-0.5, 1.0e-14);
 
-        q_iv = linalg::doublet(q_iv, X_qno_[ijkl]);
-        q_jv = linalg::doublet(q_jv, X_qno_[ijkl]);
-        q_kv = linalg::doublet(q_kv, X_qno_[ijkl]);
-        q_lv = linalg::doublet(q_lv, X_qno_[ijkl]);
+        // Transform the virtual index into the QNO basis and gather the positions into one
+        // matrix, matching the occupied blocks. The metric is then applied to all four at
+        // once instead of being streamed through cache once per block.
+        auto q_v = std::make_shared<Matrix>("(Q_ijkl | x a)", naux_ijkl, n_occupied_positions * nqno_ijkl);
+        for (int pos = 0; pos < n_occupied_positions; ++pos) {
+            auto q_v_qno = linalg::doublet(q_v_pao[pos], X_qno_[ijkl]);
+            for (int q_ijkl = 0; q_ijkl < naux_ijkl; ++q_ijkl) {
+                ::memcpy(&(*q_v)(q_ijkl, pos * nqno_ijkl), &(*q_v_qno)(q_ijkl, 0),
+                         nqno_ijkl * sizeof(double));
+            }
+        }
 
-        q_io = linalg::doublet(A_solve, q_io);
-        q_jo = linalg::doublet(A_solve, q_jo);
-        q_ko = linalg::doublet(A_solve, q_ko);
-        q_lo = linalg::doublet(A_solve, q_lo);
-        q_iv = linalg::doublet(A_solve, q_iv);
-        q_jv = linalg::doublet(A_solve, q_jv);
-        q_kv = linalg::doublet(A_solve, q_kv);
-        q_lv = linalg::doublet(A_solve, q_lv);
+        q_o = linalg::doublet(A_solve, q_o);
+        q_v = linalg::doublet(A_solve, q_v);
         q_ov = linalg::doublet(A_solve, q_ov);
         q_vv = linalg::doublet(A_solve, q_vv);
-
-        Tensor<double, 2> q_io_ein("(Q_ijkl | m i)", naux_ijkl, nlmo_ijkl);
-        Tensor<double, 2> q_jo_ein("(Q_ijkl | m j)", naux_ijkl, nlmo_ijkl);
-        Tensor<double, 2> q_ko_ein("(Q_ijkl | m k)", naux_ijkl, nlmo_ijkl);
-        Tensor<double, 2> q_lo_ein("(Q_ijkl | m l)", naux_ijkl, nlmo_ijkl);
-        ::memcpy(q_io_ein.data(), q_io->get_pointer(), naux_ijkl * nlmo_ijkl * sizeof(double));
-        ::memcpy(q_jo_ein.data(), q_jo->get_pointer(), naux_ijkl * nlmo_ijkl * sizeof(double));
-        ::memcpy(q_ko_ein.data(), q_ko->get_pointer(), naux_ijkl * nlmo_ijkl * sizeof(double));
-        ::memcpy(q_lo_ein.data(), q_lo->get_pointer(), naux_ijkl * nlmo_ijkl * sizeof(double));
-
-        Tensor<double, 2> q_iv_ein("(Q_ijkl | i a)", naux_ijkl, nqno_ijkl);
-        Tensor<double, 2> q_jv_ein("(Q_ijkl | j b)", naux_ijkl, nqno_ijkl);
-        Tensor<double, 2> q_kv_ein("(Q_ijkl | k c)", naux_ijkl, nqno_ijkl);
-        Tensor<double, 2> q_lv_ein("(Q_ijkl | l d)", naux_ijkl, nqno_ijkl);
-        ::memcpy(q_iv_ein.data(), q_iv->get_pointer(), naux_ijkl * nqno_ijkl * sizeof(double));
-        ::memcpy(q_jv_ein.data(), q_jv->get_pointer(), naux_ijkl * nqno_ijkl * sizeof(double));
-        ::memcpy(q_kv_ein.data(), q_kv->get_pointer(), naux_ijkl * nqno_ijkl * sizeof(double));
-        ::memcpy(q_lv_ein.data(), q_lv->get_pointer(), naux_ijkl * nqno_ijkl * sizeof(double));
 
         Tensor<double, 3> q_ov_ein("(Q_ijkl | m a)", naux_ijkl, nlmo_ijkl, nqno_ijkl);
         Tensor<double, 3> q_vv_ein("(Q_ijkl | a b)", naux_ijkl, nqno_ijkl, nqno_ijkl);
         ::memcpy(q_ov_ein.data(), q_ov->get_pointer(), naux_ijkl * nlmo_ijkl * nqno_ijkl * sizeof(double));
         ::memcpy(q_vv_ein.data(), q_vv->get_pointer(), naux_ijkl * nqno_ijkl * nqno_ijkl * sizeof(double));
 
-        // List of intermediates
-        std::vector<int> ijkl_list = {i, j, k, l};
-        std::vector<Tensor<double, 2>> q_io_list = {q_io_ein, q_jo_ein, q_ko_ein, q_lo_ein};
-        std::vector<Tensor<double, 2>> q_iv_list = {q_iv_ein, q_jv_ein, q_kv_ein, q_lv_ein};
+        // List of intermediates, split back out of the grouped matrices one occupied
+        // position at a time. This is the copy the per-block matrices needed anyway.
+        std::vector<Tensor<double, 2>> q_io_list, q_iv_list;
+        for (int pos = 0; pos < n_occupied_positions; ++pos) {
+            Tensor<double, 2> q_io_ein("(Q_ijkl | m x)", naux_ijkl, nlmo_ijkl);
+            Tensor<double, 2> q_iv_ein("(Q_ijkl | x a)", naux_ijkl, nqno_ijkl);
+            for (int q_ijkl = 0; q_ijkl < naux_ijkl; ++q_ijkl) {
+                ::memcpy(q_io_ein.data() + static_cast<size_t>(q_ijkl) * nlmo_ijkl,
+                         &(*q_o)(q_ijkl, pos * nlmo_ijkl), nlmo_ijkl * sizeof(double));
+                ::memcpy(q_iv_ein.data() + static_cast<size_t>(q_ijkl) * nqno_ijkl,
+                         &(*q_v)(q_ijkl, pos * nqno_ijkl), nqno_ijkl * sizeof(double));
+            }
+            q_io_list.push_back(q_io_ein);
+            q_iv_list.push_back(q_iv_ein);
+        }
 
-        constexpr int n_occupied_positions = 4;
         QuadrupletEnergyIntermediates energy_intermediates;
 
         // Algorithm 1 intermediates for canonical Eq. (19), term 1
@@ -3364,17 +3359,19 @@ void DLPNOCCSDTQ::compute_integrals() {
         std::stringstream q_vv_name;
         q_vv_name << "(Q_ijkl | a b) " << (ijkl);
 
-        // (Q_{ijkl} | [i, j, k, l] m_{ijkl})
-        auto q_io = std::make_shared<Matrix>("(Q_ijkl | m i)", naux_ijkl, nlmo_ijkl);
-        auto q_jo = std::make_shared<Matrix>("(Q_ijkl | m j)", naux_ijkl, nlmo_ijkl);
-        auto q_ko = std::make_shared<Matrix>("(Q_ijkl | m k)", naux_ijkl, nlmo_ijkl);
-        auto q_lo = std::make_shared<Matrix>("(Q_ijkl | m l)", naux_ijkl, nlmo_ijkl);
+        // The four occupied positions carry the same integral with a different LMO in the
+        // bra, so they are held as one matrix indexed by position rather than as four
+        // separate blocks: the fitting metric is then applied to all of them in one GEMM.
+        constexpr int n_occupied_positions = 4;
+        const std::vector<int> ijkl_positions = {i, j, k, l};
 
-        // (Q_{ijkl} | [i, j, k, l] a_{ijkl})
-        auto q_iv = std::make_shared<Matrix>("(Q_ijkl | i a)", naux_ijkl, npao_ijkl);
-        auto q_jv = std::make_shared<Matrix>("(Q_ijkl | j b)", naux_ijkl, npao_ijkl);
-        auto q_kv = std::make_shared<Matrix>("(Q_ijkl | k c)", naux_ijkl, npao_ijkl);
-        auto q_lv = std::make_shared<Matrix>("(Q_ijkl | l d)", naux_ijkl, npao_ijkl);
+        // (Q_{ijkl} | [i, j, k, l] m_{ijkl})
+        auto q_o = std::make_shared<Matrix>("(Q_ijkl | m x)", naux_ijkl, n_occupied_positions * nlmo_ijkl);
+
+        // (Q_{ijkl} | [i, j, k, l] a_{ijkl}). Held per position while the virtual index is
+        // still a PAO, since each position is transformed into the QNO basis separately.
+        std::vector<SharedMatrix> q_v_pao(n_occupied_positions);
+        for (auto &q_x : q_v_pao) q_x = std::make_shared<Matrix>(naux_ijkl, npao_ijkl);
 
         auto q_ov = std::make_shared<Matrix>(q_ov_name.str(), naux_ijkl, nlmo_ijkl * nqno_ijkl);
         auto q_vv = std::make_shared<Matrix>(q_vv_name.str(), naux_ijkl, nqno_ijkl * nqno_ijkl);
@@ -3384,20 +3381,20 @@ void DLPNOCCSDTQ::compute_integrals() {
             const int centerq = ribasis_->function_to_center(q);
 
             // Cheaper integrals
-            for (int m_ijkl = 0; m_ijkl < nlmo_ijkl; ++m_ijkl) {
-                int m = lmoquadruplet_to_lmos_[ijkl][m_ijkl];
-                (*q_io)(q_ijkl, m_ijkl) = (*qij_[q])(riatom_to_lmos_ext_dense_[centerq][i], riatom_to_lmos_ext_dense_[centerq][m]);
-                (*q_jo)(q_ijkl, m_ijkl) = (*qij_[q])(riatom_to_lmos_ext_dense_[centerq][j], riatom_to_lmos_ext_dense_[centerq][m]);
-                (*q_ko)(q_ijkl, m_ijkl) = (*qij_[q])(riatom_to_lmos_ext_dense_[centerq][k], riatom_to_lmos_ext_dense_[centerq][m]);
-                (*q_lo)(q_ijkl, m_ijkl) = (*qij_[q])(riatom_to_lmos_ext_dense_[centerq][l], riatom_to_lmos_ext_dense_[centerq][m]);
-            }
+            for (int pos = 0; pos < n_occupied_positions; ++pos) {
+                const int x_sparse = riatom_to_lmos_ext_dense_[centerq][ijkl_positions[pos]];
 
-            for (int u_ijkl = 0; u_ijkl < npao_ijkl; ++u_ijkl) {
-                int u = lmoquadruplet_to_paos_[ijkl][u_ijkl];
-                (*q_iv)(q_ijkl, u_ijkl) = (*qia_[q])(riatom_to_lmos_ext_dense_[centerq][i], riatom_to_paos_ext_dense_[centerq][u]);
-                (*q_jv)(q_ijkl, u_ijkl) = (*qia_[q])(riatom_to_lmos_ext_dense_[centerq][j], riatom_to_paos_ext_dense_[centerq][u]);
-                (*q_kv)(q_ijkl, u_ijkl) = (*qia_[q])(riatom_to_lmos_ext_dense_[centerq][k], riatom_to_paos_ext_dense_[centerq][u]);
-                (*q_lv)(q_ijkl, u_ijkl) = (*qia_[q])(riatom_to_lmos_ext_dense_[centerq][l], riatom_to_paos_ext_dense_[centerq][u]);
+                for (int m_ijkl = 0; m_ijkl < nlmo_ijkl; ++m_ijkl) {
+                    int m = lmoquadruplet_to_lmos_[ijkl][m_ijkl];
+                    (*q_o)(q_ijkl, pos * nlmo_ijkl + m_ijkl) =
+                        (*qij_[q])(x_sparse, riatom_to_lmos_ext_dense_[centerq][m]);
+                }
+
+                for (int u_ijkl = 0; u_ijkl < npao_ijkl; ++u_ijkl) {
+                    int u = lmoquadruplet_to_paos_[ijkl][u_ijkl];
+                    (*q_v_pao[pos])(q_ijkl, u_ijkl) =
+                        (*qia_[q])(x_sparse, riatom_to_paos_ext_dense_[centerq][u]);
+                }
             }
 
             // More expensive integrals
@@ -3428,49 +3425,40 @@ void DLPNOCCSDTQ::compute_integrals() {
             ::memcpy(&(*q_vv)(q_ijkl, 0), &(*q_vv_tmp)(0, 0), nqno_ijkl * nqno_ijkl * sizeof(double));
         } // end q_ijkl
 
-        // Contract Intermediates
-        q_iv = linalg::doublet(q_iv, X_qno_[ijkl]);
-        q_jv = linalg::doublet(q_jv, X_qno_[ijkl]);
-        q_kv = linalg::doublet(q_kv, X_qno_[ijkl]);
-        q_lv = linalg::doublet(q_lv, X_qno_[ijkl]);
-        
+        // Contract Intermediates. The virtual index is taken into the QNO basis one position
+        // at a time, then the positions are gathered so that the metric below is applied to
+        // all four with a single GEMM rather than once per block.
+        auto q_v = std::make_shared<Matrix>("(Q_ijkl | x a)", naux_ijkl, n_occupied_positions * nqno_ijkl);
+        for (int pos = 0; pos < n_occupied_positions; ++pos) {
+            auto q_v_qno = linalg::doublet(q_v_pao[pos], X_qno_[ijkl]);
+            for (int q_ijkl = 0; q_ijkl < naux_ijkl; ++q_ijkl) {
+                ::memcpy(&(*q_v)(q_ijkl, pos * nqno_ijkl), &(*q_v_qno)(q_ijkl, 0),
+                         nqno_ijkl * sizeof(double));
+            }
+        }
+
         // Multiply by (P|Q)^{-1/2}
         auto A_solve = submatrix_rows_and_cols(*full_metric_, lmoquadruplet_to_ribfs_[ijkl], lmoquadruplet_to_ribfs_[ijkl]);
         A_solve->power(-0.5, 1.0e-14);
 
-        q_io = linalg::doublet(A_solve, q_io);
-        q_jo = linalg::doublet(A_solve, q_jo);
-        q_ko = linalg::doublet(A_solve, q_ko);
-        q_lo = linalg::doublet(A_solve, q_lo);
-        q_iv = linalg::doublet(A_solve, q_iv);
-        q_jv = linalg::doublet(A_solve, q_jv);
-        q_kv = linalg::doublet(A_solve, q_kv);
-        q_lv = linalg::doublet(A_solve, q_lv);
+        q_o = linalg::doublet(A_solve, q_o);
+        q_v = linalg::doublet(A_solve, q_v);
         q_ov = linalg::doublet(A_solve, q_ov);
         q_vv = linalg::doublet(A_solve, q_vv);
 
-        q_io_list_[ijkl][0] = Tensor<double, 2>("(Q_ijkl | m i)", naux_ijkl, nlmo_ijkl);
-        q_io_list_[ijkl][1] = Tensor<double, 2>("(Q_ijkl | m j)", naux_ijkl, nlmo_ijkl);
-        q_io_list_[ijkl][2] = Tensor<double, 2>("(Q_ijkl | m k)", naux_ijkl, nlmo_ijkl);
-        q_io_list_[ijkl][3] = Tensor<double, 2>("(Q_ijkl | m l)", naux_ijkl, nlmo_ijkl);
-
-        q_iv_list_[ijkl][0] = Tensor<double, 2>("(Q_ijkl | i a)", naux_ijkl, nqno_ijkl);
-        q_iv_list_[ijkl][1] = Tensor<double, 2>("(Q_ijkl | j b)", naux_ijkl, nqno_ijkl);
-        q_iv_list_[ijkl][2] = Tensor<double, 2>("(Q_ijkl | k c)", naux_ijkl, nqno_ijkl);
-        q_iv_list_[ijkl][3] = Tensor<double, 2>("(Q_ijkl | l d)", naux_ijkl, nqno_ijkl);
+        for (int pos = 0; pos < n_occupied_positions; ++pos) {
+            q_io_list_[ijkl][pos] = Tensor<double, 2>("(Q_ijkl | m x)", naux_ijkl, nlmo_ijkl);
+            q_iv_list_[ijkl][pos] = Tensor<double, 2>("(Q_ijkl | x a)", naux_ijkl, nqno_ijkl);
+            for (int q_ijkl = 0; q_ijkl < naux_ijkl; ++q_ijkl) {
+                ::memcpy(q_io_list_[ijkl][pos].data() + static_cast<size_t>(q_ijkl) * nlmo_ijkl,
+                         &(*q_o)(q_ijkl, pos * nlmo_ijkl), nlmo_ijkl * sizeof(double));
+                ::memcpy(q_iv_list_[ijkl][pos].data() + static_cast<size_t>(q_ijkl) * nqno_ijkl,
+                         &(*q_v)(q_ijkl, pos * nqno_ijkl), nqno_ijkl * sizeof(double));
+            }
+        }
 
         q_ov_ijkl_[ijkl] = Tensor<double, 3>(q_ov->name(), naux_ijkl, nlmo_ijkl, nqno_ijkl);
         q_vv_ijkl_[ijkl] = Tensor<double, 3>(q_vv->name(), naux_ijkl, nqno_ijkl, nqno_ijkl);
-
-        ::memcpy(q_io_list_[ijkl][0].data(), q_io->get_pointer(), naux_ijkl * nlmo_ijkl * sizeof(double));
-        ::memcpy(q_io_list_[ijkl][1].data(), q_jo->get_pointer(), naux_ijkl * nlmo_ijkl * sizeof(double));
-        ::memcpy(q_io_list_[ijkl][2].data(), q_ko->get_pointer(), naux_ijkl * nlmo_ijkl * sizeof(double));
-        ::memcpy(q_io_list_[ijkl][3].data(), q_lo->get_pointer(), naux_ijkl * nlmo_ijkl * sizeof(double));
-
-        ::memcpy(q_iv_list_[ijkl][0].data(), q_iv->get_pointer(), naux_ijkl * nqno_ijkl * sizeof(double));
-        ::memcpy(q_iv_list_[ijkl][1].data(), q_jv->get_pointer(), naux_ijkl * nqno_ijkl * sizeof(double));
-        ::memcpy(q_iv_list_[ijkl][2].data(), q_kv->get_pointer(), naux_ijkl * nqno_ijkl * sizeof(double));
-        ::memcpy(q_iv_list_[ijkl][3].data(), q_lv->get_pointer(), naux_ijkl * nqno_ijkl * sizeof(double));
 
         ::memcpy(q_ov_ijkl_[ijkl].data(), q_ov->get_pointer(), naux_ijkl * nlmo_ijkl * nqno_ijkl * sizeof(double));
         ::memcpy(q_vv_ijkl_[ijkl].data(), q_vv->get_pointer(), naux_ijkl * nqno_ijkl * nqno_ijkl * sizeof(double));
