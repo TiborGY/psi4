@@ -1,5 +1,5 @@
 
-if(${Python_NumPy_VERSION} GREATER_EQUAL "2")
+if("${psi4_NumPy_VERSION}" VERSION_GREATER_EQUAL "2")
         find_package(pybind11 2.12.0 CONFIG QUIET)  # edit in codedeps
 else()
     if(${Python_VERSION_MINOR} GREATER_EQUAL "11")

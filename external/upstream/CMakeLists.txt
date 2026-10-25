@@ -1,5 +1,6 @@
 # Note: order is important as some projects might be interdependent
 foreach(dir
+  numpy  # keep this first as pybind11 and gau2grid are checking psi4_NumPy_*
   pybind11
   ambit
   bse

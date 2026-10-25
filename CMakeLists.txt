@@ -56,7 +56,8 @@ message(STATUS "Building using CMake ${CMAKE_VERSION} Generator ${CMAKE_GENERATO
 #    - C++ and C compilers (C++20 compliant)
 #    - BLAS/LAPACK (also runtime; e.g., `conda install mkl-devel`)
 #    - Python (also runtime; interpreter and headers; e.g., `conda install python`)
-#    - NumPy (also runtime; avoidable at buildtime if gau2grid pre-built; e.g., `conda install numpy`)
+#    - NumPy (also runtime; avoidable at buildtime if gau2grid pre-built; e.g., `conda install numpy`;
+#      if missing, built from source into stage on non-Windows, needing PyPI access)
 #    - networkx >=2.4 (runtime only; e.g., `conda install networkx`)
 #    - pint >=0.10 (runtime only; e.g., `conda install pint -c conda-forge`)
 #    - pydantic >=1.0 (runtime only; e.g., `conda install pydantic -c conda-forge`)
@@ -232,8 +233,13 @@ message(STATUS "Psi4 install: ${CMAKE_INSTALL_PREFIX}")
 # * library: not at all
 
 set(Python_ADDITIONAL_VERSIONS 3.15 3.14 3.13 3.12 3.11)  # adjust with CMake minimum FindPythonInterp
-find_package(Python 3.11 COMPONENTS Interpreter Development NumPy REQUIRED)
-message(STATUS "${Cyan}Found Python ${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}${ColourReset}: ${Python_EXECUTABLE} (found version ${Python_VERSION}; NumPy version: ${Python_NumPy_VERSION})")
+find_package(Python 3.11 REQUIRED COMPONENTS Interpreter Development OPTIONAL_COMPONENTS NumPy)  # NumPy built in external/upstream/numpy if missing
+if(${Python_NumPy_FOUND})
+    set(_numpy_msg "NumPy version: ${Python_NumPy_VERSION}")
+else()
+    set(_numpy_msg "NumPy not found")
+endif()
+message(STATUS "${Cyan}Found Python ${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}${ColourReset}: ${Python_EXECUTABLE} (found version ${Python_VERSION}; ${_numpy_msg})")
 set(STAGED_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/stage)
 message(STATUS "Psi4 staging: ${STAGED_INSTALL_PREFIX}")
 message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
@@ -251,6 +257,7 @@ include(ExternalProject)
 ExternalProject_Add(psi4-core
    DEPENDS lapack_external
            hdf5_external
+           numpy_external
            ambit_external
            bse_external
            chemps2_external
@@ -320,7 +327,7 @@ ExternalProject_Add(psi4-core
               -DPython_EXECUTABLE=${Python_EXECUTABLE}
               -DPython_INCLUDE_DIR=${Python_INCLUDE_DIRS}
               -DPython_LIBRARY=${Python_LIBRARIES}
-              -DPython_NumPy_INCLUDE_DIR=${Python_NumPy_INCLUDE_DIR}
+              -DPython_NumPy_INCLUDE_DIR=${psi4_NumPy_INCLUDE_DIR}
               -DPSI4_ROOT=${CMAKE_CURRENT_SOURCE_DIR}
               -DENABLE_ambit=${ENABLE_ambit}
               -DENABLE_CheMPS2=${ENABLE_CheMPS2}

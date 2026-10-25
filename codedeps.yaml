@@ -806,12 +806,16 @@ data:
     use:
       added: 1.1
       required: true
-      buildable: false
+      buildable: true
+      buildable_note: "If missing, built from source from PyPI sdist by pip (non-Windows). Prefer a packaged NumPy."
       buildtime_note: "buildtime for cmake checks; otherwise, runtime."
       buildtime: true
       cms: false
     repository: null
-    cmake: null
+    cmake:
+      name: numpy
+      constraint: "ATLEAST 2.0"
+      target: null
     conda:
       channel: conda-forge
       name: numpy

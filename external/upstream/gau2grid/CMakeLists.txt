@@ -16,10 +16,26 @@ else()
 
     include(ExternalProject)
     message(STATUS "Suitable gau2grid could not be located, ${Magenta}Building gau2grid${ColourReset} instead.")
+
+    # gau2grid code generation imports numpy, so expose NumPy if built into stage
+    set(_g2g_build_cmds)
+    if(${psi4_NumPy_STAGED})
+        file(TO_NATIVE_PATH "${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}${PYMOD_INSTALL_LIBDIR}" _install_lib)
+        set(_g2g_pythonpath "${_install_lib}")
+        if(DEFINED ENV{PYTHONPATH})
+            string(APPEND _g2g_pythonpath ":$ENV{PYTHONPATH}")
+        endif()
+        set(_g2g_build_cmds
+            BUILD_COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${_g2g_pythonpath} ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE}
+            INSTALL_COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${_g2g_pythonpath} ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --target install)
+    endif()
+
     ExternalProject_Add(gau2grid_external
         DEPENDS pybind11_external
+                numpy_external
         URL https://github.com/dgasmith/gau2grid/archive/c2d78e0.tar.gz  # v2.0.7+  # edit in codedeps
         UPDATE_COMMAND ""
+        ${_g2g_build_cmds}
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${STAGED_INSTALL_PREFIX}
                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}

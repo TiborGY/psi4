@@ -221,6 +221,12 @@ See :source:`codedeps.yaml` for a structured listing and history of dependencies
 * CMake (3.15+) https://cmake.org/download/
 
 * NumPy (needed at runtime *and* buildtime) https://numpy.org/
+  If not detected, on Linux and Mac the build system will download and
+  build NumPy from source (using ``pip`` with PyPI access) and install it
+  alongside the |PSIfour| Python module. A packaged NumPy is preferred, as
+  this source build uses NumPy's own BLAS/LAPACK detection (falling back
+  to its slow internal ``lapack_lite``), not the libraries detected for
+  |PSIfour|.
 
 * System utilities: GNU make and GNU install or Ninja, POSIX threads (Pthreads) library
 
