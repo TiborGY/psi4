@@ -747,6 +747,7 @@ data:
     cmake:
       name: pybind11  # detect Python before pybind11
       constraint: 2.12.0
+      constraint_note: "GCC>=14 needs >=2.13.6. That branch is hand-maintained in external/upstream/pybind11/CMakeLists.txt, written `find_package( pybind11` so deploy doesn't overwrite it."
       target: pybind11::module
     conda:
       channel: conda-forge

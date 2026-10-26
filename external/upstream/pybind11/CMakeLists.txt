@@ -1,5 +1,7 @@
 
-if(${Python_NumPy_VERSION} GREATER_EQUAL "2")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "14")
+        find_package( pybind11 2.13.6 CONFIG QUIET)  # GCC>=14; hand-maintained, see codedeps constraint_note
+elseif(${Python_NumPy_VERSION} GREATER_EQUAL "2")
         find_package(pybind11 2.12.0 CONFIG QUIET)  # edit in codedeps
 else()
     if(${Python_VERSION_MINOR} GREATER_EQUAL "11")
