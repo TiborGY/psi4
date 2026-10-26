@@ -119,6 +119,7 @@ How to configure Libint for building Psi4
 * :makevar:`CMAKE_DISABLE_FIND_PACKAGE_Libint2` |w---w| CMake variable to force internal build of Libint instead of detecting pre-built
 * :makevar:`CMAKE_INSIST_FIND_PACKAGE_Libint2` |w---w| CMake variable to force detecting pre-built Libint and not falling back on internal build
 * :makevar:`BUILD_Libint2_GENERATOR` |w---w| CMake variable to allow internal build to start from generator source, not generated source
+* :makevar:`Libint2_BUILD_TYPE` |w---w| CMake variable to set the build type of the internal build of Libint, if different from :makevar:`CMAKE_BUILD_TYPE`
 * :makevar:`MAX_AM_ERI` |w---w| CMake variable to specify minimum highest angular momentum built or detected
 
 **Examples**
@@ -159,3 +160,8 @@ E. Build custom library from generator source
     >>> # edit the "ENABLE" and "AM" variables
     >>> cmake -DBUILD_Libint2_GENERATOR=ON -DCMAKE_DISABLE_FIND_PACKAGE_Libint2=ON
 
+F. Build Psi4 for debugging but keep the bundled Libint optimized
+
+  .. code-block:: bash
+
+    >>> cmake -DCMAKE_BUILD_TYPE=Debug -DLibint2_BUILD_TYPE=Release

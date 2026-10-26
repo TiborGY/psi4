@@ -99,8 +99,13 @@ else()
     # stopgap to avert a report that static lib not working on Linux
     set(_build_shared_libs "ON")
 
-    # reportedly Debug takes forever to build on Mac
-    set(_cmake_build_type "Release")
+    # follow the Psi4 build type unless Libint2_BUILD_TYPE given. reportedly Debug takes forever to build on Mac,
+    #   so -DLibint2_BUILD_TYPE=Release keeps an optimized Libint2 under a Debug Psi4
+    if(Libint2_BUILD_TYPE)
+        set(_cmake_build_type ${Libint2_BUILD_TYPE})
+    else()
+        set(_cmake_build_type ${CMAKE_BUILD_TYPE})
+    endif()
 
     include(ExternalProject)
 
