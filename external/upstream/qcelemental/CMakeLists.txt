@@ -21,17 +21,25 @@ else()
 
     file(TO_NATIVE_PATH "${STAGED_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}${PYMOD_INSTALL_LIBDIR}" _install_lib)
 
+    set(_qcel_url
+        https://github.com/MolSSI/QCElemental/archive/v0.50.4.tar.gz  # edit in codedeps
+        )
+
+    # qcelemental is pure Python, so installing it needs no pip, only its package dir plus the .dist-info
+    #   that importlib.metadata reads for qcelemental.__version__. The source has no version in it
+    #   (setuptools-scm takes it from git), so take it from the tag in the URL. For an untagged commit,
+    #   set _qcel_version by hand instead (>= the find_python_module minimum above).
+    string(REGEX REPLACE "^.*/v?([^/]+)\\.tar\\.gz$" "\\1" _qcel_version "${_qcel_url}")
+    set(_qcel_distinfo ${CMAKE_CURRENT_BINARY_DIR}/qcelemental-${_qcel_version}.dist-info)
+    file(WRITE ${_qcel_distinfo}/METADATA "Metadata-Version: 2.1\nName: qcelemental\nVersion: ${_qcel_version}\n")
+
     ExternalProject_Add(qcelemental_external
+        URL ${_qcel_url}
         BUILD_ALWAYS 1
-        DOWNLOAD_COMMAND ""
         CONFIGURE_COMMAND ""
         UPDATE_COMMAND ""
         BUILD_COMMAND ""
-        BUILD_IN_SOURCE 1
-        # master: INSTALL_COMMAND ${Python_EXECUTABLE} -m pip install git+https://github.com/MolSSI/ QCElemental.git#egg=proj
-        INSTALL_COMMAND ${Python_EXECUTABLE} -m pip install git+https://github.com/MolSSI/QCElemental.git@v0.50.4#egg=proj  # edit in codedeps
-                                                      --target=${_install_lib}
-                                                      --no-deps
-                                                      #-v
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/qcelemental ${_install_lib}/qcelemental
+                COMMAND ${CMAKE_COMMAND} -E copy_directory ${_qcel_distinfo} ${_install_lib}/qcelemental-${_qcel_version}.dist-info
         )
 endif()

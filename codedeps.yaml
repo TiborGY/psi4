@@ -1016,7 +1016,6 @@ data:
       account: MolSSI
       name: QCElemental
       commit: v0.50.4
-      githttps: true
     cmake:
       name: qcelemental
       constraint: "ATLEAST 0.50.4"
