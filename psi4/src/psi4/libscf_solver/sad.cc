@@ -156,7 +156,7 @@ std::pair<arma::mat,arma::vec> expand_density(const std::vector<arma::mat> &C, c
    }
 
    return std::make_pair(Cret,oret);
- };
+ }
 
 std::vector<arma::mat> extract_mat(const std::vector<std::vector<arma::uvec>> & lm_indices, const arma::mat & mat) {
     std::vector<arma::mat> ret(lm_indices.size());
@@ -176,7 +176,7 @@ std::vector<arma::mat> extract_mat(const std::vector<std::vector<arma::uvec>> & 
       }
     }
     return ret;
-};
+}
 
 
 std::pair<double, std::vector<arma::mat>> SADGuess::fock_builder(const OpenOrbitalOptimizer::DensityMatrix<double, double> & dm, const std::vector<std::vector<arma::uvec>> & lm_indices, const std::vector<arma::mat> & X, const arma::mat & S, const arma::mat & coreH) {
@@ -226,7 +226,7 @@ std::pair<double, std::vector<arma::mat>> SADGuess::fock_builder(const OpenOrbit
     double Etot = Ecore+Ecoul+Eexch;
 
     return std::make_pair(Etot,fock);
-  };
+  }
 
 #endif
 
