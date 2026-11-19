@@ -9,6 +9,29 @@ jobs:
   strategy:
     maxParallel: 8
     matrix:
+      gcc_10:
+        # oldest GCC that cmake/custom_cxxstandard.cmake accepts. LIBSTDCXX_GCC_VER makes the lane link *and*
+        #   run against GCC 10's own libstdc++ rather than a newer one from Ubuntu or conda-forge.
+        #   See "Special Operation: use GCC's own libstdc++".
+        CXX_COMPILER: 'g++-10'
+        PYTHON_VER: '3.14'
+        C_COMPILER: 'gcc-10'
+        F_COMPILER: 'gfortran-10'
+        BUILD_TYPE: 'release'
+        APT_INSTALL: 'gcc-10 g++-10 gfortran-10'
+        # pinned: Ubuntu stopped packaging gcc-10 after 24.04, so this can't follow ubuntu-latest
+        vmImage: 'ubuntu-24.04'
+        PYTEST_MARKER_EXPR: "(quick and not memory_profiler)"
+        PYTEST_NAME_EXPR: 'not nonsense1'
+        # c-f einsums needs a newer libstdc++ (GLIBCXX_3.4.31) than GCC 10 provides
+        ENABLE_EINSUMS: "OFF"
+        ENABLE_GAUXC: "ON"
+        CMARGS: ""
+        CM_GENERATOR: "Ninja"
+        ADVISOR_ARGS: ""
+        ADVISOR_DISABLE_ARGS: "compilers"
+        LIBSTDCXX_GCC_VER: '10'
+
       gcc_11:
         CXX_COMPILER: 'g++-11'
         PYTHON_VER: '3.14'
@@ -171,6 +194,26 @@ jobs:
     displayName: "Add Conda to PATH"
 
   - bash: |
+      set -e
+      if [[ -n "${LIBSTDCXX_GCC_VER:-}" ]]; then
+        # Ubuntu ships only the newest GCC's libstdc++.so.6 (GCC 14's on 24.04), so an apt-installed older g++
+        #   compiles against its own headers but links and runs against that newer library. Fetch the older
+        #   GCC's own runtime (for GCC 10: libstdc++.so.6.0.28, GLIBCXX_3.4.28) into a separate prefix ...
+        prefix="$(Agent.BuildDirectory)/libstdcxx-gcc${LIBSTDCXX_GCC_VER}"
+        conda create -p "${prefix}" -c conda-forge --override-channels "libstdcxx-ng=${LIBSTDCXX_GCC_VER}"
+        libstdcxx=$(readlink -f "${prefix}/lib/libstdc++.so.6")
+        # ... and make it the libstdc++ the compiler links against (its libstdc++.so linker symlink points at
+        #   the system one)
+        cxx_link=$(${CXX_COMPILER} -print-file-name=libstdc++.so)
+        [[ "${cxx_link}" == /* ]]
+        sudo ln -sfv "${libstdcxx}" "${cxx_link}"
+        # test steps LD_PRELOAD it, the only way to ensure no other libstdc++.so.6 gets into the process:
+        #   c-f binaries (python included) carry DT_RPATH to the env, which beats LD_LIBRARY_PATH.
+        echo "##vso[task.setvariable variable=LIBSTDCXX_SO]${libstdcxx}"
+      fi
+    displayName: "Special Operation: use GCC's own libstdc++"
+
+  - bash: |
       grep OPENORBITALOPTIMIZER psi4/src/read_options.cc
       if [[ "$(Agent.JobName)" == "Linux Builds gcc_latest" ]]; then
         sed -i 's;\(options\.add_str("ORBITAL_OPTIMIZER_PACKAGE", "\)INTERNAL\(", "INTERNAL OOO OPENORBITALOPTIMIZER"\);\1OOO\2;' psi4/src/read_options.cc
@@ -202,7 +245,10 @@ jobs:
       fi
       sed -i "s;- libint;#- libint;g" env_p4env.yaml
       sed -i "s;#- psi4::libint;- psi4::libint=2.8.1;g" env_p4env.yaml
-      echo "  - einsums>=1.0.6" >> env_p4env.yaml
+      if [[ -z "${LIBSTDCXX_GCC_VER:-}" ]]; then
+        # c-f einsums can't load with an older GCC's libstdc++
+        echo "  - einsums>=1.0.6" >> env_p4env.yaml
+      fi
       echo "  - range-v3" >> env_p4env.yaml
       echo "  - zlib" >> env_p4env.yaml
       echo "  - armadillo" >> env_p4env.yaml
@@ -212,6 +258,16 @@ jobs:
       cat env_p4env.yaml
       conda env create -n p4env -f env_p4env.yaml
       source activate p4env
+      if [[ -n "${LIBSTDCXX_GCC_VER:-}" ]]; then
+        # c-f builds of numpy, scipy, pandas (C++ extensions) and cmake (ctest runs in the test steps) need a newer
+        #   libstdc++ (GLIBCXX_3.4.29+) than GCC 10's. PyPI's manylinux wheels are limited to old symbol versions,
+        #   so swap them in, keeping conda's versions of the Python packages.
+        pins=$(python -c "from importlib.metadata import version; print(*(f'{p}=={version(p)}' for p in ['numpy', 'scipy', 'pandas']))")
+        pip install --no-deps --force-reinstall --only-binary=:all: cmake ${pins} || exit 1
+        # drop the env's linker symlink to its (newer) libstdc++, so a -L${CONDA_PREFIX}/lib can't divert linking
+        #   from the compiler's one. The runtime libstdc++.so.6 stays, as conda's own tools need it.
+        rm -fv "${CONDA_PREFIX}/lib/libstdc++.so"
+      fi
       conda info
       conda list
     displayName: 'Build Environment'
@@ -257,8 +313,32 @@ jobs:
     displayName: 'Build Psi4'
 
   - bash: |
+      set -e
+      if [[ -n "${LIBSTDCXX_SO:-}" ]]; then
+        cd build
+        source activate p4env
+        # built against GCC's own libstdc++: headers by the compiler ...
+        echo "#include <cstddef>" | ${CXX_COMPILER} -x c++ -dM -E - | grep -E "_GLIBCXX_RELEASE|__GLIBCXX__ "
+        # ... and library by "Special Operation: use GCC's own libstdc++" (no other libstdc++.so linkable)
+        readlink -f "$(${CXX_COMPILER} -print-file-name=libstdc++.so)"
+        [[ "$(readlink -f "$(${CXX_COMPILER} -print-file-name=libstdc++.so)")" == "${LIBSTDCXX_SO}" ]]
+        [[ ! -e "${CONDA_PREFIX}/lib/libstdc++.so" ]]
+        # psi4 loads and runs with it as the only libstdc++ in the process (else "version `GLIBCXX_...' not found")
+        LD_PRELOAD="${LIBSTDCXX_SO}" PYTHONPATH=stage/lib python -c "if True:
+          import psi4
+          psi4.core.be_quiet()
+          psi4.geometry('He')
+          print('He/sto-3g SCF energy', psi4.energy('scf/sto-3g'))
+          libs = {l.split()[-1] for l in open('/proc/self/maps') if 'libstdc++' in l}
+          print('libstdc++ in use:', *libs)
+          assert libs == {'${LIBSTDCXX_SO}'}, libs"
+      fi
+    displayName: "Special Operation: check use of GCC's own libstdc++"
+
+  - bash: |
       cd build
       source activate p4env
+      if [[ -n "${LIBSTDCXX_SO:-}" ]]; then export LD_PRELOAD="${LIBSTDCXX_SO}"; fi
       python -V
       python -c "import qcengine as qcng; qcng.get_program('psi4')" || true
       python -c 'import numpy; print(numpy.version.version)'
@@ -271,6 +351,7 @@ jobs:
   - bash: |
       cd build
       source activate p4env
+      if [[ -n "${LIBSTDCXX_SO:-}" ]]; then export LD_PRELOAD="${LIBSTDCXX_SO}"; fi
       python -V
       export PYTHONPATH=stage/lib
       export PATH=stage/bin:$PATH
@@ -332,6 +413,7 @@ jobs:
   - bash: |
       cd build
       source activate p4env
+      if [[ -n "${LIBSTDCXX_SO:-}" ]]; then export LD_PRELOAD="${LIBSTDCXX_SO}"; fi
       python ../devtools/scripts/ci_run_test.py
       python ../devtools/scripts/ci_print_failing.py
     displayName: 'CTest Tests'
@@ -339,6 +421,7 @@ jobs:
   - bash: |
       cd build
       source activate p4env
+      if [[ -n "${LIBSTDCXX_SO:-}" ]]; then export LD_PRELOAD="${LIBSTDCXX_SO}"; fi
       PYTHONPATH=stage/lib/ pytest -v -rws --durations=15 --durations-min=40 --strict-markers --color yes -n 2 -m "$PYTEST_MARKER_EXPR" -k "$PYTEST_NAME_EXPR" stage/lib/psi4/tests/
     displayName: 'PyTest Tests'
 
